@@ -1,0 +1,117 @@
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+
+const url = process.env.DB_TEST_SUPABASE_URL!;
+const anon = process.env.DB_TEST_ANON_KEY!;
+const service = process.env.DB_TEST_SERVICE_ROLE_KEY!;
+
+const opts = { auth: { persistSession: false, autoRefreshToken: false } };
+const admin = createClient(url, service, opts);
+const run = Date.now();
+const password = 'Test-pass-12345';
+
+async function makeUser(tag: string) {
+  const email = `${tag}-${run}@example.test`;
+  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  if (error) throw error;
+  const client = createClient(url, anon, opts);
+  const signed = await client.auth.signInWithPassword({ email, password });
+  if (signed.error) throw signed.error;
+  return { id: data.user.id, client };
+}
+
+const must = <T>(r: { data: T; error: unknown }): NonNullable<T> => {
+  if (r.error) throw r.error;
+  return r.data as NonNullable<T>;
+};
+
+let A: { id: string; client: SupabaseClient };
+let B: { id: string; client: SupabaseClient };
+let G: string;
+let T: string;
+let P: string;
+
+beforeAll(async () => {
+  A = await makeUser('a');
+  B = await makeUser('b');
+  G = must(await admin.from('groups').insert({ name: 'G', created_by: A.id }).select('id').single()).id;
+  must(await admin.from('group_members').insert({ group_id: G, user_id: A.id, role: 'owner' }));
+  T = must(await admin.from('trips').insert({ group_id: G, name: 'T', city: 'Hải Phòng', created_by: A.id }).select('id').single()).id;
+  P = must(
+    await admin
+      .from('places')
+      .insert({ group_id: G, name: 'Quán', city: 'Hải Phòng', city_norm: 'hai phong', category: 'food', created_by: A.id })
+      .select('id')
+      .single(),
+  ).id;
+  must(await admin.from('trip_places').insert({ trip_id: T, place_id: P, added_by: A.id }).select('id').single());
+  must(await admin.from('place_reviews_internal').insert({ place_id: P, user_id: A.id, trip_id: T, verdict: 'up' }));
+  must(await admin.from('ai_cache').insert({ key: `k-${run}`, value: { x: 1 }, expires_at: new Date(Date.now() + 1e6).toISOString() }));
+});
+
+afterAll(async () => {
+  await admin.from('groups').delete().eq('id', G);
+  await admin.auth.admin.deleteUser(A.id);
+  await admin.auth.admin.deleteUser(B.id);
+});
+
+describe('RLS', () => {
+  test('trigger tạo profile khi có user mới', async () => {
+    expect((await admin.from('profiles').select().eq('id', A.id)).data).toHaveLength(1);
+  });
+
+  test('thành viên đọc được trip', async () => {
+    expect((await A.client.from('trips').select().eq('id', T)).data).toHaveLength(1);
+  });
+
+  test('thành viên đọc được places/trip_places/reviews', async () => {
+    for (const t of ['places', 'trip_places', 'place_reviews_internal']) {
+      expect((await A.client.from(t).select()).data).toHaveLength(1);
+    }
+  });
+
+  test('người ngoài không đọc được trip/places/trip_places', async () => {
+    for (const t of ['trips', 'places', 'trip_places', 'place_reviews_internal', 'groups', 'group_members']) {
+      expect((await B.client.from(t).select()).data).toEqual([]);
+    }
+  });
+
+  test('người ngoài không chèn được place vào nhóm G', async () => {
+    const r = await B.client.from('places').insert({ group_id: G, name: 'x', city: 'x', city_norm: 'x', category: 'food' });
+    expect(r.error).not.toBeNull();
+  });
+
+  test('người ngoài không chèn được trip_places vào trip của G', async () => {
+    const r = await B.client.from('trip_places').insert({ trip_id: T, place_id: P, added_by: B.id });
+    expect(r.error).not.toBeNull();
+  });
+
+  test('thành viên chèn được place vào nhóm của mình', async () => {
+    const r = await A.client
+      .from('places')
+      .insert({ group_id: G, name: 'ok', city: 'x', city_norm: 'x', category: 'cafe', created_by: A.id });
+    expect(r.error).toBeNull();
+  });
+
+  test('trùng google_place_id trong một nhóm bị chặn', async () => {
+    const row = { group_id: G, google_place_id: 'gp1', name: 'x', city: 'x', city_norm: 'x', category: 'food' as const };
+    expect((await admin.from('places').insert(row)).error).toBeNull();
+    expect((await admin.from('places').insert(row)).error?.code).toBe('23505');
+  });
+
+  test('ai_cache chỉ service role truy cập', async () => {
+    expect((await A.client.from('ai_cache').select()).data ?? []).toEqual([]);
+    expect((await A.client.from('ai_cache').insert({ key: 'z', value: {}, expires_at: new Date().toISOString() })).error).not.toBeNull();
+    expect((await admin.from('ai_cache').select().eq('key', `k-${run}`)).data).toHaveLength(1);
+  });
+
+  test('is_group_member phản ánh đúng thành viên', async () => {
+    expect((await A.client.rpc('is_group_member', { gid: G })).data).toBe(true);
+    expect((await B.client.rpc('is_group_member', { gid: G })).data).toBe(false);
+  });
+
+  test('người dùng không tự thêm mình vào nhóm', async () => {
+    const r = await B.client.from('group_members').insert({ group_id: G, user_id: B.id, role: 'member' });
+    expect(r.error).not.toBeNull();
+  });
+});
