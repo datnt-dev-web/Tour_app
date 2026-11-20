@@ -1,6 +1,6 @@
 import type { CacheStore } from './cache-store';
 
-/** Đọc-qua cache; lỗi từ fn lan ra và không được lưu. */
+/** Đọc-qua cache; lỗi từ fn lan ra và không được lưu. Giá trị phải khác null: null coi là miss nên không bao giờ được cache. */
 export async function cached<T>(
   store: CacheStore,
   key: string,

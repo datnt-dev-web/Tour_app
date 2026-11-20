@@ -32,4 +32,9 @@ describe('parseEnv', () => {
     expect(e.AI_DAILY_LIMIT_PER_GROUP).toBe(3);
     expect(e.BOOTSTRAP_OWNER_EMAILS).toEqual(['a@x.com', 'b@x.com']);
   });
+  test('Upstash là tùy chọn (dev)', () => {
+    const e = parseEnv({ ...validEnv, UPSTASH_REDIS_REST_URL: undefined, UPSTASH_REDIS_REST_TOKEN: undefined });
+    expect(e.UPSTASH_REDIS_REST_URL).toBeUndefined();
+    expect(e.UPSTASH_REDIS_REST_TOKEN).toBeUndefined();
+  });
 });
