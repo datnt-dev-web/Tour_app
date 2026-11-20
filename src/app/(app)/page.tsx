@@ -10,7 +10,7 @@ export default async function Home() {
   const ctx = await getRequestGroup();
   if (!ctx?.group) {
     return (
-      <main className="animate-enter p-4">
+      <main className="animate-enter px-2 py-4">
         <h1 className="text-xl font-extrabold">Chuyến đi</h1>
         <p className="py-8 text-center text-sm text-muted">Bạn chưa ở nhóm nào. Hãy nhờ bạn bè gửi link mời.</p>
       </main>

@@ -40,7 +40,7 @@ export function Filters({ city, category, priceTier, onCityChange, onCategoryCha
           className="min-h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted"
         />
       </label>
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]" role="group" aria-label="Loại chỗ">
+      <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none]" role="group" aria-label="Loại chỗ">
         {CATEGORIES.map((c) => (
           <Chip key={c.value} selected={category === c.value} onClick={() => onCategoryChange(c.value)} className="shrink-0">
             {c.label}

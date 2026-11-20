@@ -4,7 +4,7 @@ import Link from 'next/link';
 /** Chỗ chưa lưu mà Google Places lỗi: không có tên/thành phố để dựng link kiểm tra, chỉ báo lỗi và đường quay lại. */
 export function PlaceUnavailable() {
   return (
-    <main className="animate-enter flex flex-col gap-4 p-4">
+    <main className="animate-enter flex flex-col gap-4 px-2 py-4">
       <Link href="/explore" aria-label="Quay lại Khám phá" className="-ml-2 inline-flex size-11 items-center justify-center pressable rounded text-ink hover:bg-surface">
         <ArrowLeft size={20} aria-hidden />
       </Link>

@@ -69,7 +69,7 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPr
   const { upcoming, past } = splitTrips(trips, todayInVietnam());
 
   return (
-    <main className="animate-enter flex flex-col gap-4 p-4">
+    <main className="animate-enter flex flex-col gap-4 px-2 py-4">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-muted">Nhóm</p>

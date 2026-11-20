@@ -85,7 +85,7 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
   const mutationError = setStatus.error ?? remove.error;
 
   return (
-    <main className="animate-enter flex flex-col gap-4 p-4 pb-28">
+    <main className="animate-enter flex flex-col gap-4 px-2 py-4 pb-28">
       <header className="flex flex-col gap-1">
         <Link href="/" aria-label="Quay lại" className="-ml-2 inline-flex size-11 items-center justify-center pressable rounded text-ink hover:bg-surface">
           <ArrowLeft size={20} aria-hidden />
@@ -152,7 +152,7 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
       )}
 
       {view === 'list' && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+16px)] mx-auto flex max-w-[480px] justify-end px-4">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+16px)] mx-auto flex max-w-[480px] justify-end px-2">
           <Link
             href={exploreHref}
             className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded bg-accent px-5 text-sm font-semibold text-white pressable shadow-md hover:bg-accent-strong"

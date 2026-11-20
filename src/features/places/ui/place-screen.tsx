@@ -83,7 +83,7 @@ export function PlaceScreen({ groupId, placeKey, initialData, aiSlot }: { groupI
   const cityForCheck = (tripParam ? cityOf(tripParam) : place?.city) ?? '';
 
   return (
-    <main className="animate-enter flex flex-col gap-4 p-4 pb-40">
+    <main className="animate-enter flex flex-col gap-4 px-2 py-4 pb-40">
       <header className="flex flex-col gap-1">
         <button type="button" aria-label="Quay lại" onClick={() => router.back()} className="-ml-2 inline-flex size-11 items-center justify-center pressable rounded text-ink hover:bg-surface">
           <ArrowLeft size={20} aria-hidden />
@@ -123,7 +123,7 @@ export function PlaceScreen({ groupId, placeKey, initialData, aiSlot }: { groupI
         </p>
       )}
 
-      <div className="fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))] z-30 mx-auto max-w-[480px] border-t border-line bg-white p-3">
+      <div className="fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))] z-30 mx-auto max-w-[480px] border-t border-line bg-white px-2 py-3">
         <Button className="w-full" disabled={isAddedToParam || (tripParam !== undefined && !cityOf(tripParam))} onClick={() => (tripParam ? addTo(tripParam) : setChoosing(true))}>
           {isAddedToParam ? '✓ Đã thêm' : `Thêm vào chuyến${tripName ? ` ${tripName}` : ''}`}
         </Button>

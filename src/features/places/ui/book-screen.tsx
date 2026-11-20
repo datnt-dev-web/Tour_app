@@ -73,7 +73,7 @@ export function BookScreen({ groupId, initialRows }: { groupId: string; initialR
   const rows = useMemo(() => filterBook(data, { q, verdict: verdict === 'all' ? undefined : verdict }), [data, q, verdict]);
 
   return (
-    <main className="animate-enter flex flex-col gap-4 p-4">
+    <main className="animate-enter flex flex-col gap-4 px-2 py-4">
       <header className="flex items-baseline justify-between gap-2">
         <h1 className="text-xl font-extrabold">Sổ quán</h1>
         <p className="text-sm text-muted">{data.length} chỗ</p>
