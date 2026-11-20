@@ -1,11 +1,12 @@
 'use client';
 
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useState, type ReactNode } from 'react';
 import { createQueryPersister, PERSIST_BUSTER, PERSIST_MAX_AGE } from './persister';
 
-export function QueryProvider({ children }: { children: ReactNode }) {
+/** userId null (không có phiên) thì chạy không lưu cache xuống máy. */
+export function QueryProvider({ children, userId }: { children: ReactNode; userId: string | null }) {
   const [client] = useState(
     () =>
       new QueryClient({
@@ -14,7 +15,9 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         },
       }),
   );
-  const [persister] = useState(createQueryPersister);
+  const [persister] = useState(() => (userId ? createQueryPersister(userId) : null));
+
+  if (!persister) return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 
   return (
     <PersistQueryClientProvider
