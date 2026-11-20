@@ -8,7 +8,7 @@ const TONES: Record<BadgeTone, string> = {
   bad: 'bg-bad-bg text-bad',
   ai: 'bg-ai-bg text-ai',
   warn: 'bg-warn-bg text-warn',
-  accent: 'bg-accent text-white',
+  accent: 'bg-highlight text-deep',
 };
 
 export type BadgeProps = HTMLAttributes<HTMLSpanElement> & { tone?: BadgeTone };

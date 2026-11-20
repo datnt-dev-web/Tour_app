@@ -3,6 +3,7 @@
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/shared/ui/button';
+import { staggerStyle } from '@/shared/ui/stagger';
 import { Chip } from '@/shared/ui/chip';
 import { VERDICT_LABELS } from '../constants';
 import type { InternalReview, ReviewVerdict } from '../repositories/reviews-repo';
@@ -74,8 +75,8 @@ export function InternalReviews({
         <p className="text-sm text-muted">Nhóm chưa có đánh giá nào.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {reviews.map((r) => (
-            <li key={r.id} className="flex gap-3 rounded border border-line bg-white p-3">
+          {reviews.map((r, i) => (
+            <li key={r.id} style={staggerStyle(i)} className="stagger flex gap-3 rounded border border-line bg-white p-3 shadow-card">
               <span
                 aria-hidden
                 style={{ backgroundColor: r.avatarColor }}

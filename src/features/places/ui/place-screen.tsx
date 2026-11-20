@@ -83,9 +83,9 @@ export function PlaceScreen({ groupId, placeKey, initialData, aiSlot }: { groupI
   const cityForCheck = (tripParam ? cityOf(tripParam) : place?.city) ?? '';
 
   return (
-    <main className="flex flex-col gap-4 p-4 pb-40">
+    <main className="animate-enter flex flex-col gap-4 p-4 pb-40">
       <header className="flex flex-col gap-1">
-        <button type="button" aria-label="Quay lại" onClick={() => router.back()} className="-ml-2 inline-flex size-11 items-center justify-center rounded text-ink hover:bg-surface">
+        <button type="button" aria-label="Quay lại" onClick={() => router.back()} className="-ml-2 inline-flex size-11 items-center justify-center pressable rounded text-ink hover:bg-surface">
           <ArrowLeft size={20} aria-hidden />
         </button>
         <div className="flex flex-wrap gap-2">

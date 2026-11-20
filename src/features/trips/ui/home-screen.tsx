@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { daysUntil, formatDayMonth, todayInVietnam } from '@/shared/date';
+import { staggerStyle } from '@/shared/ui/stagger';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
@@ -32,10 +33,10 @@ function countdown(t: TripSummary, today: string) {
   return days > 0 ? `Còn ${days} ngày` : 'Đang diễn ra';
 }
 
-function UpcomingCard({ trip, today }: { trip: TripSummary; today: string }) {
+function UpcomingCard({ trip, today, index }: { trip: TripSummary; today: string; index: number }) {
   const label = countdown(trip, today);
   return (
-    <Link href={`/trips/${trip.id}`} className="block rounded bg-ink p-4 text-white">
+    <Link href={`/trips/${trip.id}`} style={staggerStyle(index)} className="stagger pressable block rounded bg-deep p-4 text-white">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Sắp đi</p>
@@ -48,11 +49,11 @@ function UpcomingCard({ trip, today }: { trip: TripSummary; today: string }) {
         {label && <Badge tone="accent" className="shrink-0">{label}</Badge>}
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-sm bg-white/10 p-3">
+        <div className="rounded-sm bg-white/8 p-3">
           <dd className="text-xl font-extrabold">{trip.confirmedCount}</dd>
           <dt className="text-xs text-white/70">chỗ đã chốt</dt>
         </div>
-        <div className="rounded-sm bg-white/10 p-3">
+        <div className="rounded-sm bg-white/8 p-3">
           <dd className="text-xl font-extrabold">{trip.pendingCount}</dd>
           <dt className="text-xs text-white/70">chưa chốt</dt>
         </div>
@@ -68,7 +69,7 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPr
   const { upcoming, past } = splitTrips(trips, todayInVietnam());
 
   return (
-    <main className="flex flex-col gap-4 p-4">
+    <main className="animate-enter flex flex-col gap-4 p-4">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-muted">Nhóm</p>
@@ -78,8 +79,8 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPr
       </header>
       <InviteButton groupId={groupId} />
 
-      {upcoming.map((t) => (
-        <UpcomingCard key={t.id} trip={t} today={todayInVietnam()} />
+      {upcoming.map((t, i) => (
+        <UpcomingCard key={t.id} index={i} trip={t} today={todayInVietnam()} />
       ))}
       {upcoming.length === 0 && <p className="py-4 text-center text-sm text-muted">Chưa có chuyến nào sắp đi.</p>}
 
@@ -100,8 +101,8 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPr
               Sổ quán
             </Link>
           </div>
-          {praised.map((p) => (
-            <Link key={p.placeId} href={`/places/${encodeURIComponent(placeKeyOf(p))}`}>
+          {praised.map((p, i) => (
+            <Link key={p.placeId} href={`/places/${encodeURIComponent(placeKeyOf(p))}`} className="stagger pressable block" style={staggerStyle(i)}>
               <Card className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{p.name}</p>
@@ -117,8 +118,8 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPr
       {past.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-base font-bold">Đã đi</h2>
-          {past.map((t) => (
-            <Link key={t.id} href={`/trips/${t.id}`}>
+          {past.map((t, i) => (
+            <Link key={t.id} href={`/trips/${t.id}`} className="stagger pressable block" style={staggerStyle(i)}>
               <Card className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{t.city}</p>

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { CATEGORY_LABELS, placeKeyOf, STORED_CATEGORIES } from '@/features/places/constants';
 import { Badge } from '@/shared/ui/badge';
+import { staggerStyle } from '@/shared/ui/stagger';
 import { Chip } from '@/shared/ui/chip';
 import { STATUS_LABELS, STATUS_TONES, TAB_STATUSES, TRIP_PLACE_STATUSES, TRIP_TABS, type TripTab } from '../constants';
 import type { TripDetail, TripPlaceItem } from '../repositories/trips-repo';
@@ -13,9 +14,9 @@ import { dateRange } from './home-screen';
 import { tripQuery } from './trip-queries';
 import { useRemoveFromTrip, useSetStatus } from './use-trip-mutations';
 
-function PlaceRow({ tripId, item, onStatus, onRemove }: { tripId: string; item: TripPlaceItem; onStatus: (s: TripPlaceItem['status']) => void; onRemove: () => void }) {
+function PlaceRow({ index, tripId, item, onStatus, onRemove }: { index: number; tripId: string; item: TripPlaceItem; onStatus: (s: TripPlaceItem['status']) => void; onRemove: () => void }) {
   return (
-    <li className="flex flex-col gap-2 rounded border border-line bg-white p-3">
+    <li className="stagger flex flex-col gap-2 rounded border border-line bg-white p-3 shadow-card" style={staggerStyle(index)}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <Link
@@ -47,7 +48,7 @@ function PlaceRow({ tripId, item, onStatus, onRemove }: { tripId: string; item: 
           type="button"
           aria-label={`Xóa ${item.place.name} khỏi chuyến`}
           onClick={onRemove}
-          className="inline-flex size-11 items-center justify-center rounded border border-line bg-white text-bad hover:bg-surface"
+          className="inline-flex size-11 items-center justify-center rounded border border-line bg-white pressable text-bad hover:bg-surface"
         >
           <Trash2 size={18} aria-hidden />
         </button>
@@ -71,9 +72,9 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
   const mutationError = setStatus.error ?? remove.error;
 
   return (
-    <main className="flex flex-col gap-4 p-4 pb-28">
+    <main className="animate-enter flex flex-col gap-4 p-4 pb-28">
       <header className="flex flex-col gap-1">
-        <Link href="/" aria-label="Quay lại" className="-ml-2 inline-flex size-11 items-center justify-center rounded text-ink hover:bg-surface">
+        <Link href="/" aria-label="Quay lại" className="-ml-2 inline-flex size-11 items-center justify-center pressable rounded text-ink hover:bg-surface">
           <ArrowLeft size={20} aria-hidden />
         </Link>
         <h1 className="text-xl font-extrabold">{trip.city}</h1>
@@ -106,8 +107,9 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
               {CATEGORY_LABELS[category]} ({rows.length})
             </h2>
             <ul className="flex flex-col gap-2">
-              {rows.map((item) => (
+              {rows.map((item, index) => (
                 <PlaceRow
+                  index={index}
                   key={item.id}
                   tripId={tripId}
                   item={item}
@@ -123,7 +125,7 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+16px)] mx-auto flex max-w-[480px] justify-end px-4">
         <Link
           href={exploreHref}
-          className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded bg-accent px-5 text-sm font-semibold text-white shadow-md hover:bg-accent-strong"
+          className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded bg-accent px-5 text-sm font-semibold text-white pressable shadow-md hover:bg-accent-strong"
         >
           <Search size={18} aria-hidden />
           Tìm thêm

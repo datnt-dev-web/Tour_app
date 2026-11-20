@@ -9,7 +9,7 @@ import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { createTripAction } from '../actions/trip-actions';
 
-const FIELD = 'min-h-11 w-full rounded border border-line bg-white px-3 text-sm outline-none focus:border-ink';
+const FIELD = 'min-h-11 w-full rounded border border-line bg-white px-3 text-sm outline-none focus:border-accent';
 
 export function NewTripForm({ groupId, onCancel }: { groupId: string; onCancel: () => void }) {
   const router = useRouter();

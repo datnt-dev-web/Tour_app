@@ -5,6 +5,7 @@ import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { staggerStyle } from '@/shared/ui/stagger';
 import { Chip } from '@/shared/ui/chip';
 import { BOOK_FILTERS, CATEGORY_LABELS, placeKeyOf } from '../constants';
 import { filterBook, type BookRow, type BookVerdict } from '../services/book-service';
@@ -18,7 +19,7 @@ const ROW_ESTIMATE_PX = 96;
 
 function BookRowItem({ row }: { row: BookRow }) {
   return (
-    <Link href={`/places/${encodeURIComponent(placeKeyOf(row))}`} className="flex min-h-11 flex-col gap-1 rounded border border-line bg-white p-3">
+    <Link href={`/places/${encodeURIComponent(placeKeyOf(row))}`} className="pressable flex min-h-11 flex-col gap-1 rounded border border-line bg-white p-3 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 font-semibold leading-snug">{row.name}</p>
         <VerdictBadge verdict={row.verdict} className="shrink-0" />
@@ -72,7 +73,7 @@ export function BookScreen({ groupId, initialRows }: { groupId: string; initialR
   const rows = useMemo(() => filterBook(data, { q, verdict: verdict === 'all' ? undefined : verdict }), [data, q, verdict]);
 
   return (
-    <main className="flex flex-col gap-4 p-4">
+    <main className="animate-enter flex flex-col gap-4 p-4">
       <header className="flex items-baseline justify-between gap-2">
         <h1 className="text-xl font-extrabold">Sổ quán</h1>
         <p className="text-sm text-muted">{data.length} chỗ</p>
@@ -86,7 +87,7 @@ export function BookScreen({ groupId, initialRows }: { groupId: string; initialR
           onChange={(e) => setInput(e.target.value)}
           placeholder="Tìm tên, địa chỉ hoặc ghi chú"
           aria-label="Tìm trong sổ quán"
-          className="min-h-11 w-full rounded border border-line bg-white pl-10 pr-3 text-sm"
+          className="min-h-11 w-full rounded border border-line bg-white pl-10 pr-3 text-sm outline-none focus:border-accent"
         />
       </label>
 
@@ -106,8 +107,8 @@ export function BookScreen({ groupId, initialRows }: { groupId: string; initialR
         <VirtualRows rows={rows} />
       ) : (
         <ul className="flex flex-col gap-2">
-          {rows.map((r) => (
-            <li key={r.placeId}>
+          {rows.map((r, i) => (
+            <li key={r.placeId} className="stagger" style={staggerStyle(i)}>
               <BookRowItem row={r} />
             </li>
           ))}

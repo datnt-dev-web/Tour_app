@@ -15,20 +15,20 @@ export function AddToTripSheet({ groupId, placeName, isAdded, onPick, onClose }:
   const upcoming = data ? splitTrips(data, todayInVietnam()).upcoming : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 animate-fade-in" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Chọn chuyến"
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[70dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        className="animate-sheet-up flex max-h-[70dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-base font-bold">Thêm vào chuyến nào?</h2>
             <p className="truncate text-sm text-muted">{placeName}</p>
           </div>
-          <button type="button" aria-label="Đóng" onClick={onClose} className="inline-flex size-11 shrink-0 items-center justify-center rounded hover:bg-surface">
+          <button type="button" aria-label="Đóng" onClick={onClose} className="inline-flex size-11 shrink-0 items-center justify-center pressable rounded hover:bg-surface">
             <X size={20} aria-hidden />
           </button>
         </div>
@@ -51,7 +51,7 @@ export function AddToTripSheet({ groupId, placeName, isAdded, onPick, onClose }:
                   type="button"
                   disabled={isAdded(t.id)}
                   onClick={() => onPick(t.id)}
-                  className="flex min-h-11 w-full flex-col rounded border border-line bg-white p-3 text-left hover:bg-surface disabled:opacity-60"
+                  className="flex min-h-11 w-full flex-col pressable rounded border border-line bg-white p-3 text-left hover:bg-surface disabled:opacity-60"
                 >
                   <span className="font-semibold">
                     {t.name}

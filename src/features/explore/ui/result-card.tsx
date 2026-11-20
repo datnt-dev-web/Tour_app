@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { RankedPlace } from '@/features/explore/services/ranking';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
+import { staggerStyle } from '@/shared/ui/stagger';
 import { Card } from '@/shared/ui/card';
 
 const formatCount = (n: number) => n.toLocaleString('vi-VN');
@@ -23,9 +24,9 @@ export interface ResultCardProps {
 
 export function ResultCard({ place, onAdd, added = false, detailQuery, badge }: ResultCardProps) {
   return (
-    <Card className="flex flex-col gap-3">
+    <Card className="stagger flex flex-col gap-3" style={staggerStyle(place.rank - 1)}>
       <div className="flex gap-3">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-ink text-sm font-bold text-white">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-deep text-sm font-bold text-white">
           {place.rank}
         </span>
         <div className="min-w-0 flex-1">
@@ -49,7 +50,7 @@ export function ResultCard({ place, onAdd, added = false, detailQuery, badge }: 
         <Link
           prefetch
           href={`/places/${encodeURIComponent(place.googlePlaceId)}${detailQuery ? `?${detailQuery}` : ''}`}
-          className="inline-flex min-h-11 flex-1 items-center justify-center rounded border border-line bg-white px-3 text-sm font-semibold text-ink hover:bg-surface"
+          className="inline-flex min-h-11 flex-1 items-center justify-center pressable rounded border border-line bg-white px-3 text-sm font-semibold text-ink hover:bg-surface"
         >
           Xem &amp; kiểm tra
         </Link>

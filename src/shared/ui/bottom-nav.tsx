@@ -29,10 +29,16 @@ export function BottomNav() {
             key={href}
             href={href}
             aria-current={active ? 'page' : undefined}
-            className={`flex min-h-11 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold ${
+            className={`pressable relative flex min-h-11 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold ${
               active ? 'text-accent' : 'text-muted'
             }`}
           >
+            <span
+              aria-hidden
+              className={`absolute inset-x-0 top-0 mx-auto h-0.5 w-8 origin-center bg-accent transition-[transform,opacity] duration-(--dur-base) ease-(--ease-out) ${
+                active ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+              }`}
+            />
             <Icon size={22} aria-hidden />
             {label}
           </Link>
