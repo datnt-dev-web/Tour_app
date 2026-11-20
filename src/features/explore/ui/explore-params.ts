@@ -1,0 +1,31 @@
+import type { PlaceCategory, PriceTier } from '@/integrations/google-places/types';
+
+export interface ExploreParams {
+  city: string;
+  category: PlaceCategory;
+  price?: PriceTier;
+}
+
+const CATEGORY_VALUES: PlaceCategory[] = ['food', 'snack', 'cafe', 'play', 'stay'];
+export const DEFAULT_CATEGORY: PlaceCategory = 'food';
+
+export function readParams(sp: URLSearchParams): ExploreParams {
+  const raw = sp.get('category');
+  const category = CATEGORY_VALUES.find((c) => c === raw) ?? DEFAULT_CATEGORY;
+  const price = Number(sp.get('price'));
+  return {
+    city: sp.get('city')?.trim() ?? '',
+    category,
+    price: price === 1 || price === 2 || price === 3 ? price : undefined,
+  };
+}
+
+/** Query string mới từ params hiện tại + patch (patch có khóa `price: undefined` nghĩa là bỏ lọc giá). */
+export function buildExploreQuery(current: ExploreParams, patch: Partial<ExploreParams>): string {
+  const next = { ...current, ...patch };
+  const qs = new URLSearchParams();
+  if (next.city) qs.set('city', next.city);
+  qs.set('category', next.category);
+  if (next.price) qs.set('price', String(next.price));
+  return qs.toString();
+}

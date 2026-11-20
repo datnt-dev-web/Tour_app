@@ -2,23 +2,16 @@
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import type { PlaceCategory, PriceTier } from '@/integrations/google-places/types';
+import { useEffect, useRef, useState } from 'react';
 import { queryKeys } from '@/shared/query/keys';
 import { Skeleton } from '@/shared/ui/skeleton';
 import type { RankedPlace } from '../services/ranking';
-import { CATEGORIES, Filters } from './filters';
+import { buildExploreQuery, readParams, type ExploreParams } from './explore-params';
+import { Filters } from './filters';
 import { ResultCard } from './result-card';
 
 const CITY_DEBOUNCE_MS = 300;
 const SKELETON_COUNT = 4;
-const DEFAULT_CATEGORY: PlaceCategory = 'food';
-
-interface ExploreParams {
-  city: string;
-  category: PlaceCategory;
-  price?: PriceTier;
-}
 
 async function fetchExplore(params: ExploreParams): Promise<RankedPlace[]> {
   const qs = new URLSearchParams({ city: params.city, category: params.category });
@@ -28,16 +21,6 @@ async function fetchExplore(params: ExploreParams): Promise<RankedPlace[]> {
   return ((await res.json()) as { results: RankedPlace[] }).results;
 }
 
-function readParams(sp: URLSearchParams): ExploreParams {
-  const category = CATEGORIES.find((c) => c.value === sp.get('category'))?.value ?? DEFAULT_CATEGORY;
-  const price = Number(sp.get('price'));
-  return {
-    city: sp.get('city')?.trim() ?? '',
-    category,
-    price: price === 1 || price === 2 || price === 3 ? price : undefined,
-  };
-}
-
 export function ExploreScreen() {
   const router = useRouter();
   const pathname = usePathname();
@@ -45,27 +28,31 @@ export function ExploreScreen() {
   const params = readParams(searchParams);
   const [cityInput, setCityInput] = useState(params.city);
 
-  // Ghi URL: chip dùng push (back/forward giữ bộ lọc), gõ thành phố dùng replace để không làm đầy lịch sử.
-  const updateUrl = (patch: Partial<ExploreParams>, mode: 'push' | 'replace' = 'push') => {
-    const next = { ...params, ...patch };
-    const qs = new URLSearchParams();
-    if (next.city) qs.set('city', next.city);
-    qs.set('category', next.category);
-    if (next.price) qs.set('price', String(next.price));
-    router[mode](`${pathname}?${qs}`);
-  };
+  // Luôn đọc params mới nhất lúc timer nổ, để chip bấm trong lúc chờ debounce không bị ghi đè.
+  const paramsRef = useRef(params);
+  useEffect(() => {
+    paramsRef.current = params;
+  });
 
-  // Đồng bộ ô nhập khi URL đổi từ ngoài (back/forward); chỉnh state ngay lúc render thay vì trong effect.
+  // Chip dùng push (back/forward giữ bộ lọc), gõ thành phố dùng replace để không làm đầy lịch sử.
+  const updateUrl = (patch: Partial<ExploreParams>, mode: 'push' | 'replace' = 'push') =>
+    router[mode](`${pathname}?${buildExploreQuery(paramsRef.current, patch)}`);
+
+  // City đã đẩy lên URL bởi chính component này: URL tới trễ mang giá trị đó thì không được ghi đè ô nhập đang gõ tiếp.
+  const [pushedCity, setPushedCity] = useState(params.city);
   const [syncedCity, setSyncedCity] = useState(params.city);
   if (syncedCity !== params.city) {
     setSyncedCity(params.city);
-    setCityInput(params.city);
+    if (params.city !== pushedCity) setCityInput(params.city); // URL đổi từ ngoài (back/forward)
   }
 
   useEffect(() => {
     const city = cityInput.trim();
-    if (city === params.city) return;
-    const t = setTimeout(() => updateUrl({ city }, 'replace'), CITY_DEBOUNCE_MS);
+    if (city === paramsRef.current.city) return;
+    const t = setTimeout(() => {
+      setPushedCity(city);
+      updateUrl({ city }, 'replace');
+    }, CITY_DEBOUNCE_MS);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy lại khi người dùng gõ
   }, [cityInput]);
