@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isTabActive } from './bottom-nav';
+import { isTabActive } from '@/shared/ui/bottom-nav';
 
 describe('isTabActive', () => {
   it('Chuyến đi active ở / và /trips/*', () => {
