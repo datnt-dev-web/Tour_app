@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { isPublicPath } from '@/shared/supabase/public-paths';
+import { isApiPath, isPublicPath } from '@/shared/supabase/public-paths';
 
 describe('isPublicPath', () => {
   test.each([
@@ -10,4 +10,13 @@ describe('isPublicPath', () => {
     ['/explore', false],
     ['/invitex', false],
   ])('%s -> %s', (path, expected) => expect(isPublicPath(path)).toBe(expected));
+});
+
+describe('isApiPath', () => {
+  test.each([
+    ['/api/explore', true],
+    ['/api', true],
+    ['/apiary', false],
+    ['/explore', false],
+  ])('%s -> %s', (path, expected) => expect(isApiPath(path)).toBe(expected));
 });
