@@ -21,5 +21,5 @@ export default async function Home() {
     createTripsRepo(supabase).listTrips(ctx.group.id),
     listBook(createPlacesRepo(supabase), ctx.group.id, { verdict: 'up' }),
   ]);
-  return <HomeScreen groupId={ctx.group.id} groupName={ctx.group.name} initialTrips={trips} initialPraised={praised.slice(0, PRAISED_LIMIT)} />;
+  return <HomeScreen userId={ctx.userId} groupId={ctx.group.id} groupName={ctx.group.name} initialTrips={trips} initialPraised={praised.slice(0, PRAISED_LIMIT)} />;
 }

@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   const { data } = await supabase.auth.getUser();
 
   return (
-    <QueryProvider userId={data.user?.id ?? null}>
+    <QueryProvider key={data.user?.id ?? 'anon'} userId={data.user?.id ?? null}>
       <AppFrame withNav>
         {children}
         <BottomNav />

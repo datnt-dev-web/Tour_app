@@ -8,6 +8,8 @@ import { daysUntil, formatDayMonth, todayInVietnam } from '@/shared/date';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
+import { SignOutButton } from '@/features/auth/ui/sign-out-button';
+import { InviteButton } from '@/features/groups/ui/invite-button';
 import { placeKeyOf } from '@/features/places/constants';
 import type { BookRow } from '@/features/places/services/book-service';
 import { praisedQuery } from '@/features/places/ui/book-queries';
@@ -59,7 +61,7 @@ function UpcomingCard({ trip, today }: { trip: TripSummary; today: string }) {
   );
 }
 
-export function HomeScreen({ groupId, groupName, initialTrips, initialPraised }: { groupId: string; groupName: string; initialTrips: TripSummary[]; initialPraised: BookRow[] }) {
+export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPraised }: { userId: string; groupId: string; groupName: string; initialTrips: TripSummary[]; initialPraised: BookRow[] }) {
   const [creating, setCreating] = useState(false);
   const { data: trips } = useQuery({ ...tripsQuery(groupId), initialData: initialTrips });
   const { data: praised } = useQuery({ ...praisedQuery(groupId), initialData: initialPraised });
@@ -67,10 +69,14 @@ export function HomeScreen({ groupId, groupName, initialTrips, initialPraised }:
 
   return (
     <main className="flex flex-col gap-4 p-4">
-      <header>
-        <p className="text-sm text-muted">Nhóm</p>
-        <h1 className="text-xl font-extrabold">{groupName}</h1>
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm text-muted">Nhóm</p>
+          <h1 className="truncate text-xl font-extrabold">{groupName}</h1>
+        </div>
+        <SignOutButton userId={userId} />
       </header>
+      <InviteButton groupId={groupId} />
 
       {upcoming.map((t) => (
         <UpcomingCard key={t.id} trip={t} today={todayInVietnam()} />
