@@ -20,7 +20,8 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, view
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="vi" className={`${beVietnamPro.variable} h-full antialiased`}>
+    // Extension trình duyệt (vd. data-yd-*) chèn thuộc tính vào <html> trước khi React hydrate; chỉ bỏ qua lệch thuộc tính của riêng thẻ này.
+    <html lang="vi" className={`${beVietnamPro.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full">
         {children}
         <RegisterSW />
