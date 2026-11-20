@@ -2,15 +2,13 @@
 
 import { MapPin } from 'lucide-react';
 import type { PlaceCategory, PriceTier } from '@/integrations/google-places/types';
+import { CATEGORY_LABELS, EXPLORE_CATEGORIES } from '@/features/places/constants';
 import { Chip } from '@/shared/ui/chip';
 
-export const CATEGORIES: { value: PlaceCategory; label: string }[] = [
-  { value: 'food', label: 'Ăn chính' },
-  { value: 'snack', label: 'Ăn vặt & chè' },
-  { value: 'cafe', label: 'Cafe' },
-  { value: 'play', label: 'Chỗ chơi' },
-  { value: 'stay', label: 'Chỗ nghỉ' },
-];
+export const CATEGORIES: { value: PlaceCategory; label: string }[] = EXPLORE_CATEGORIES.map((value) => ({
+  value,
+  label: CATEGORY_LABELS[value],
+}));
 
 export const PRICE_TIERS: { value: PriceTier; label: string }[] = [
   { value: 1, label: '₫' },

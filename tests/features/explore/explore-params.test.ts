@@ -24,3 +24,10 @@ test('syncCityFromUrl: Back/Forward về city từng đẩy vẫn đồng bộ �
   r = syncCityFromUrl('Hue', pushed);
   expect(r).toEqual({ input: 'Hue', pushed: 'Hue' });
 });
+
+test('trip trên URL được đọc và giữ nguyên khi đổi bộ lọc', () => {
+  const current = readParams(new URLSearchParams('city=x&category=cafe&trip=t1'));
+  expect(current.trip).toBe('t1');
+  expect(buildExploreQuery(current, { category: 'food' })).toBe('city=x&category=food&trip=t1');
+  expect(readParams(new URLSearchParams('city=x')).trip).toBeUndefined();
+});

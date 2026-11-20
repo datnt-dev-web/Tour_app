@@ -10,11 +10,13 @@ const formatPrice = (tier: number) => '₫'.repeat(tier);
 
 export interface ResultCardProps {
   place: RankedPlace;
-  /** Task 8 nối vào; chưa truyền thì nút bị vô hiệu. */
+  /** Chưa truyền thì nút bị vô hiệu. */
   onAdd?: (place: RankedPlace) => void;
+  /** Đã thêm vào chuyến (lạc quan, hoàn tác nếu lỗi). */
+  added?: boolean;
 }
 
-export function ResultCard({ place, onAdd }: ResultCardProps) {
+export function ResultCard({ place, onAdd, added = false }: ResultCardProps) {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex gap-3">
@@ -45,8 +47,8 @@ export function ResultCard({ place, onAdd }: ResultCardProps) {
         >
           Xem &amp; kiểm tra
         </Link>
-        <Button className="flex-1" disabled={!onAdd} onClick={() => onAdd?.(place)}>
-          + Thêm vào chuyến
+        <Button className="flex-1" disabled={!onAdd || added} onClick={() => onAdd?.(place)}>
+          {added ? '✓ Đã thêm' : '+ Thêm vào chuyến'}
         </Button>
       </div>
     </Card>

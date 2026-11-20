@@ -3,6 +3,8 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { AddToTripSheet } from '@/features/trips/ui/add-to-trip-sheet';
+import { useAddToTrip } from '@/features/trips/ui/use-trip-mutations';
 import { queryKeys } from '@/shared/query/keys';
 import { Skeleton } from '@/shared/ui/skeleton';
 import type { RankedPlace } from '../services/ranking';
@@ -13,7 +15,7 @@ import { ResultCard } from './result-card';
 const CITY_DEBOUNCE_MS = 300;
 const SKELETON_COUNT = 4;
 
-async function fetchExplore(params: ExploreParams): Promise<RankedPlace[]> {
+async function fetchExplore(params: Omit<ExploreParams, 'trip'>): Promise<RankedPlace[]> {
   const qs = new URLSearchParams({ city: params.city, category: params.category });
   if (params.price) qs.set('price', String(params.price));
   const res = await fetch(`/api/explore?${qs}`);
@@ -21,12 +23,35 @@ async function fetchExplore(params: ExploreParams): Promise<RankedPlace[]> {
   return ((await res.json()) as { results: RankedPlace[] }).results;
 }
 
-export function ExploreScreen() {
+export function ExploreScreen({ groupId }: { groupId: string | null }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const params = readParams(searchParams);
   const [cityInput, setCityInput] = useState(params.city);
+  const { trip: tripId, ...search } = params;
+
+  // Tập chỗ đã thêm trong phiên này; thêm lạc quan khi bấm, bỏ ra nếu server báo lỗi.
+  const [added, setAdded] = useState<ReadonlySet<string>>(new Set());
+  const [pending, setPending] = useState<RankedPlace | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
+  const addMutation = useAddToTrip({
+    onMutate: (id) => {
+      setAddError(null);
+      setAdded((s) => new Set(s).add(id));
+    },
+    onError: (id, message) => {
+      setAdded((s) => new Set([...s].filter((x) => x !== id)));
+      setAddError(message);
+    },
+  });
+  const addTo = (place: RankedPlace, toTripId: string) =>
+    addMutation.mutate({
+      googlePlaceId: place.googlePlaceId,
+      input: { tripId: toTripId, candidate: place, category: params.category, city: params.city },
+    });
+  // Có ?trip= thì thêm thẳng, không thì chọn chuyến trong sheet.
+  const onAdd = groupId ? (place: RankedPlace) => (tripId ? addTo(place, tripId) : setPending(place)) : undefined;
 
   // Luôn đọc params mới nhất lúc timer nổ, để chip bấm trong lúc chờ debounce không bị ghi đè.
   const paramsRef = useRef(params);
@@ -60,8 +85,8 @@ export function ExploreScreen() {
   }, [cityInput]);
 
   const { data, isError, isPending } = useQuery({
-    queryKey: queryKeys.explore(params),
-    queryFn: () => fetchExplore(params),
+    queryKey: queryKeys.explore(search),
+    queryFn: () => fetchExplore(search),
     enabled: params.city !== '',
     placeholderData: keepPreviousData,
   });
@@ -87,9 +112,27 @@ export function ExploreScreen() {
         ) : data.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted">Chưa tìm thấy chỗ phù hợp. Thử bỏ bớt bộ lọc giá.</p>
         ) : (
-          data.map((place) => <ResultCard key={place.googlePlaceId} place={place} />)
+          data.map((place) => (
+            <ResultCard key={place.googlePlaceId} place={place} onAdd={onAdd} added={added.has(place.googlePlaceId)} />
+          ))
         )}
       </section>
+      {addError && (
+        <p role="alert" className="text-sm text-bad">
+          {addError}
+        </p>
+      )}
+      {pending && groupId && (
+        <AddToTripSheet
+          groupId={groupId}
+          placeName={pending.name}
+          onClose={() => setPending(null)}
+          onPick={(id) => {
+            addTo(pending, id);
+            setPending(null);
+          }}
+        />
+      )}
     </main>
   );
 }
