@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:db": "vitest run --dir tests/db --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "lucide-react": "^1.77.0",

@@ -19,7 +19,9 @@ describe('parseEnv', () => {
   test('env áp mặc định số', () => {
     const e = parseEnv(validEnv);
     expect(e.AI_DAILY_LIMIT_PER_GROUP).toBe(10);
+    expect(e.AI_MONTHLY_CAP).toBe(300);
     expect(e.RANK_PRIOR_M).toBe(50);
+    expect(e.EXPLORE_MIN_REVIEWS).toBe(20);
     expect(e.PLACES_TTL_SEC).toBe(86400);
     expect(e.AI_SUMMARY_TTL_SEC).toBe(1209600);
     expect(e.AI_HOT_TTL_SEC).toBe(604800);

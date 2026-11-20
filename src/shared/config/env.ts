@@ -12,7 +12,7 @@ const schema = z.object({
   UPSTASH_REDIS_REST_URL: z.string().url(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
   AI_DAILY_LIMIT_PER_GROUP: num(10),
-  AI_MONTHLY_CAP: num(1000),
+  AI_MONTHLY_CAP: num(300),
   RANK_PRIOR_M: num(50),
   EXPLORE_MIN_REVIEWS: num(20),
   PLACES_TTL_SEC: num(86400),
