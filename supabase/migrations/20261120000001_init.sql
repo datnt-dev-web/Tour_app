@@ -161,12 +161,42 @@ create policy trip_places_all on public.trip_places for all to authenticated
 
 create policy reviews_select on public.place_reviews_internal for select to authenticated
   using (public.is_group_member((select p.group_id from public.places p where p.id = place_id)));
+-- Ghi review: của chính mình, place thuộc nhóm của mình, trip (nếu có) cùng nhóm với place
 create policy reviews_insert on public.place_reviews_internal for insert to authenticated
   with check (
     user_id = (select auth.uid())
     and public.is_group_member((select p.group_id from public.places p where p.id = place_id))
+    and (
+      trip_id is null
+      or (select t.group_id from public.trips t where t.id = trip_id)
+        = (select p.group_id from public.places p where p.id = place_id)
+    )
   );
 create policy reviews_update on public.place_reviews_internal for update to authenticated
-  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+  using (user_id = (select auth.uid()))
+  with check (
+    user_id = (select auth.uid())
+    and public.is_group_member((select p.group_id from public.places p where p.id = place_id))
+    and (
+      trip_id is null
+      or (select t.group_id from public.trips t where t.id = trip_id)
+        = (select p.group_id from public.places p where p.id = place_id)
+    )
+  );
 create policy reviews_delete on public.place_reviews_internal for delete to authenticated
   using (user_id = (select auth.uid()));
+
+-- group_id bất biến: chặn chuyển trip/place sang nhóm khác (phá bất biến của bảng con)
+create function public.forbid_group_change() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.group_id is distinct from old.group_id then
+    raise exception 'group_id không được đổi' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+
+create trigger trips_group_immutable before update on public.trips
+  for each row execute function public.forbid_group_change();
+create trigger places_group_immutable before update on public.places
+  for each row execute function public.forbid_group_change();

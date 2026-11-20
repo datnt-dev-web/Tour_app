@@ -30,6 +30,9 @@ let B: { id: string; client: SupabaseClient };
 let G: string;
 let T: string;
 let P: string;
+let G2: string;
+let T2: string;
+let P2: string;
 
 beforeAll(async () => {
   A = await makeUser('a');
@@ -45,12 +48,22 @@ beforeAll(async () => {
       .single(),
   ).id;
   must(await admin.from('trip_places').insert({ trip_id: T, place_id: P, added_by: A.id }).select('id').single());
+  G2 = must(await admin.from('groups').insert({ name: 'G2', created_by: A.id }).select('id').single()).id;
+  must(await admin.from('group_members').insert({ group_id: G2, user_id: A.id, role: 'owner' }));
+  T2 = must(await admin.from('trips').insert({ group_id: G2, name: 'T2', city: 'x', created_by: A.id }).select('id').single()).id;
+  P2 = must(
+    await admin
+      .from('places')
+      .insert({ group_id: G2, name: 'P2', city: 'x', city_norm: 'x', category: 'food', created_by: A.id })
+      .select('id')
+      .single(),
+  ).id;
   must(await admin.from('place_reviews_internal').insert({ place_id: P, user_id: A.id, trip_id: T, verdict: 'up' }));
   must(await admin.from('ai_cache').insert({ key: `k-${run}`, value: { x: 1 }, expires_at: new Date(Date.now() + 1e6).toISOString() }));
 });
 
 afterAll(async () => {
-  await admin.from('groups').delete().eq('id', G);
+  await admin.from('groups').delete().in('id', [G, G2]);
   await admin.auth.admin.deleteUser(A.id);
   await admin.auth.admin.deleteUser(B.id);
 });
@@ -65,9 +78,9 @@ describe('RLS', () => {
   });
 
   test('thành viên đọc được places/trip_places/reviews', async () => {
-    for (const t of ['places', 'trip_places', 'place_reviews_internal']) {
-      expect((await A.client.from(t).select()).data).toHaveLength(1);
-    }
+    expect((await A.client.from('places').select().eq('group_id', G)).data).toHaveLength(1);
+    expect((await A.client.from('trip_places').select().eq('trip_id', T)).data).toHaveLength(1);
+    expect((await A.client.from('place_reviews_internal').select().eq('place_id', P)).data).toHaveLength(1);
   });
 
   test('người ngoài không đọc được trip/places/trip_places', async () => {
@@ -113,5 +126,35 @@ describe('RLS', () => {
   test('người dùng không tự thêm mình vào nhóm', async () => {
     const r = await B.client.from('group_members').insert({ group_id: G, user_id: B.id, role: 'member' });
     expect(r.error).not.toBeNull();
+  });
+
+  test('không chuyển được review sang place của nhóm khác (A chỉ ở G, không ở H)', async () => {
+    const H = must(await admin.from('groups').insert({ name: 'H', created_by: B.id }).select('id').single()).id;
+    const PH = must(
+      await admin
+        .from('places')
+        .insert({ group_id: H, name: 'h', city: 'x', city_norm: 'x', category: 'food' })
+        .select('id')
+        .single(),
+    ).id;
+    const r = await A.client.from('place_reviews_internal').update({ place_id: PH }).eq('place_id', P).select();
+    expect(r.error).not.toBeNull();
+    await admin.from('groups').delete().eq('id', H);
+  });
+
+  test('không chèn review với trip_id của nhóm khác', async () => {
+    const r = await A.client.from('place_reviews_internal').insert({ place_id: P, trip_id: T2, verdict: 'up' });
+    expect(r.error).not.toBeNull();
+  });
+
+  test('không đổi trip_id review sang trip nhóm khác', async () => {
+    const r = await A.client.from('place_reviews_internal').update({ trip_id: T2 }).eq('place_id', P).select();
+    expect(r.error).not.toBeNull();
+  });
+
+  test('group_id của trips và places bất biến', async () => {
+    expect((await A.client.from('trips').update({ group_id: G2 }).eq('id', T).select()).error).not.toBeNull();
+    expect((await A.client.from('places').update({ group_id: G2 }).eq('id', P).select()).error).not.toBeNull();
+    expect(P2).toBeDefined();
   });
 });
