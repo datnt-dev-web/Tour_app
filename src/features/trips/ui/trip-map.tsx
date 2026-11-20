@@ -3,19 +3,33 @@
 import { useQuery } from '@tanstack/react-query';
 import { latLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Navigation, X } from 'lucide-react';
+import { LocateFixed, Navigation, X } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { CircleMarker, MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Circle, CircleMarker, MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { STATUS_LABELS, STATUS_TONES, TAB_STATUSES, type TripTab } from '../constants';
 import type { TripMapPoint } from '../services/trip-locations-service';
 import { tripLocationsQuery } from './trip-queries';
+import { formatDistance, nearestPoints, distanceMeters, type LatLng } from './geo';
 import { directionsUrl, placeDetailHref } from './trip-view';
+import { useMyLocation, type MyLocation } from './use-my-location';
 
 const SINGLE_POINT_ZOOM = 16;
+const MY_LOCATION_ZOOM = 15;
+const NEAREST_LIMIT = 3;
+// Vòng sai số quá rộng (định vị bằng mạng) chỉ gây rối mắt, chỉ vẽ khi đủ nhỏ.
+const MAX_ACCURACY_CIRCLE_M = 300;
+// Màu chấm "bạn ở đây" khớp --color-ai (xanh dương) để tách khỏi màu ghim quán.
+const ME_COLOR = '#1e40af';
+
+const LOCATION_MESSAGES: Partial<Record<MyLocation['status'], string>> = {
+  locating: 'Đang lấy vị trí của bạn…',
+  denied: 'Bạn đã chặn quyền vị trí. Bật lại trong cài đặt trình duyệt rồi thử lại.',
+  unavailable: 'Không lấy được vị trí của bạn, thử lại sau.',
+};
 const FIT_PADDING: [number, number] = [56, 56];
 const DEFAULT_CENTER: [number, number] = [20.8449, 106.6881];
 const MAP_HEIGHT = 'h-[max(420px,calc(100dvh-24rem))]';
@@ -45,7 +59,26 @@ function ClearOnMapClick({ onClear }: { onClear: () => void }) {
   return null;
 }
 
-function PointCard({ point, tripId, onClose }: { point: TripMapPoint; tripId: string; onClose: () => void }) {
+/** Chấm vị trí của tôi; lần đầu có vị trí thì bay tới đó, sau đó để người dùng tự kéo bản đồ. */
+function MyLocationLayer({ coords, accuracy }: { coords: LatLng; accuracy: number }) {
+  const map = useMap();
+  const centered = useRef(false);
+  useEffect(() => {
+    if (centered.current) return;
+    centered.current = true;
+    map.flyTo([coords.lat, coords.lng], Math.max(map.getZoom(), MY_LOCATION_ZOOM), { duration: 0.6 });
+  }, [map, coords]);
+  return (
+    <>
+      {accuracy <= MAX_ACCURACY_CIRCLE_M && (
+        <Circle center={[coords.lat, coords.lng]} radius={accuracy} pathOptions={{ color: ME_COLOR, weight: 1, fillColor: ME_COLOR, fillOpacity: 0.12 }} interactive={false} />
+      )}
+      <CircleMarker center={[coords.lat, coords.lng]} radius={8} pathOptions={{ color: '#ffffff', weight: 3, fillColor: ME_COLOR, fillOpacity: 1 }} interactive={false} />
+    </>
+  );
+}
+
+function PointCard({ point, tripId, distance, onClose }: { point: TripMapPoint; tripId: string; distance: number | null; onClose: () => void }) {
   return (
     <div className="animate-sheet-up absolute inset-x-3 bottom-3 z-[1000] flex flex-col gap-3 rounded border border-line bg-white p-3 shadow-card">
       <div className="flex items-start justify-between gap-2">
@@ -62,9 +95,10 @@ function PointCard({ point, tripId, onClose }: { point: TripMapPoint; tripId: st
           <X size={18} aria-hidden />
         </button>
       </div>
-      <Badge tone={STATUS_TONES[point.status]} className="self-start">
-        {STATUS_LABELS[point.status]}
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge tone={STATUS_TONES[point.status]}>{STATUS_LABELS[point.status]}</Badge>
+        {distance !== null && <span className="text-sm font-medium text-ai">Cách bạn {formatDistance(distance)}</span>}
+      </div>
       <div className="flex gap-2">
         <a
           href={directionsUrl(point)}
@@ -93,6 +127,8 @@ const Notice = ({ children }: { children: React.ReactNode }) => (
 export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab }) {
   const { data, isPending, error, refetch, isRefetching } = useQuery(tripLocationsQuery(tripId));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { location, start } = useMyLocation();
+  const me = location.status === 'ok' ? location.coords : null;
   // Tham chiếu ổn định để FitBounds không căn lại khung nhìn mỗi lần chọn marker.
   const points = useMemo(() => (data ? data.points.filter((p) => TAB_STATUSES[tab].includes(p.status)) : []), [data, tab]);
 
@@ -116,6 +152,8 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
   }
 
   const selected = points.find((p) => p.tripPlaceId === selectedId) ?? null;
+  const nearest = me ? nearestPoints(points, me, NEAREST_LIMIT) : [];
+  const locationMessage = LOCATION_MESSAGES[location.status];
 
   return (
     <div className="flex flex-col gap-2">
@@ -140,9 +178,54 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
                 />
               );
             })}
+            {location.status === 'ok' && <MyLocationLayer coords={location.coords} accuracy={location.accuracy} />}
           </MapContainer>
-          {selected && <PointCard key={selected.tripPlaceId} point={selected} tripId={tripId} onClose={() => setSelectedId(null)} />}
+          <button
+            type="button"
+            onClick={start}
+            disabled={location.status === 'locating'}
+            aria-label="Hiện vị trí của tôi"
+            aria-pressed={location.status === 'ok'}
+            className={`absolute right-3 top-3 z-[1000] inline-flex size-11 items-center justify-center rounded border border-line bg-white shadow-card pressable hover:bg-surface disabled:opacity-60 ${
+              location.status === 'ok' ? 'text-ai' : 'text-ink'
+            }`}
+          >
+            <LocateFixed size={20} aria-hidden className={location.status === 'locating' ? 'animate-pulse' : undefined} />
+          </button>
+          {selected && (
+            <PointCard
+              key={selected.tripPlaceId}
+              point={selected}
+              tripId={tripId}
+              distance={me ? distanceMeters(me, selected) : null}
+              onClose={() => setSelectedId(null)}
+            />
+          )}
         </div>
+      )}
+      {locationMessage && (
+        <p role="status" className={`text-sm ${location.status === 'locating' ? 'text-muted' : 'text-bad'}`}>
+          {locationMessage}
+        </p>
+      )}
+      {nearest.length > 0 && (
+        <section aria-label="Quán gần bạn nhất" className="flex flex-col gap-1">
+          <h2 className="text-sm font-semibold">Gần bạn nhất</h2>
+          <ul className="flex flex-col gap-1">
+            {nearest.map(({ point, meters }) => (
+              <li key={point.tripPlaceId}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(point.tripPlaceId)}
+                  className="pressable flex min-h-11 w-full items-center justify-between gap-3 rounded border border-line bg-white px-3 text-left text-sm hover:bg-surface"
+                >
+                  <span className="min-w-0 truncate font-medium">{point.name}</span>
+                  <span className="shrink-0 font-semibold text-ai">{formatDistance(meters)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       {data.missing > 0 && <p className="text-sm text-muted">{data.missing} chỗ chưa có trên bản đồ (thiếu địa chỉ).</p>}
     </div>
