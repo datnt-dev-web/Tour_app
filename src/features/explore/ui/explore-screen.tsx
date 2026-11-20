@@ -53,6 +53,8 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
   // Có ?trip= thì thêm thẳng, không thì chọn chuyến trong sheet.
   const onAdd = groupId ? (place: RankedPlace) => (tripId ? addTo(place, tripId) : setPending(place)) : undefined;
 
+  const detailQuery = new URLSearchParams({ category: params.category, ...(tripId ? { trip: tripId } : {}) }).toString();
+
   // Luôn đọc params mới nhất lúc timer nổ, để chip bấm trong lúc chờ debounce không bị ghi đè.
   const paramsRef = useRef(params);
   useEffect(() => {
@@ -113,7 +115,7 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
           <p className="py-8 text-center text-sm text-muted">Chưa tìm thấy chỗ phù hợp. Thử bỏ bớt bộ lọc giá.</p>
         ) : (
           data.map((place) => (
-            <ResultCard key={place.googlePlaceId} place={place} onAdd={onAdd} added={tripId ? added.has(addedKey(tripId, place.googlePlaceId)) : false} />
+            <ResultCard key={place.googlePlaceId} place={place} onAdd={onAdd} detailQuery={detailQuery} added={tripId ? added.has(addedKey(tripId, place.googlePlaceId)) : false} />
           ))
         )}
       </section>

@@ -16,3 +16,8 @@ export function formatDayMonth(date: string): string {
   const [, m, d] = date.split('-');
   return `${d}/${m}`;
 }
+
+/** Thứ hôm nay theo giờ Việt Nam, thứ Hai = 0 … Chủ nhật = 6 (cùng thứ tự weekdayDescriptions của Google). */
+export function weekdayIndexInVietnam(now: Date = new Date()): number {
+  return (new Date(`${todayInVietnam(now)}T00:00:00Z`).getUTCDay() + 6) % 7;
+}

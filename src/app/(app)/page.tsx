@@ -1,4 +1,7 @@
 import { getRequestGroup } from '@/features/groups/server/get-request-group';
+import { createPlacesRepo } from '@/features/places/repositories/places-repo';
+import { PRAISED_LIMIT } from '@/features/places/ui/book-queries';
+import { listBook } from '@/features/places/services/book-service';
 import { createTripsRepo } from '@/features/trips/repositories/trips-repo';
 import { HomeScreen } from '@/features/trips/ui/home-screen';
 import { createServerSupabase } from '@/shared/supabase/server';
@@ -13,6 +16,10 @@ export default async function Home() {
       </main>
     );
   }
-  const trips = await createTripsRepo(await createServerSupabase()).listTrips(ctx.group.id);
-  return <HomeScreen groupId={ctx.group.id} groupName={ctx.group.name} initialTrips={trips} />;
+  const supabase = await createServerSupabase();
+  const [trips, praised] = await Promise.all([
+    createTripsRepo(supabase).listTrips(ctx.group.id),
+    listBook(createPlacesRepo(supabase), ctx.group.id, { verdict: 'up' }),
+  ]);
+  return <HomeScreen groupId={ctx.group.id} groupName={ctx.group.name} initialTrips={trips} initialPraised={praised.slice(0, PRAISED_LIMIT)} />;
 }

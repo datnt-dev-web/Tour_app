@@ -14,9 +14,11 @@ export interface ResultCardProps {
   onAdd?: (place: RankedPlace) => void;
   /** Đã thêm vào chuyến (lạc quan, hoàn tác nếu lỗi). */
   added?: boolean;
+  /** Query string nối vào link chi tiết (category, trip) để màn chỗ biết ngữ cảnh khi thêm vào chuyến. */
+  detailQuery?: string;
 }
 
-export function ResultCard({ place, onAdd, added = false }: ResultCardProps) {
+export function ResultCard({ place, onAdd, added = false, detailQuery }: ResultCardProps) {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex gap-3">
@@ -42,7 +44,7 @@ export function ResultCard({ place, onAdd, added = false }: ResultCardProps) {
       <div className="flex gap-2">
         <Link
           prefetch
-          href={`/places/${place.googlePlaceId}`}
+          href={`/places/${encodeURIComponent(place.googlePlaceId)}${detailQuery ? `?${detailQuery}` : ''}`}
           className="inline-flex min-h-11 flex-1 items-center justify-center rounded border border-line bg-white px-3 text-sm font-semibold text-ink hover:bg-surface"
         >
           Xem &amp; kiểm tra
