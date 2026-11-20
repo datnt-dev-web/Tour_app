@@ -1,21 +1,27 @@
 'use client';
 
-import { Compass, Map, NotebookText, type LucideIcon } from 'lucide-react';
+import { Compass, Luggage, Map, NotebookText, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
-/** Tab Chuyến đi gồm cả trang chi tiết chuyến `/trips/*`. */
-export const isTabActive = (href: string, pathname: string) =>
-  href === '/' ? pathname === '/' || pathname.startsWith('/trips/') : pathname.startsWith(href);
+/** `/trips/*?view=map` thuộc tab Bản đồ; các trang `/trips/*` còn lại thuộc tab Chuyến đi. */
+export const isTabActive = (href: string, pathname: string, view: string | null = null) => {
+  const tripMap = pathname.startsWith('/trips/') && view === 'map';
+  if (href === '/') return pathname === '/' || (pathname.startsWith('/trips/') && !tripMap);
+  if (href === '/map') return pathname === '/map' || tripMap;
+  return pathname.startsWith(href);
+};
 
 const TABS: { href: string; label: string; Icon: LucideIcon }[] = [
-  { href: '/', label: 'Chuyến đi', Icon: Map },
+  { href: '/', label: 'Chuyến đi', Icon: Luggage },
+  { href: '/map', label: 'Bản đồ', Icon: Map },
   { href: '/explore', label: 'Khám phá', Icon: Compass },
   { href: '/book', label: 'Sổ quán', Icon: NotebookText },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const view = useSearchParams().get('view');
 
   return (
     <nav
@@ -23,7 +29,7 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-40 mx-auto flex h-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))] max-w-[480px] pb-[env(safe-area-inset-bottom)] border-t border-line bg-white"
     >
       {TABS.map(({ href, label, Icon }) => {
-        const active = isTabActive(href, pathname);
+        const active = isTabActive(href, pathname, view);
         return (
           <Link
             key={href}

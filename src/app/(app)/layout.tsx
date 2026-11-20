@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { QueryProvider } from '@/shared/query/provider';
 import { createServerSupabase } from '@/shared/supabase/server';
 import { AppFrame } from '@/shared/ui/app-frame';
@@ -11,7 +12,10 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
     <QueryProvider key={data.user?.id ?? 'anon'} userId={data.user?.id ?? null}>
       <AppFrame withNav>
         {children}
-        <BottomNav />
+        {/* BottomNav đọc ?view= nên cần Suspense */}
+        <Suspense>
+          <BottomNav />
+        </Suspense>
       </AppFrame>
     </QueryProvider>
   );
