@@ -23,7 +23,7 @@ Supabase vẫn để `enable_signup = true` vì OAuth và OTP cần tạo user m
 
 ## Chạy app
 
-Biến môi trường: xem `.env.example` (Supabase URL/anon/service role, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` và `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` (bản đồ chuyến), Upstash tùy chọn ở dev, `BOOTSTRAP_OWNER_EMAILS`, giới hạn AI và TTL cache). Sao chép thành `.env.local`; với Supabase local lấy khóa từ `npx supabase status`.
+Biến môi trường: xem `.env.example` (Supabase URL/anon/service role, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY`, Upstash tùy chọn ở dev, `BOOTSTRAP_OWNER_EMAILS`, giới hạn AI và TTL cache). Sao chép thành `.env.local`; với Supabase local lấy khóa từ `npx supabase status`.
 
 ```bash
 npm install
@@ -49,7 +49,7 @@ Tạo OAuth client loại Web trong Google Cloud Console, thêm `<supabase-url>/
 
 ## Bản đồ chuyến
 
-Tab "Bản đồ" của chuyến dùng Google Maps JavaScript. `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` là khóa trình duyệt (lộ ra client), nên phải tạo khóa riêng trong Google Cloud Console, giới hạn theo HTTP referrer (domain production và `localhost`) và chỉ bật Maps JavaScript API. Tọa độ lấy ở server (Places Details và Geocoding API, dùng `GOOGLE_PLACES_API_KEY`, cần bật thêm Geocoding API) và chỉ cache ở Redis, không ghi vào Postgres.
+Tab "Bản đồ" của chuyến dùng OpenStreetMap (Leaflet), không cần khóa API. Tọa độ lấy ở server: Google Place Details nếu `GOOGLE_PLACES_API_KEY` là khóa thật, ngược lại hoặc khi không có tọa độ thì geocode bằng Nominatim (tối đa 1 request/giây theo chính sách, nên lần đầu mở có thể mất khoảng 1 giây mỗi quán chưa có cache). Tọa độ chỉ cache ở Redis (`GEOCODE_TTL_SEC`), không ghi vào Postgres. Nút "Chỉ đường" vẫn mở Google Maps.
 
 ## Lệnh kiểm tra
 

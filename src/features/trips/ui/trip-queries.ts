@@ -24,7 +24,7 @@ export const tripQuery = (tripId: string) =>
 
 const LOCATIONS_STALE_MS = 5 * 60 * 1000;
 
-/** Điểm bản đồ do server dựng (Google + cache Redis), nên lấy qua API route thay vì Supabase trực tiếp. */
+/** Điểm bản đồ do server dựng (Google hoặc OSM, cache Redis), nên lấy qua API route thay vì Supabase trực tiếp. */
 export const tripLocationsQuery = (tripId: string) =>
   queryOptions({
     queryKey: queryKeys.tripLocations(tripId),

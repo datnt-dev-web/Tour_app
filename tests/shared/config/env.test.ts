@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { parseEnv } from '@/shared/config/env';
+import { isGooglePlacesConfigured, parseEnv } from '@/shared/config/env';
 
 const validEnv: Record<string, string | undefined> = {
   NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
@@ -36,5 +36,15 @@ describe('parseEnv', () => {
     const e = parseEnv({ ...validEnv, UPSTASH_REDIS_REST_URL: undefined, UPSTASH_REDIS_REST_TOKEN: undefined });
     expect(e.UPSTASH_REDIS_REST_URL).toBeUndefined();
     expect(e.UPSTASH_REDIS_REST_TOKEN).toBeUndefined();
+  });
+});
+
+describe('isGooglePlacesConfigured', () => {
+  test('khóa thật là true; thiếu hoặc giá trị giữ chỗ là false', () => {
+    expect(isGooglePlacesConfigured('AIzaSyReal')).toBe(true);
+    expect(isGooglePlacesConfigured(undefined)).toBe(false);
+    expect(isGooglePlacesConfigured('')).toBe(false);
+    expect(isGooglePlacesConfigured('your-google-places-key')).toBe(false);
+    expect(isGooglePlacesConfigured('dummy-local')).toBe(false);
   });
 });

@@ -5,7 +5,7 @@ import type { PlaceDetails } from '@/integrations/google-places/types';
 import { MemoryCacheStore } from '@/shared/cache/memory-store';
 import { AppError } from '@/shared/errors';
 
-vi.mock('@/shared/config/env', () => ({ getEnv: () => ({ PLACES_TTL_SEC: 86400 }) }));
+vi.mock('@/shared/config/env', () => ({ getEnv: () => ({ PLACES_TTL_SEC: 86400, GEOCODE_TTL_SEC: 2592000 }) }));
 
 const GROUP = 'G';
 const item = (id: string, place: Record<string, unknown>, status: TripPlaceItem['status'] = 'wanted') =>
@@ -23,12 +23,13 @@ type Over = Partial<{
   geocode: (a: string) => Promise<{ lat: number; lng: number } | null>;
 }>;
 
-function setup(items: TripPlaceItem[], over: Over = {}) {
+function setup(items: TripPlaceItem[], over: Over = {}, googleEnabled = true) {
   const getDetails = vi.fn(over.getDetails ?? (async () => ({ location: { lat: 1, lng: 2 } }) as PlaceDetails));
   const geocode = vi.fn(over.geocode ?? (async () => ({ lat: 3, lng: 4 })));
   const deps: TripLocationsDeps = {
     places: { getDetails },
     geocoder: { geocode },
+    googleEnabled,
     cache: new MemoryCacheStore(),
     tripsRepo: { getTripDetail: async () => detail(items) },
   };
@@ -46,30 +47,48 @@ describe('getTripLocations', () => {
     expect(geocode).not.toHaveBeenCalled();
   });
 
-  test('chỗ thêm tay có địa chỉ thì geocode "địa chỉ, thành phố"', async () => {
+  test('chỗ thêm tay có địa chỉ thì geocode "địa chỉ, thành phố, Việt Nam"', async () => {
     const { deps, geocode } = setup([item('b', { address: '12 Lạch Tray' })]);
     const r = await getTripLocations(deps, GROUP, 'T');
-    expect(geocode).toHaveBeenCalledWith('12 Lạch Tray, Hải Phòng');
+    expect(geocode).toHaveBeenCalledTimes(1);
+    expect(geocode).toHaveBeenCalledWith('12 Lạch Tray, Hải Phòng, Việt Nam');
     expect(r.points[0]).toMatchObject({ lat: 3, lng: 4, placeKey: 'local:p-b', googlePlaceId: null });
   });
 
-  test('không địa chỉ, địa chỉ "(...)" hoặc rỗng đều tính missing; dropped bị bỏ', async () => {
+  test('địa chỉ không ra kết quả thì thử lại theo tên quán', async () => {
+    const geocode = vi.fn(async (q: string) => (q.startsWith('Quán b') ? { lat: 5, lng: 6 } : null));
+    const { deps } = setup([item('b', { address: '12 Lạch Tray' })], { geocode });
+    const r = await getTripLocations(deps, GROUP, 'T');
+    expect(geocode.mock.calls.map((c) => c[0])).toEqual(['12 Lạch Tray, Hải Phòng, Việt Nam', 'Quán b, Hải Phòng, Việt Nam']);
+    expect(r.points[0]).toMatchObject({ lat: 5, lng: 6 });
+  });
+
+  test('Google tắt (khóa giữ chỗ): không gọi Google, dùng OSM', async () => {
+    const { deps, getDetails, geocode } = setup([item('a', { google_place_id: 'g1', address: 'Số 1' })], {}, false);
+    const r = await getTripLocations(deps, GROUP, 'T');
+    expect(getDetails).not.toHaveBeenCalled();
+    expect(geocode).toHaveBeenCalledWith('Số 1, Hải Phòng, Việt Nam');
+    expect(r.points[0]).toMatchObject({ lat: 3, lng: 4 });
+  });
+
+  test('địa chỉ trống hoặc "(...)" bị bỏ qua, chỉ thử theo tên; không ra thì missing; dropped bị bỏ', async () => {
     const { deps, geocode } = setup([
       item('a', { address: null }),
       item('b', { address: '(chưa rõ)' }),
       item('c', { address: '  ' }),
       item('d', { address: 'Số 9' }, 'dropped'),
-    ]);
+    ], { geocode: async () => null });
     const r = await getTripLocations(deps, GROUP, 'T');
     expect(r).toEqual({ points: [], missing: 3 });
-    expect(geocode).not.toHaveBeenCalled();
+    expect(geocode.mock.calls.map((c) => c[0])).toEqual(['Quán a, Hải Phòng, Việt Nam', 'Quán b, Hải Phòng, Việt Nam', 'Quán c, Hải Phòng, Việt Nam']);
   });
 
   test('ZERO_RESULTS tính missing và không cache', async () => {
     const { deps, geocode } = setup([item('a', { address: 'Đâu đó' })], { geocode: async () => null });
     expect((await getTripLocations(deps, GROUP, 'T')).missing).toBe(1);
     await getTripLocations(deps, GROUP, 'T');
-    expect(geocode).toHaveBeenCalledTimes(2);
+    // Mỗi lượt thử cả địa chỉ lẫn tên, và cả hai đều không được cache.
+    expect(geocode).toHaveBeenCalledTimes(4);
   });
 
   test('một chỗ lỗi không làm hỏng cả kết quả', async () => {

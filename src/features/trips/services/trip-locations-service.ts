@@ -1,4 +1,4 @@
-import type { GeocodingClient } from '@/integrations/google-geocoding/client';
+import type { GeocodingClient } from '@/integrations/nominatim/client';
 import type { LatLng, PlacesClient } from '@/integrations/google-places/types';
 import type { Place } from '@/features/places/repositories/places-repo';
 import { placeKeyOf } from '@/features/places/constants';
@@ -22,13 +22,15 @@ export interface TripMapPoint {
 
 export interface TripLocations {
   points: TripMapPoint[];
-  /** Số chỗ không định vị được (thiếu địa chỉ, hoặc Google lỗi / không tìm thấy). */
+  /** Số chỗ không định vị được (không tìm thấy, hoặc dịch vụ định vị lỗi). */
   missing: number;
 }
 
 export interface TripLocationsDeps {
   places: Pick<PlacesClient, 'getDetails'>;
   geocoder: GeocodingClient;
+  /** Khóa Google Places dùng được; false thì bỏ qua Google hoàn toàn. */
+  googleEnabled: boolean;
   cache: CacheStore;
   tripsRepo: Pick<TripsRepo, 'getTripDetail'>;
 }
@@ -39,20 +41,24 @@ function usableAddress(address: string | null): address is string {
   return !!a && !a.startsWith('(');
 }
 
-/** Tọa độ chỉ nằm ở cache Redis (điều khoản Google không cho lưu vào DB). Không định vị được thì null. */
-async function locate(deps: TripLocationsDeps, place: Place, city: string): Promise<LatLng | null> {
-  const ttl = getEnv().PLACES_TTL_SEC;
-  if (place.google_place_id) {
-    const id = place.google_place_id;
-    const details = await cached(deps.cache, cacheKey('places:details', { id }), ttl, () => deps.places.getDetails(id));
-    if (details.location) return details.location;
-  }
-  if (!usableAddress(place.address)) return null;
-  const q = `${place.address.trim()}, ${city}`;
-  // null (không tìm thấy) không được cache, theo hợp đồng của cached().
-  return cached(deps.cache, cacheKey('geocode:address', { q }), ttl, () => deps.geocoder.geocode(q), {
+/** Geocode OSM một chuỗi truy vấn; chỉ cache kết quả có tọa độ (null không bao giờ được cache). */
+const geocodeCached = (deps: TripLocationsDeps, q: string) =>
+  cached(deps.cache, cacheKey('geo:osm', { q }), getEnv().GEOCODE_TTL_SEC, () => deps.geocoder.geocode(q), {
     shouldCache: (v) => v !== null,
   });
+
+/** Tọa độ chỉ nằm ở cache Redis, không ghi vào DB. Thứ tự: Google Details (nếu bật), rồi OSM theo địa chỉ, rồi theo tên. */
+async function locate(deps: TripLocationsDeps, place: Place, city: string): Promise<LatLng | null> {
+  if (deps.googleEnabled && place.google_place_id) {
+    const id = place.google_place_id;
+    const details = await cached(deps.cache, cacheKey('places:details', { id }), getEnv().PLACES_TTL_SEC, () => deps.places.getDetails(id));
+    if (details.location) return details.location;
+  }
+  if (usableAddress(place.address)) {
+    const hit = await geocodeCached(deps, `${place.address.trim()}, ${city}, Việt Nam`);
+    if (hit) return hit;
+  }
+  return geocodeCached(deps, `${place.name.trim()}, ${city}, Việt Nam`);
 }
 
 /** Chỗ của chuyến (trừ dropped) kèm tọa độ. Lỗi từng chỗ không làm hỏng cả kết quả. Chuyến không thuộc nhóm hoặc không thấy được: NOT_FOUND. */

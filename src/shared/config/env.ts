@@ -16,6 +16,7 @@ const schema = z.object({
   RANK_PRIOR_M: num(50),
   EXPLORE_MIN_REVIEWS: num(20),
   PLACES_TTL_SEC: num(86400),
+  GEOCODE_TTL_SEC: num(2592000),
   AI_SUMMARY_TTL_SEC: num(1209600),
   AI_HOT_TTL_SEC: num(604800),
   BOOTSTRAP_OWNER_EMAILS: z
@@ -28,6 +29,14 @@ const schema = z.object({
         .filter(Boolean),
     ),
 });
+
+// Giá trị giữ chỗ trong .env.example / .env.local; coi như chưa cấu hình để khỏi gọi Google vô ích.
+const PLACEHOLDER_KEY = /^(your-|dummy)/i;
+
+/** Khóa Google Places có dùng được không (có và không phải giá trị giữ chỗ). */
+export function isGooglePlacesConfigured(key: string | undefined): boolean {
+  return !!key && !PLACEHOLDER_KEY.test(key);
+}
 
 export type Env = z.infer<typeof schema>;
 

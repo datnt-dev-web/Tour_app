@@ -1,6 +1,9 @@
 import { appErrorResponse, errorResponse, requireGroup } from '@/features/ai/server/ai-request';
 import { loadTripLocations } from '@/features/trips/server/load-trip-locations';
 
+// Mỗi chỗ chưa cache tốn ~1,1 giây (giới hạn 1 req/giây của Nominatim) nên lần đầu có thể lâu.
+export const maxDuration = 60;
+
 export async function GET(_request: Request, ctx: RouteContext<'/api/trips/[tripId]/locations'>) {
   const auth = await requireGroup();
   if (auth instanceof Response) return auth;

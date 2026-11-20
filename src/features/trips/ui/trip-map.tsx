@@ -1,10 +1,12 @@
 'use client';
 
-import { AdvancedMarker, APIProvider, Map, Pin, useMap } from '@vis.gl/react-google-maps';
 import { useQuery } from '@tanstack/react-query';
+import { latLngBounds } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Navigation, X } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { CircleMarker, MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Skeleton } from '@/shared/ui/skeleton';
@@ -13,38 +15,39 @@ import type { TripMapPoint } from '../services/trip-locations-service';
 import { tripLocationsQuery } from './trip-queries';
 import { directionsUrl, placeDetailHref } from './trip-view';
 
-const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-// AdvancedMarker bắt buộc có map id; DEMO_MAP_ID dùng được khi chưa tạo map id riêng.
-const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
 const SINGLE_POINT_ZOOM = 16;
-const FIT_PADDING = 56;
-const DEFAULT_CENTER = { lat: 20.8449, lng: 106.6881 };
+const FIT_PADDING: [number, number] = [56, 56];
+const DEFAULT_CENTER: [number, number] = [20.8449, 106.6881];
 const MAP_HEIGHT = 'h-[max(420px,calc(100dvh-24rem))]';
+const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors';
 
-// Pin cần chuỗi màu nên không dùng được class token: khớp --color-accent và màu hổ phách của nhóm warn.
-const PIN_COLORS = { accent: '#047857', warn: '#d97706' } as const;
-const pinColor = (p: TripMapPoint) => (p.status === 'wanted' ? PIN_COLORS.warn : PIN_COLORS.accent);
+// Path options của Leaflet cần chuỗi màu nên không dùng được class token: khớp --color-accent và màu hổ phách của nhóm warn.
+const MARKER_COLORS = { accent: '#047857', warn: '#d97706' } as const;
+const markerColor = (p: TripMapPoint) => (p.status === 'wanted' ? MARKER_COLORS.warn : MARKER_COLORS.accent);
 
 /** Căn khung nhìn theo các điểm đang hiện; một điểm thì phóng gần thay vì fitBounds (sẽ zoom tối đa). */
 function FitBounds({ points }: { points: TripMapPoint[] }) {
   const map = useMap();
   useEffect(() => {
-    if (!map || points.length === 0) return;
+    if (points.length === 0) return;
     if (points.length === 1) {
-      map.setCenter({ lat: points[0].lat, lng: points[0].lng });
-      map.setZoom(SINGLE_POINT_ZOOM);
+      map.setView([points[0].lat, points[0].lng], SINGLE_POINT_ZOOM);
       return;
     }
-    const bounds = new google.maps.LatLngBounds();
-    for (const p of points) bounds.extend({ lat: p.lat, lng: p.lng });
-    map.fitBounds(bounds, FIT_PADDING);
+    map.fitBounds(latLngBounds(points.map((p): [number, number] => [p.lat, p.lng])), { padding: FIT_PADDING });
   }, [map, points]);
+  return null;
+}
+
+function ClearOnMapClick({ onClear }: { onClear: () => void }) {
+  useMapEvents({ click: onClear });
   return null;
 }
 
 function PointCard({ point, tripId, onClose }: { point: TripMapPoint; tripId: string; onClose: () => void }) {
   return (
-    <div className="animate-sheet-up absolute inset-x-3 bottom-3 flex flex-col gap-3 rounded border border-line bg-white p-3 shadow-card">
+    <div className="animate-sheet-up absolute inset-x-3 bottom-3 z-[1000] flex flex-col gap-3 rounded border border-line bg-white p-3 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-semibold leading-snug">{point.name}</p>
@@ -88,11 +91,19 @@ const Notice = ({ children }: { children: React.ReactNode }) => (
 );
 
 export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab }) {
-  const { data, isPending, error, refetch, isRefetching } = useQuery({ ...tripLocationsQuery(tripId), enabled: !!MAPS_KEY });
+  const { data, isPending, error, refetch, isRefetching } = useQuery(tripLocationsQuery(tripId));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Tham chiếu ổn định để FitBounds không căn lại khung nhìn mỗi lần chọn marker.
+  const points = useMemo(() => (data ? data.points.filter((p) => TAB_STATUSES[tab].includes(p.status)) : []), [data, tab]);
 
-  if (!MAPS_KEY) return <Notice>Chưa cấu hình Google Maps.</Notice>;
-  if (isPending) return <Skeleton className={MAP_HEIGHT} />;
+  if (isPending) {
+    return (
+      <div className={`relative ${MAP_HEIGHT}`}>
+        <Skeleton className="size-full" />
+        <p className="absolute inset-0 flex items-center justify-center text-sm text-muted">Đang tìm vị trí các quán…</p>
+      </div>
+    );
+  }
   if (error) {
     return (
       <div role="alert" className="flex flex-col items-center gap-3 rounded border border-line bg-white p-6 text-center text-sm">
@@ -104,7 +115,6 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
     );
   }
 
-  const points = data.points.filter((p) => TAB_STATUSES[tab].includes(p.status));
   const selected = points.find((p) => p.tripPlaceId === selectedId) ?? null;
 
   return (
@@ -112,32 +122,25 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
       {points.length === 0 ? (
         <Notice>Chưa có chỗ nào có địa chỉ để hiện trên bản đồ.</Notice>
       ) : (
-        <div className={`animate-fade-in relative overflow-hidden rounded border border-line ${MAP_HEIGHT}`}>
-          <APIProvider apiKey={MAPS_KEY} language="vi" region="VN">
-            <Map
-              mapId={MAP_ID}
-              defaultCenter={DEFAULT_CENTER}
-              defaultZoom={12}
-              gestureHandling="greedy"
-              disableDefaultUI
-              zoomControl
-              onClick={() => setSelectedId(null)}
-              className="size-full"
-            >
-              <FitBounds points={points} />
-              {points.map((p) => (
-                <AdvancedMarker
+        <div className={`animate-fade-in relative isolate overflow-hidden rounded border border-line ${MAP_HEIGHT}`}>
+          <MapContainer center={DEFAULT_CENTER} zoom={12} zoomControl attributionControl className="size-full">
+            <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
+            <FitBounds points={points} />
+            <ClearOnMapClick onClear={() => setSelectedId(null)} />
+            {points.map((p) => {
+              const isSelected = p.tripPlaceId === selectedId;
+              return (
+                <CircleMarker
                   key={p.tripPlaceId}
-                  position={{ lat: p.lat, lng: p.lng }}
-                  title={p.name}
-                  zIndex={p.tripPlaceId === selectedId ? 1 : 0}
-                  onClick={() => setSelectedId(p.tripPlaceId)}
-                >
-                  <Pin background={pinColor(p)} borderColor="#0b3b2a" glyphColor="#ffffff" scale={p.tripPlaceId === selectedId ? 1.3 : 1} />
-                </AdvancedMarker>
-              ))}
-            </Map>
-          </APIProvider>
+                  center={[p.lat, p.lng]}
+                  radius={isSelected ? 13 : 10}
+                  pathOptions={{ color: '#ffffff', weight: 3, fillColor: markerColor(p), fillOpacity: 1 }}
+                  bubblingMouseEvents={false}
+                  eventHandlers={{ click: () => setSelectedId(p.tripPlaceId) }}
+                />
+              );
+            })}
+          </MapContainer>
           {selected && <PointCard key={selected.tripPlaceId} point={selected} tripId={tripId} onClose={() => setSelectedId(null)} />}
         </div>
       )}
