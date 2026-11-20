@@ -1,10 +1,10 @@
 import { z } from 'zod';
+import { requireGroup } from '@/features/ai/server/ai-request';
 import { exploreSearch } from '@/features/explore/services/explore-service';
 import { createGooglePlacesClient } from '@/integrations/google-places/client';
 import { getEnv } from '@/shared/config/env';
 import { getCacheStore } from '@/shared/cache/get-cache-store';
 import { AppError } from '@/shared/errors';
-import { createServerSupabase } from '@/shared/supabase/server';
 
 const querySchema = z.object({
   city: z.string().trim().min(1).max(100),
@@ -17,9 +17,9 @@ const errorResponse = (code: string, message: string, status: number) =>
   Response.json({ error: { code, message } }, { status });
 
 export async function GET(request: Request) {
-  const supabase = await createServerSupabase();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) return errorResponse('UNAUTHENTICATED', 'Bạn cần đăng nhập.', 401);
+  // Chỉ thành viên nhóm mới được tiêu quota Google (người lạ tự đăng ký vẫn có phiên).
+  const auth = await requireGroup();
+  if (auth instanceof Response) return auth;
 
   const raw = Object.fromEntries(new URL(request.url).searchParams);
   // Tham số rỗng (vd. price=) coi như không truyền.

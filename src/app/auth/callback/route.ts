@@ -27,11 +27,17 @@ export async function GET(request: NextRequest) {
     return toLogin('not-invited');
   }
 
-  if (access === 'invite' && token) {
+  if ((access === 'invite' || access === 'member') && token) {
     try {
       await acceptInvite(repo, token, data.user.id);
     } catch (e) {
       if (!(e instanceof AppError)) throw e;
+      if (access === 'member') {
+        // Thành viên cũ mang lời mời hỏng: bỏ cookie, vẫn vào app (không đăng xuất).
+        const res = NextResponse.redirect(`${origin}/`);
+        res.cookies.delete(INVITE_COOKIE);
+        return res;
+      }
       // Token bị người khác dùng giữa lúc canAccess và acceptInvite: coi như không có lời mời.
       await supabase.auth.signOut();
       const res = toLogin('not-invited');

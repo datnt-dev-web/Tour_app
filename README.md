@@ -10,7 +10,7 @@ Supabase vẫn để `enable_signup = true` vì OAuth và OTP cần tạo user m
 
 ### Cấu hình Supabase Cloud
 
-1. Authentication, Providers, Email: bật (magic link, tắt "Confirm email" nếu muốn vào ngay bằng link).
+1. Authentication, Providers, Email: bật OTP/magic link, giữ "Confirm email" bật, và tắt đăng ký email + mật khẩu (chỉ dùng OTP hoặc Google) để người lạ không tự lập tài khoản bằng mật khẩu.
 2. Authentication, Providers, Google: bật, dán Client ID và Client Secret từ Google Cloud Console (OAuth client loại Web). Thêm `https://<project-ref>.supabase.co/auth/v1/callback` vào "Authorized redirect URIs" của Google.
 3. Authentication, URL Configuration:
    - Site URL: domain production, ví dụ `https://food-tour.example.com`.
