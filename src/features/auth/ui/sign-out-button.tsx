@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { del } from 'idb-keyval';
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { clearPageCache } from '@/shared/pwa/clear-page-cache';
 import { persistKey } from '@/shared/query/persister';
 import { createBrowserSupabase } from '@/shared/supabase/browser';
 import { Button } from '@/shared/ui/button';
@@ -17,6 +18,7 @@ export function SignOutButton({ userId }: { userId: string }) {
     await createBrowserSupabase().auth.signOut();
     await del(persistKey(userId)).catch(() => {});
     queryClient.clear();
+    await clearPageCache();
     router.replace('/login');
   }
 

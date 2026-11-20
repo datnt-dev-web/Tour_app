@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from 'react';
 
-export type BadgeTone = 'neutral' | 'good' | 'bad' | 'ai' | 'warn';
+export type BadgeTone = 'neutral' | 'good' | 'bad' | 'ai' | 'warn' | 'accent';
 
 const TONES: Record<BadgeTone, string> = {
   neutral: 'bg-surface text-muted',
@@ -8,6 +8,7 @@ const TONES: Record<BadgeTone, string> = {
   bad: 'bg-bad-bg text-bad',
   ai: 'bg-ai-bg text-ai',
   warn: 'bg-warn-bg text-warn',
+  accent: 'bg-accent text-white',
 };
 
 export type BadgeProps = HTMLAttributes<HTMLSpanElement> & { tone?: BadgeTone };

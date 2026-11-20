@@ -45,7 +45,7 @@ function UpcomingCard({ trip, today }: { trip: TripSummary; today: string }) {
             {dateRange(trip) && ` · ${dateRange(trip)}`}
           </p>
         </div>
-        {label && <Badge className="shrink-0 bg-accent text-white">{label}</Badge>}
+        {label && <Badge tone="accent" className="shrink-0">{label}</Badge>}
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-2">
         <div className="rounded-sm bg-white/10 p-3">

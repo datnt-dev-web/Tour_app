@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { CATEGORY_LABELS, STORED_CATEGORIES } from '@/features/places/constants';
+import { CATEGORY_LABELS, placeKeyOf, STORED_CATEGORIES } from '@/features/places/constants';
 import { Badge } from '@/shared/ui/badge';
 import { Chip } from '@/shared/ui/chip';
 import { STATUS_LABELS, STATUS_TONES, TAB_STATUSES, TRIP_PLACE_STATUSES, TRIP_TABS, type TripTab } from '../constants';
@@ -13,12 +13,17 @@ import { dateRange } from './home-screen';
 import { tripQuery } from './trip-queries';
 import { useRemoveFromTrip, useSetStatus } from './use-trip-mutations';
 
-function PlaceRow({ item, onStatus, onRemove }: { item: TripPlaceItem; onStatus: (s: TripPlaceItem['status']) => void; onRemove: () => void }) {
+function PlaceRow({ tripId, item, onStatus, onRemove }: { tripId: string; item: TripPlaceItem; onStatus: (s: TripPlaceItem['status']) => void; onRemove: () => void }) {
   return (
     <li className="flex flex-col gap-2 rounded border border-line bg-white p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="font-semibold leading-snug">{item.place.name}</p>
+          <Link
+            href={`/places/${encodeURIComponent(placeKeyOf({ placeId: item.place.id, googlePlaceId: item.place.google_place_id }))}?trip=${tripId}`}
+            className="block font-semibold leading-snug"
+          >
+            {item.place.name}
+          </Link>
           <p className="truncate text-sm text-muted">{item.note || item.place.address}</p>
         </div>
         <Badge tone={STATUS_TONES[item.status]} className="shrink-0">
@@ -104,6 +109,7 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
               {rows.map((item) => (
                 <PlaceRow
                   key={item.id}
+                  tripId={tripId}
                   item={item}
                   onStatus={(status) => setStatus.mutate({ tripPlaceId: item.id, status })}
                   onRemove={() => remove.mutate({ tripPlaceId: item.id })}

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { clearPageCache } from '@/shared/pwa/clear-page-cache';
 import { createBrowserSupabase } from '@/shared/supabase/browser';
 import { Button } from '@/shared/ui/button';
 
@@ -11,6 +12,10 @@ export function LoginForm({ error }: { error?: string }) {
   const [sent, setSent] = useState(false);
   const [failure, setFailure] = useState<string | null>(error ? (ERRORS[error] ?? null) : null);
   const [pending, setPending] = useState(false);
+  // Phiên hết hạn cũng đổ về /login: dọn cache trang của người dùng trước.
+  useEffect(() => {
+    void clearPageCache();
+  }, []);
   const redirectTo = () => `${window.location.origin}/auth/callback`;
 
   async function google() {
