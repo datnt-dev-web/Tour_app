@@ -91,7 +91,7 @@ export function BookScreen({ groupId, initialRows }: { groupId: string; initialR
         />
       </label>
 
-      <div className="flex gap-2 overflow-x-auto" role="group" aria-label="Lọc theo đánh giá">
+      <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]" role="group" aria-label="Lọc theo đánh giá">
         {BOOK_FILTERS.map((f) => (
           <Chip key={f.value} selected={verdict === f.value} onClick={() => setVerdict(f.value)} className="shrink-0">
             {f.label}
