@@ -6,6 +6,8 @@ describe('isPublicPath', () => {
     ['/login', true],
     ['/auth/callback', true],
     ['/invite/abc', true],
+    ['/sw.js', true],
+    ['/manifest.webmanifest', true],
     ['/', false],
     ['/explore', false],
     ['/invitex', false],

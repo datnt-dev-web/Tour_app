@@ -1,5 +1,5 @@
 // Đường dẫn công khai; mọi route còn lại (nhóm `(app)`) yêu cầu đăng nhập.
-const PUBLIC_PREFIXES = ['/login', '/auth', '/invite'];
+const PUBLIC_PREFIXES = ['/login', '/auth', '/invite', '/sw.js', '/manifest.webmanifest'];
 
 export const isPublicPath = (pathname: string) =>
   PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));

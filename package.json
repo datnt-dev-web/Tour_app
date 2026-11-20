@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:db": "vitest run --config vitest.db.config.ts",
     "seed:haiphong": "tsx --conditions=react-server scripts/seed-haiphong.ts",
+    "dev:login-link": "tsx --conditions=react-server scripts/dev-login-link.ts",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
@@ -41,6 +42,7 @@
     "eslint-config-next": "16.4.6",
     "fake-indexeddb": "^6.2.8",
     "jsdom": "^31.0.1",
+    "lighthouse": "^13.6.0",
     "supabase": "^3.2.0",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",

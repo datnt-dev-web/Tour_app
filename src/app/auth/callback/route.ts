@@ -13,10 +13,14 @@ export async function GET(request: NextRequest) {
   const toLogin = (error?: string) => NextResponse.redirect(`${origin}/login${error ? `?error=${error}` : ''}`);
 
   const code = searchParams.get('code');
-  if (!code) return toLogin();
+  const tokenHash = searchParams.get('token_hash');
+  if (!code && !tokenHash) return toLogin();
 
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  // `code`: Google/PKCE. `token_hash`: link đăng nhập từ admin generateLink (dev helper, email template).
+  const { data, error } = code
+    ? await supabase.auth.exchangeCodeForSession(code)
+    : await supabase.auth.verifyOtp({ token_hash: tokenHash!, type: 'magiclink' });
   if (error || !data.user) return toLogin();
 
   const repo = createInvitesRepo(createAdminSupabase());
