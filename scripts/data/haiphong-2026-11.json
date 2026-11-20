@@ -1,0 +1,25 @@
+{
+  "name": "Hải Phòng",
+  "city": "Hải Phòng",
+  "startDate": "2026-11-23",
+  "endDate": "2026-11-24",
+  "places": [
+    { "name": "Bánh đa cua Bà Cụ", "address": "179 Cầu Đất", "category": "food", "status": "confirmed", "verdict": null, "note": "Hoặc 51 Lạch Tray, hoặc bánh đa cua cô Cẩm" },
+    { "name": "Cafe cô Hạnh", "address": "148 Lương Khánh Thiện", "category": "cafe", "status": "confirmed", "verdict": "up", "note": "Cafe cốt dừa, kem trứng. ~25k/người. Lần trước khen ngon" },
+    { "name": "Nhà hát lớn Hải Phòng", "address": "Trung tâm", "category": "play", "status": "confirmed", "verdict": null, "note": "Dạo trung tâm, Tam Bạc, chụp ảnh" },
+    { "name": "Nem cua bể Quán Nga", "address": "92 Trần Nhật Duật", "category": "food", "status": "confirmed", "verdict": null, "note": "" },
+    { "name": "Bánh bèo cô Mây", "address": "65 Chu Văn An (chợ Chu Văn An)", "category": "snack", "status": "confirmed", "verdict": "up", "note": "Mở 12:30–19:30. ~30k/người. Lần trước khen ngon" },
+    { "name": "Bánh đúc tàu", "address": "159 Hai Bà Trưng", "category": "snack", "status": "confirmed", "verdict": null, "note": "Bán 8–12h và 14–19h, ăn cay thì báo cô. Lần trước chưa ăn" },
+    { "name": "Chè Hường", "address": "171 Hai Bà Trưng", "category": "snack", "status": "confirmed", "verdict": null, "note": "Mở 9–18h. Lần trước chưa ăn" },
+    { "name": "Dừa dầm cô Thủy", "address": "20 ngõ 124 Lạch Tray", "category": "snack", "status": "confirmed", "verdict": null, "note": "Dừa dầm ~20k" },
+    { "name": "Kem xôi Bạch Tuyết", "address": "116 Lạch Tray", "category": "snack", "status": "confirmed", "verdict": null, "note": "Kem xôi ~15k" },
+    { "name": "Hương Ốc", "address": "274 Hàng Kênh", "category": "food", "status": "confirmed", "verdict": null, "note": "SĐT 0904 370 340. Lần trước chưa ăn" },
+    { "name": "Chè Thái", "address": "149 Hàng Kênh", "category": "snack", "status": "confirmed", "verdict": null, "note": "~20k/người. Lần trước chưa ăn" },
+    { "name": "Bánh mì que, pate", "address": "172 Hàng Kênh", "category": "gift", "status": "confirmed", "verdict": null, "note": "Đã chuyển từ 192 sang 172. Bánh 25k/chục, pate 90k/hộp nửa cân" },
+    { "name": "Sủi dìn", "address": "(chưa chọn quán)", "category": "snack", "status": "wanted", "verdict": null, "note": "Đang mùa, hàng nào cũng đông. Không đối chiếu Google" },
+    { "name": "Bún cá cay Thắng Tồ", "address": "47 Lạch Tray", "category": "food", "status": "confirmed", "verdict": null, "note": "~40k/người. Gọi hỏi giờ mở buổi sáng" },
+    { "name": "Bánh mì trứng đánh kem", "address": "2/D4 Nguyễn Bình", "category": "food", "status": null, "verdict": null, "note": "Cốc kem trứng 13k. Phương án thay bún cá" },
+    { "name": "Quán bánh đa cua 100 Trần Nhật Duật", "address": "100 Trần Nhật Duật", "category": "food", "status": null, "verdict": "down", "note": "Lần trước 50k/bát mà không ngon" },
+    { "name": "Dừa dầm Hiền Béo", "address": "Hải Phòng", "category": "snack", "status": null, "verdict": "down", "note": "Không ăn" }
+  ]
+}
