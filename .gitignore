@@ -7,3 +7,11 @@ coverage/
 playwright-report/
 test-results/
 supabase/.temp/
+.superpowers/
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+.DS_Store
+*.pem
+/out/
+/build

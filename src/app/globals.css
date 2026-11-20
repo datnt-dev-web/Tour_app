@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1c1b19;
+  --color-muted: #5f5b54;
+  --color-line: #e7e3dc;
+  --color-surface: #f4f2ee;
+  --color-accent: #d9431e;
+  --color-accent-strong: #b2341a;
+  --color-good: #1e6a4c;
+  --color-good-bg: #e5f1eb;
+  --color-bad: #8e2a15;
+  --color-bad-bg: #fbe9e3;
+  --color-ai: #2e4a7d;
+  --color-ai-bg: #eef2fa;
+  --color-warn: #7a4b00;
+  --color-warn-bg: #fbefd5;
+
+  /* Chỉ cho phép rounded-sm (4px) và rounded (6px); avatar dùng rounded-full */
+  --radius-*: initial;
+  --radius-sm: 4px;
+  --radius: 6px;
+
+  --font-sans: var(--font-be-vietnam-pro), system-ui, sans-serif;
+  --spacing-nav: 72px;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
