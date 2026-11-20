@@ -11,4 +11,5 @@ export const queryKeys = {
   bookAll: ['book'] as const,
   place: (placeId: string) => ['place', placeId] as const,
   aiSummary: (placeId: string) => ['aiSummary', placeId] as const,
+  aiStatus: ['aiStatus'] as const,
 };

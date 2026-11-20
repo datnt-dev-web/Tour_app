@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
+import { AiSummaryCard } from '@/features/ai/ui/ai-summary-card';
 import { getRequestGroup } from '@/features/groups/server/get-request-group';
 import { loadPlaceView } from '@/features/places/server/load-place-view';
 import { decodePlaceKey, type PlaceView } from '@/features/places/services/place-service';
@@ -25,7 +26,12 @@ export default async function PlacePage({ params }: PageProps<'/places/[placeId]
   // useSearchParams (?trip=, ?category=) trong PlaceScreen cần Suspense để build tĩnh không vỡ.
   return (
     <Suspense>
-      <PlaceScreen groupId={ctx.group.id} placeKey={placeKey} initialData={view} />
+      <PlaceScreen
+        groupId={ctx.group.id}
+        placeKey={placeKey}
+        initialData={view}
+        aiSlot={<AiSummaryCard placeKey={placeKey} unavailableReason={view.googlePlaceId ? undefined : 'Chỗ chưa xác minh nên chưa tóm tắt được.'} />}
+      />
     </Suspense>
   );
 }

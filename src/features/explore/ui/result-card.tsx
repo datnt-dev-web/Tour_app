@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import type { RankedPlace } from '@/features/explore/services/ranking';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
@@ -16,9 +17,11 @@ export interface ResultCardProps {
   added?: boolean;
   /** Query string nối vào link chi tiết (category, trip) để màn chỗ biết ngữ cảnh khi thêm vào chuyến. */
   detailQuery?: string;
+  /** Nhãn phụ trên tên (vd. "AI gợi ý"). */
+  badge?: ReactNode;
 }
 
-export function ResultCard({ place, onAdd, added = false, detailQuery }: ResultCardProps) {
+export function ResultCard({ place, onAdd, added = false, detailQuery, badge }: ResultCardProps) {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex gap-3">
@@ -26,6 +29,7 @@ export function ResultCard({ place, onAdd, added = false, detailQuery }: ResultC
           {place.rank}
         </span>
         <div className="min-w-0 flex-1">
+          {badge && <div className="mb-1">{badge}</div>}
           <h3 className="text-base font-bold leading-snug">{place.name}</h3>
           <p className="truncate text-sm text-muted">{place.address}</p>
           <p className="mt-1 flex flex-wrap items-center gap-x-1 text-sm">

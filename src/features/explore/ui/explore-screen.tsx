@@ -2,10 +2,14 @@
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { HotPlacesButton, UnverifiedHotPlaces } from '@/features/ai/ui/hot-places-button';
+import type { HotPlace } from '@/features/ai/services/ai-service';
 import { AddToTripSheet } from '@/features/trips/ui/add-to-trip-sheet';
 import { addedKey, useAddToTrip } from '@/features/trips/ui/use-trip-mutations';
 import { queryKeys } from '@/shared/query/keys';
+import { Badge } from '@/shared/ui/badge';
 import { Skeleton } from '@/shared/ui/skeleton';
 import type { RankedPlace } from '../services/ranking';
 import { buildExploreQuery, readParams, syncCityFromUrl, type ExploreParams } from './explore-params';
@@ -93,6 +97,24 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
     placeholderData: keepPreviousData,
   });
 
+  // Gợi ý AI chỉ hiện cho đúng (thành phố, loại) đã hỏi; đổi bộ lọc thì ẩn đi.
+  const [hot, setHot] = useState<{ city: string; category: string; places: HotPlace[] } | null>(null);
+  const hotHere = hot && hot.city === params.city && hot.category === params.category ? hot.places : [];
+  const known = new Set(data?.map((p) => p.googlePlaceId));
+  const aiPlaces: RankedPlace[] = [];
+  for (const h of hotHere) {
+    const c = h.candidate;
+    if (c && !known.has(c.googlePlaceId)) {
+      known.add(c.googlePlaceId);
+      aiPlaces.push({ ...c, score: 0, rank: (data?.length ?? 0) + aiPlaces.length + 1 });
+    }
+  }
+  const unverified = hotHere.filter((h) => !h.verified);
+
+  const renderCard = (place: RankedPlace, badge?: ReactNode) => (
+    <ResultCard key={place.googlePlaceId} place={place} badge={badge} onAdd={onAdd} detailQuery={detailQuery} added={tripId ? added.has(addedKey(tripId, place.googlePlaceId)) : false} />
+  );
+
   return (
     <main className="flex flex-col gap-4 p-4">
       <h1 className="text-xl font-extrabold">Khám phá</h1>
@@ -114,11 +136,22 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
         ) : data.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted">Chưa tìm thấy chỗ phù hợp. Thử bỏ bớt bộ lọc giá.</p>
         ) : (
-          data.map((place) => (
-            <ResultCard key={place.googlePlaceId} place={place} onAdd={onAdd} detailQuery={detailQuery} added={tripId ? added.has(addedKey(tripId, place.googlePlaceId)) : false} />
-          ))
+          data.map((place) => renderCard(place))
+        )}
+        {aiPlaces.map((place) =>
+          renderCard(
+            place,
+            <Badge tone="ai">
+              <Sparkles size={12} aria-hidden />
+              AI gợi ý
+            </Badge>,
+          ),
         )}
       </section>
+      {groupId && params.city !== '' && (
+        <HotPlacesButton city={params.city} category={params.category} onResult={(places) => setHot({ city: params.city, category: params.category, places })} />
+      )}
+      <UnverifiedHotPlaces places={unverified} city={params.city} />
       {addError && (
         <p role="alert" className="text-sm text-bad">
           {addError}

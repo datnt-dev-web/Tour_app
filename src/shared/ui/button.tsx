@@ -1,11 +1,12 @@
 import type { ButtonHTMLAttributes } from 'react';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'ai';
 
 const VARIANTS: Record<Variant, string> = {
   primary: 'bg-accent text-white hover:bg-accent-strong',
   secondary: 'border border-line bg-white text-ink hover:bg-surface',
   ghost: 'text-accent hover:bg-surface',
+  ai: 'bg-ai-bg text-ai hover:bg-ai-bg/70',
 };
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant };
