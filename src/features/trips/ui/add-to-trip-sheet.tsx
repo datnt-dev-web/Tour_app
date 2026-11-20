@@ -10,7 +10,7 @@ import { dateRange } from './home-screen';
 import { tripsQuery } from './trip-queries';
 
 /** Bottom sheet chọn chuyến sắp đi để thêm chỗ vào. */
-export function AddToTripSheet({ groupId, placeName, onPick, onClose }: { groupId: string; placeName: string; onPick: (tripId: string) => void; onClose: () => void }) {
+export function AddToTripSheet({ groupId, placeName, isAdded, onPick, onClose }: { groupId: string; placeName: string; isAdded: (tripId: string) => boolean; onPick: (tripId: string) => void; onClose: () => void }) {
   const { data, isPending, isError } = useQuery(tripsQuery(groupId));
   const upcoming = data ? splitTrips(data, todayInVietnam()).upcoming : [];
 
@@ -49,10 +49,14 @@ export function AddToTripSheet({ groupId, placeName, onPick, onClose }: { groupI
               <li key={t.id}>
                 <button
                   type="button"
+                  disabled={isAdded(t.id)}
                   onClick={() => onPick(t.id)}
-                  className="flex min-h-11 w-full flex-col rounded border border-line bg-white p-3 text-left hover:bg-surface"
+                  className="flex min-h-11 w-full flex-col rounded border border-line bg-white p-3 text-left hover:bg-surface disabled:opacity-60"
                 >
-                  <span className="font-semibold">{t.name}</span>
+                  <span className="font-semibold">
+                    {t.name}
+                    {isAdded(t.id) && ' · ✓ Đã thêm'}
+                  </span>
                   <span className="text-sm text-muted">
                     {t.city}
                     {dateRange(t) && ` · ${dateRange(t)}`}

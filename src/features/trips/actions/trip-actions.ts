@@ -1,15 +1,17 @@
 'use server';
 
 import { z } from 'zod';
+import { STORED_CATEGORIES } from '@/features/places/constants';
 import { createPlacesRepo } from '@/features/places/repositories/places-repo';
 import { runAction, type ActionResult } from '@/shared/actions';
 import { AppError } from '@/shared/errors';
 import { createServerSupabase } from '@/shared/supabase/server';
+import { TRIP_PLACE_STATUSES } from '../constants';
 import { createTripsRepo, type Trip, type TripPlace } from '../repositories/trips-repo';
 import { addToTrip, createTrip, removePlace, setStatus } from '../services/trips-service';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const category = z.enum(['food', 'snack', 'cafe', 'play', 'stay', 'gift']);
+const category = z.enum(STORED_CATEGORIES);
 
 const createTripSchema = z.object({
   groupId: z.uuid(),
@@ -41,7 +43,7 @@ const addSchema = z
 
 const statusSchema = z.object({
   tripPlaceId: z.uuid(),
-  status: z.enum(['wanted', 'confirmed', 'visited', 'dropped']),
+  status: z.enum(TRIP_PLACE_STATUSES),
 });
 const removeSchema = z.object({ tripPlaceId: z.uuid() });
 

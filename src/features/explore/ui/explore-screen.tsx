@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { AddToTripSheet } from '@/features/trips/ui/add-to-trip-sheet';
-import { useAddToTrip } from '@/features/trips/ui/use-trip-mutations';
+import { addedKey, useAddToTrip } from '@/features/trips/ui/use-trip-mutations';
 import { queryKeys } from '@/shared/query/keys';
 import { Skeleton } from '@/shared/ui/skeleton';
 import type { RankedPlace } from '../services/ranking';
@@ -31,7 +31,7 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
   const [cityInput, setCityInput] = useState(params.city);
   const { trip: tripId, ...search } = params;
 
-  // Tập chỗ đã thêm trong phiên này; thêm lạc quan khi bấm, bỏ ra nếu server báo lỗi.
+  // Tập (chuyến, chỗ) đã thêm trong phiên này; thêm lạc quan khi bấm, bỏ ra nếu server báo lỗi.
   const [added, setAdded] = useState<ReadonlySet<string>>(new Set());
   const [pending, setPending] = useState<RankedPlace | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
@@ -113,7 +113,7 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
           <p className="py-8 text-center text-sm text-muted">Chưa tìm thấy chỗ phù hợp. Thử bỏ bớt bộ lọc giá.</p>
         ) : (
           data.map((place) => (
-            <ResultCard key={place.googlePlaceId} place={place} onAdd={onAdd} added={added.has(place.googlePlaceId)} />
+            <ResultCard key={place.googlePlaceId} place={place} onAdd={onAdd} added={tripId ? added.has(addedKey(tripId, place.googlePlaceId)) : false} />
           ))
         )}
       </section>
@@ -126,6 +126,7 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
         <AddToTripSheet
           groupId={groupId}
           placeName={pending.name}
+          isAdded={(id) => added.has(addedKey(id, pending.googlePlaceId))}
           onClose={() => setPending(null)}
           onPick={(id) => {
             addTo(pending, id);

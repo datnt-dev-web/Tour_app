@@ -50,13 +50,15 @@ export function useRemoveFromTrip(tripId: string) {
  * Thêm chỗ từ Khám phá. Giao diện "Đã thêm" do nơi gọi giữ qua onMutate/onError (chưa có dòng trip_places thật để sửa cache);
  * settle làm mới chuyến và danh sách chuyến.
  */
-export function useAddToTrip(handlers: { onMutate: (googlePlaceId: string) => void; onError: (googlePlaceId: string, message: string) => void }) {
+export const addedKey = (tripId: string, googlePlaceId: string) => `${tripId}:${googlePlaceId}`;
+
+export function useAddToTrip(handlers: { onMutate: (key: string) => void; onError: (key: string, message: string) => void }) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (v: { googlePlaceId: string; input: Parameters<typeof addToTripAction>[0] }) =>
       unwrap(await addToTripAction(v.input)),
-    onMutate: (v) => handlers.onMutate(v.googlePlaceId),
-    onError: (e, v) => handlers.onError(v.googlePlaceId, e.message),
+    onMutate: (v) => handlers.onMutate(addedKey(v.input.tripId, v.googlePlaceId)),
+    onError: (e, v) => handlers.onError(addedKey(v.input.tripId, v.googlePlaceId), e.message),
     onSettled: (_d, _e, v) =>
       Promise.all([
         qc.invalidateQueries({ queryKey: queryKeys.trip(v.input.tripId) }),

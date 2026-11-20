@@ -4,6 +4,7 @@ import { createPlacesRepo } from '@/features/places/repositories/places-repo';
 import { createGroupsRepo } from '@/features/groups/repositories/groups-repo';
 import { createTripsRepo } from '@/features/trips/repositories/trips-repo';
 import { getCurrentGroup } from '@/features/groups/services/groups-service';
+import { runAction } from '@/shared/actions';
 import type { Database } from '@/shared/supabase/database.types';
 
 const url = process.env.DB_TEST_SUPABASE_URL!;
@@ -18,6 +19,7 @@ const NO_ID = '00000000-0000-0000-0000-000000000000';
 let user: { id: string; db: SupabaseClient<Database> };
 let G: string;
 let G2: string;
+let GX: string; // nhóm user không thuộc về
 
 const candidate = (id: string) => ({
   googlePlaceId: id, name: `Quán ${id}`, address: 'Số 1', rating: 4.5, reviewCount: 100, priceTier: 1 as const, openNow: null, mapsUrl: 'https://maps.example/x',
@@ -35,6 +37,7 @@ beforeAll(async () => {
   const g2 = await admin.from('groups').insert({ name: 'Nhóm mới', created_by: user.id, created_at: '2026-06-01T00:00:00Z' }).select('id').single();
   G = g1.data!.id;
   G2 = g2.data!.id;
+  GX = (await admin.from('groups').insert({ name: 'Ngoài', created_by: user.id }).select('id').single()).data!.id;
   await admin.from('group_members').insert([
     { group_id: G, user_id: user.id, role: 'owner' },
     { group_id: G2, user_id: user.id, role: 'owner' },
@@ -42,7 +45,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await admin.from('groups').delete().in('id', [G, G2]);
+  await admin.from('groups').delete().in('id', [G, G2, GX]);
   await admin.auth.admin.deleteUser(user.id);
 });
 
@@ -109,5 +112,29 @@ describe('places + trips repo', () => {
     await trips.removeFromTrip(tp.id);
     expect((await trips.getTripDetail(trip.id))?.items).toHaveLength(0);
     expect(await trips.getTrip(NO_ID)).toBeNull();
+  });
+
+  test('thêm lại chỗ đã dropped đưa về wanted; status khác giữ nguyên', async () => {
+    const places = createPlacesRepo(user.db);
+    const trips = createTripsRepo(user.db);
+    const trip = await trips.createTrip({ groupId: G, name: 'T-revive', city: 'x', startDate: '2026-12-01', endDate: '2026-12-02' });
+    const p = await places.upsertPlaceFromGoogle(G, candidate('gp-revive'), 'food', 'x', user.id);
+    const tp = await trips.addPlaceToTrip(trip.id, p.id, user.id);
+    await trips.setTripPlaceStatus(tp.id, 'dropped');
+    expect((await trips.addPlaceToTrip(trip.id, p.id, user.id)).status).toBe('wanted');
+    await trips.setTripPlaceStatus(tp.id, 'visited');
+    expect((await trips.addPlaceToTrip(trip.id, p.id, user.id)).status).toBe('visited');
+  });
+
+  test('setTripPlaceStatus/removeFromTrip trên dòng không tồn tại: NOT_FOUND', async () => {
+    const trips = createTripsRepo(user.db);
+    await expect(trips.setTripPlaceStatus(NO_ID, 'confirmed')).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(trips.removeFromTrip(NO_ID)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  test('runAction: tạo chuyến vào nhóm lạ trả FORBIDDEN, không ném lỗi Postgres', async () => {
+    const trips = createTripsRepo(user.db);
+    const r = await runAction(() => trips.createTrip({ groupId: GX, name: 'x', city: 'x', startDate: '2026-12-01', endDate: '2026-12-02' }));
+    expect(r).toEqual({ ok: false, error: { code: 'FORBIDDEN', message: 'Bạn không có quyền với dữ liệu này.' } });
   });
 });

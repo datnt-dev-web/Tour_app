@@ -1,3 +1,4 @@
+import { AppError } from '@/shared/errors';
 import type { Database } from '@/shared/supabase/database.types';
 import type { Db } from '@/shared/supabase/db';
 import type { Place } from '@/features/places/repositories/places-repo';
@@ -24,7 +25,7 @@ export interface TripsRepo {
   listTrips(groupId: string): Promise<TripSummary[]>;
   getTrip(tripId: string): Promise<Trip | null>;
   getTripDetail(tripId: string): Promise<TripDetail | null>;
-  /** Đã có (trip_id, place_id) thì trả dòng cũ, giữ nguyên status và note. */
+  /** Đã có (trip_id, place_id) thì trả dòng cũ, giữ nguyên status và note (riêng dropped được đưa về wanted). */
   addPlaceToTrip(tripId: string, placeId: string, userId: string, note?: string): Promise<TripPlace>;
   setTripPlaceStatus(tripPlaceId: string, status: TripPlaceStatus): Promise<void>;
   removeFromTrip(tripPlaceId: string): Promise<void>;
@@ -40,6 +41,8 @@ export function toSummary({ trip_places, ...trip }: TripRow): TripSummary {
     pendingCount: trip_places.filter((p) => p.status === 'wanted').length,
   };
 }
+
+const notFound = () => new AppError('NOT_FOUND', 'Không tìm thấy chỗ trong chuyến.');
 
 export function createTripsRepo(db: Db): TripsRepo {
   async function getTrip(tripId: string): Promise<Trip | null> {
@@ -85,6 +88,14 @@ export function createTripsRepo(db: Db): TripsRepo {
           { onConflict: 'trip_id,place_id', ignoreDuplicates: true },
         );
       if (error) throw error;
+      // Đã bỏ (dropped) mà thêm lại nghĩa là muốn đi lại; các trạng thái khác giữ nguyên.
+      const { error: reviveError } = await db
+        .from('trip_places')
+        .update({ status: 'wanted' })
+        .eq('trip_id', tripId)
+        .eq('place_id', placeId)
+        .eq('status', 'dropped');
+      if (reviveError) throw reviveError;
       const { data, error: selectError } = await db
         .from('trip_places')
         .select('*')
@@ -96,13 +107,15 @@ export function createTripsRepo(db: Db): TripsRepo {
     },
 
     async setTripPlaceStatus(tripPlaceId, status) {
-      const { error } = await db.from('trip_places').update({ status }).eq('id', tripPlaceId);
+      const { data, error } = await db.from('trip_places').update({ status }).eq('id', tripPlaceId).select('id');
       if (error) throw error;
+      if (data.length === 0) throw notFound();
     },
 
     async removeFromTrip(tripPlaceId) {
-      const { error } = await db.from('trip_places').delete().eq('id', tripPlaceId);
+      const { data, error } = await db.from('trip_places').delete().eq('id', tripPlaceId).select('id');
       if (error) throw error;
+      if (data.length === 0) throw notFound();
     },
   };
 }
