@@ -1,9 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { runAction, type ActionResult } from '@/shared/actions';
-import { AppError } from '@/shared/errors';
-import { createServerSupabase } from '@/shared/supabase/server';
+import { parse, runAction, type ActionResult } from '@/shared/actions';
+import { authed } from '@/shared/supabase/authed';
 import { createReviewsRepo, type InternalReview } from '../repositories/reviews-repo';
 
 const reviewSchema = z.object({
@@ -16,12 +15,8 @@ const reviewSchema = z.object({
 /** Ghi bằng phiên người dùng: RLS kiểm thành viên nhóm và trip cùng nhóm với chỗ. */
 export async function addInternalReviewAction(input: z.input<typeof reviewSchema>): Promise<ActionResult<InternalReview>> {
   return runAction(async () => {
-    const db = await createServerSupabase();
-    const { data: auth } = await db.auth.getUser();
-    if (!auth.user) throw new AppError('UNAUTHENTICATED', 'Bạn cần đăng nhập.');
-    const parsed = reviewSchema.safeParse(input);
-    if (!parsed.success) throw new AppError('INVALID_INPUT', 'Dữ liệu không hợp lệ.');
-    const { note, ...rest } = parsed.data;
+    const { db } = await authed();
+    const { note, ...rest } = parse(reviewSchema, input);
     return createReviewsRepo(db).addReview({ ...rest, note: note || null });
   });
 }

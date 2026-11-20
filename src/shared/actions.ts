@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { AppError } from './errors';
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
@@ -28,4 +29,11 @@ export async function runAction<T>(fn: () => Promise<T>): Promise<ActionResult<T
 export function unwrap<T>(result: ActionResult<T>): T {
   if (!result.ok) throw new AppError(result.error.code, result.error.message);
   return result.data;
+}
+
+/** Validate input của action; sai thì INVALID_INPUT (không lộ chi tiết schema). */
+export function parse<T>(schema: z.ZodType<T>, input: unknown): T {
+  const r = schema.safeParse(input);
+  if (!r.success) throw new AppError('INVALID_INPUT', 'Dữ liệu không hợp lệ.');
+  return r.data;
 }

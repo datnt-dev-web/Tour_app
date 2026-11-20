@@ -3,9 +3,8 @@
 import { z } from 'zod';
 import { STORED_CATEGORIES } from '@/features/places/constants';
 import { createPlacesRepo } from '@/features/places/repositories/places-repo';
-import { runAction, type ActionResult } from '@/shared/actions';
-import { AppError } from '@/shared/errors';
-import { createServerSupabase } from '@/shared/supabase/server';
+import { parse, runAction, type ActionResult } from '@/shared/actions';
+import { authed } from '@/shared/supabase/authed';
 import { TRIP_PLACE_STATUSES } from '../constants';
 import { createTripsRepo, type Trip, type TripPlace } from '../repositories/trips-repo';
 import { addToTrip, createTrip, removePlace, setStatus } from '../services/trips-service';
@@ -46,20 +45,6 @@ const statusSchema = z.object({
   status: z.enum(TRIP_PLACE_STATUSES),
 });
 const removeSchema = z.object({ tripPlaceId: z.uuid() });
-
-/** Phiên người dùng + client theo phiên (RLS là chốt chặn cuối); chưa đăng nhập trả UNAUTHENTICATED. */
-async function authed() {
-  const db = await createServerSupabase();
-  const { data } = await db.auth.getUser();
-  if (!data.user) throw new AppError('UNAUTHENTICATED', 'Bạn cần đăng nhập.');
-  return { db, userId: data.user.id };
-}
-
-function parse<T>(schema: z.ZodType<T>, input: unknown): T {
-  const r = schema.safeParse(input);
-  if (!r.success) throw new AppError('INVALID_INPUT', 'Dữ liệu không hợp lệ.');
-  return r.data;
-}
 
 export async function createTripAction(input: z.input<typeof createTripSchema>): Promise<ActionResult<Trip>> {
   return runAction(async () => {
