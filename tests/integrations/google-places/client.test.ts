@@ -23,7 +23,7 @@ describe('mapping', () => {
     expect(mapPriceLevel('PRICE_LEVEL_EXPENSIVE')).toBe(3);
     expect(mapPriceLevel('PRICE_LEVEL_VERY_EXPENSIVE')).toBe(3);
     expect(mapPriceLevel(undefined)).toBeNull();
-    expect(priceTierToLevels(1)).toEqual(['PRICE_LEVEL_FREE', 'PRICE_LEVEL_INEXPENSIVE']);
+    expect(priceTierToLevels(1)).toEqual(['PRICE_LEVEL_INEXPENSIVE']);
     expect(priceTierToLevels(2)).toEqual(['PRICE_LEVEL_MODERATE']);
     expect(priceTierToLevels(3)).toEqual(['PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_VERY_EXPENSIVE']);
   });
@@ -52,7 +52,7 @@ describe('searchText', () => {
       languageCode: 'vi',
       regionCode: 'VN',
     });
-    expect(body.priceLevels).toEqual(['PRICE_LEVEL_FREE', 'PRICE_LEVEL_INEXPENSIVE', 'PRICE_LEVEL_MODERATE']);
+    expect(body.priceLevels).toEqual(['PRICE_LEVEL_INEXPENSIVE', 'PRICE_LEVEL_MODERATE']);
   });
 
   test('map response sang PlaceCandidate', async () => {
@@ -107,6 +107,18 @@ describe('searchText', () => {
     expect(err.message).not.toContain(KEY);
   });
 
+  test('200 + body không phải JSON → PLACES_UNAVAILABLE', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>oops', { status: 200 })));
+    await expect(createGooglePlacesClient(KEY).searchText({ city: 'Huế', category: 'food' })).rejects.toMatchObject({
+      code: 'PLACES_UNAVAILABLE',
+    });
+  });
+
+  test('200 + body null → []', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('null', { status: 200 })));
+    expect(await createGooglePlacesClient(KEY).searchText({ city: 'Huế', category: 'food' })).toEqual([]);
+  });
+
   test('lỗi mạng → PLACES_UNAVAILABLE', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error(`boom ${KEY}`)));
     const err = await createGooglePlacesClient(KEY)
@@ -150,6 +162,17 @@ describe('getDetails', () => {
     const d = await createGooglePlacesClient(KEY).getDetails('p1');
     expect(d.weekdayHours).toEqual([]);
     expect(d.phone).toBeNull();
+  });
+
+  test('id có "/" được URL-encode', async () => {
+    const fetchMock = mockFetch({ id: 'a/b', displayName: { text: 'A' } });
+    await createGooglePlacesClient(KEY).getDetails('a/b');
+    expect(fetchMock.mock.calls[0][0]).toBe('https://places.googleapis.com/v1/places/a%2Fb?languageCode=vi');
+  });
+
+  test('200 + body null → PLACES_UNAVAILABLE', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('null', { status: 200 })));
+    await expect(createGooglePlacesClient(KEY).getDetails('p1')).rejects.toMatchObject({ code: 'PLACES_UNAVAILABLE' });
   });
 
   test('HTTP 403 → PLACES_UNAVAILABLE', async () => {

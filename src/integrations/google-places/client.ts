@@ -38,7 +38,7 @@ function toCandidate(p: RawPlace): PlaceCandidate {
 
 export function createGooglePlacesClient(apiKey: string): PlacesClient {
   // Không đưa lỗi gốc vào message: nó có thể chứa URL/key.
-  async function call<T>(url: string, init: RequestInit & { headers: Record<string, string> }): Promise<T> {
+  async function call<T>(url: string, init: RequestInit & { headers: Record<string, string> }): Promise<T | null> {
     let res: Response;
     try {
       res = await fetch(url, { ...init, headers: { ...init.headers, 'X-Goog-Api-Key': apiKey } });
@@ -48,7 +48,12 @@ export function createGooglePlacesClient(apiKey: string): PlacesClient {
     if (!res.ok) {
       throw new AppError('PLACES_UNAVAILABLE', `Google Places tạm thời không khả dụng (${res.status}).`);
     }
-    return (await res.json()) as T;
+    try {
+      const data: unknown = await res.json();
+      return data !== null && typeof data === 'object' ? (data as T) : null;
+    } catch {
+      throw new AppError('PLACES_UNAVAILABLE', 'Google Places trả về dữ liệu không hợp lệ.');
+    }
   }
 
   async function search(body: Record<string, unknown>): Promise<PlaceCandidate[]> {
@@ -57,7 +62,7 @@ export function createGooglePlacesClient(apiKey: string): PlacesClient {
       headers: { 'Content-Type': 'application/json', 'X-Goog-FieldMask': SEARCH_MASK },
       body: JSON.stringify({ languageCode: 'vi', regionCode: 'VN', ...body }),
     });
-    return (data.places ?? []).map(toCandidate);
+    return (data?.places ?? []).map(toCandidate);
   }
 
   return {
@@ -78,6 +83,7 @@ export function createGooglePlacesClient(apiKey: string): PlacesClient {
         method: 'GET',
         headers: { 'X-Goog-FieldMask': DETAILS_MASK },
       });
+      if (!p) throw new AppError('PLACES_UNAVAILABLE', 'Google Places trả về dữ liệu không hợp lệ.');
       return {
         ...toCandidate(p),
         weekdayHours: p.regularOpeningHours?.weekdayDescriptions ?? [],

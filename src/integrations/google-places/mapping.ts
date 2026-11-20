@@ -12,8 +12,15 @@ export function mapPriceLevel(level?: string): PriceTier | null {
   return (level && LEVEL_TO_TIER[level]) || null;
 }
 
+// Bộ lọc priceLevels của Text Search không nhận PRICE_LEVEL_FREE nên tier 1 chỉ gửi INEXPENSIVE.
+const TIER_TO_FILTER_LEVELS: Record<PriceTier, string[]> = {
+  1: ['PRICE_LEVEL_INEXPENSIVE'],
+  2: ['PRICE_LEVEL_MODERATE'],
+  3: ['PRICE_LEVEL_EXPENSIVE', 'PRICE_LEVEL_VERY_EXPENSIVE'],
+};
+
 export function priceTierToLevels(t: PriceTier): string[] {
-  return Object.keys(LEVEL_TO_TIER).filter((l) => LEVEL_TO_TIER[l] === t);
+  return TIER_TO_FILTER_LEVELS[t];
 }
 
 export const CATEGORY_QUERY: Record<PlaceCategory, { textQuery: (city: string) => string; includedType?: string }> = {
