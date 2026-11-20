@@ -17,7 +17,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Điều hướng chính"
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex h-nav max-w-[480px] border-t border-line bg-white"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex h-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))] max-w-[480px] pb-[env(safe-area-inset-bottom)] border-t border-line bg-white"
     >
       {TABS.map(({ href, label, Icon }) => {
         const active = isActive(href);

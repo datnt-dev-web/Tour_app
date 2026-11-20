@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: 'Khám phá quán ăn, chỗ chơi, chỗ ở và lưu vào chuyến đi của nhóm bạn.',
 };
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover' };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
