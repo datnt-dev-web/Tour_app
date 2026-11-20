@@ -20,7 +20,7 @@ describe('canAccess', () => {
   test('bootstrap email lần đầu → tạo nhóm owner', async () => {
     const { repo, groups, members } = fakeRepo();
     expect(await canAccess(repo, { id: 'u1', email: 'Owner@X.com' }, BOOT)).toBe('bootstrap');
-    expect(groups.map((g) => g.name)).toEqual(['Hội ăn chơi']);
+    expect(groups.map((g) => g.name)).toEqual(['Con lợn nhựa']);
     expect(members.has('g1:u1')).toBe(true);
   });
   test('thành viên sẵn có → member', async () => {

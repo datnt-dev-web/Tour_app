@@ -3,7 +3,7 @@ import { findUsableInvite } from '@/features/groups/services/invite-service';
 
 export type Access = 'member' | 'invite' | 'bootstrap' | 'denied';
 
-export const BOOTSTRAP_GROUP_NAME = 'Hội ăn chơi';
+export const BOOTSTRAP_GROUP_NAME = 'Con lợn nhựa';
 
 /** Cổng vào app (Supabase vẫn cho đăng ký tự do, đây mới là chỗ chặn). `bootstrapEmails` đã lowercase từ env. */
 export async function canAccess(

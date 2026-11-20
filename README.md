@@ -4,7 +4,7 @@ App mobile cho nhóm bạn chọn quán ăn theo chuyến đi. Chỉ vào đư�
 
 ## Đăng nhập theo lời mời
 
-Luồng: `/invite/[token]` lưu cookie `ft-invite` rồi sang `/login`; đăng nhập Google hoặc magic link; `/auth/callback` kiểm tra quyền (`canAccess`) rồi nhận lời mời. Email trong `BOOTSTRAP_OWNER_EMAILS` được tự tạo nhóm "Hội ăn chơi" ở lần đăng nhập đầu.
+Luồng: `/invite/[token]` lưu cookie `ft-invite` rồi sang `/login`; đăng nhập Google hoặc magic link; `/auth/callback` kiểm tra quyền (`canAccess`) rồi nhận lời mời. Email trong `BOOTSTRAP_OWNER_EMAILS` được tự tạo nhóm "Con lợn nhựa" ở lần đăng nhập đầu.
 
 Supabase vẫn để `enable_signup = true` vì OAuth và OTP cần tạo user mới. Người lạ có thể tạo tài khoản trong `auth.users`, nhưng bị `canAccess` đẩy ra (signOut, `/login?error=not-invited`) và không có dòng nào trong `group_members` nên RLS không cho đọc dữ liệu.
 
@@ -41,7 +41,7 @@ Seed chuyến Hải Phòng: `npm run seed:haiphong -- --group <groupId> --user <
 npm run dev:login-link -- --email dev@example.com [--origin http://localhost:3000]
 ```
 
-Script tạo user nếu chưa có, cho vào nhóm "Hội ăn chơi", seed Hải Phòng nếu nhóm chưa có chuyến, rồi in URL `/auth/callback?token_hash=...` dùng một lần; mở URL đó là đăng nhập. Script từ chối chạy nếu Supabase URL không phải localhost/127.0.0.1.
+Script tạo user nếu chưa có, cho vào nhóm "Con lợn nhựa", seed Hải Phòng nếu nhóm chưa có chuyến, rồi in URL `/auth/callback?token_hash=...` dùng một lần; mở URL đó là đăng nhập. Script từ chối chạy nếu Supabase URL không phải localhost/127.0.0.1.
 
 ### Bật Google OAuth
 

@@ -1,6 +1,6 @@
 /**
  * Chỉ cho Supabase LOCAL: `npm run dev:login-link -- --email you@example.com [--origin http://localhost:3000]`.
- * Đảm bảo user tồn tại, có nhóm (tạo "Hội ăn chơi" nếu chưa), nhóm chưa có chuyến thì seed Hải Phòng (không gọi Places),
+ * Đảm bảo user tồn tại, có nhóm (tạo "Con lợn nhựa" nếu chưa), nhóm chưa có chuyến thì seed Hải Phòng (không gọi Places),
  * rồi in URL đăng nhập một lần trỏ vào /auth/callback?token_hash=...
  */
 import { existsSync } from 'node:fs';
