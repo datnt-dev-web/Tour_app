@@ -6,6 +6,9 @@ export const queryKeys = {
   trip: (tripId: string) => ['trip', tripId] as const,
   book: (groupId: string, filter: unknown) => ['book', groupId, filter] as const,
   explore: (params: unknown) => ['explore', params] as const,
+  /** Tiền tố chung của mọi màn chỗ / sổ quán, để invalidate khi chưa biết khóa cụ thể. */
+  placeAll: ['place'] as const,
+  bookAll: ['book'] as const,
   place: (placeId: string) => ['place', placeId] as const,
   aiSummary: (placeId: string) => ['aiSummary', placeId] as const,
 };

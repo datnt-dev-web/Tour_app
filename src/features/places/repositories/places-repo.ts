@@ -58,6 +58,7 @@ export function createPlacesRepo(db: Db): PlacesRepo {
           category,
           maps_url: c.mapsUrl,
           created_by: userId,
+          verified: true, // có google id nghĩa là đã đối chiếu Google Maps
         },
         { onConflict: 'group_id,google_place_id', ignoreDuplicates: true },
       );

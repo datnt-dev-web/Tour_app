@@ -13,7 +13,7 @@ export interface PlaceView {
   googlePlaceId: string | null;
   /** Dữ liệu Google (cache 24h); null với chỗ thêm tay hoặc khi Google đang lỗi. */
   details: PlaceDetails | null;
-  /** Có google id nghĩa là đã đối chiếu với Google Maps; chỗ thêm tay thì chưa. */
+  /** Cột places.verified (true khi lưu từ Google); chỗ thêm tay thì false. */
   verified: boolean;
   reviews: InternalReview[];
 }
@@ -29,6 +29,15 @@ const LOCAL_PREFIX = 'local:';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const notFound = () => new AppError('NOT_FOUND', 'Không tìm thấy chỗ này.');
 
+/** Giải mã khóa trên URL; chuỗi hỏng (vd. '%' lẻ) trả null để nơi gọi coi là không tìm thấy thay vì 500. */
+export function decodePlaceKey(raw: string): string | null {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+}
+
 /** placeKey là Google place id hoặc `local:<uuid>` (chỗ thêm tay). Chỗ local không có trong nhóm thì NOT_FOUND. */
 export async function getPlaceView(deps: PlaceViewDeps, groupId: string, placeKey: string): Promise<PlaceView> {
   const isLocal = placeKey.startsWith(LOCAL_PREFIX);
@@ -43,7 +52,8 @@ export async function getPlaceView(deps: PlaceViewDeps, groupId: string, placeKe
     googlePlaceId ? loadDetails(deps, googlePlaceId, place !== null) : null,
     place ? deps.reviewsRepo.listReviews(place.id) : [],
   ]);
-  return { place, googlePlaceId, details, verified: googlePlaceId !== null, reviews };
+  // Nguồn duy nhất là cột places.verified; chỗ chưa lưu luôn có google id nên coi là đã xác minh.
+  return { place, googlePlaceId, details, verified: place ? place.verified : true, reviews };
 }
 
 /** Chỗ nhóm đã lưu vẫn xem được khi Google lỗi (chỉ thiếu phần chi tiết); chỗ chưa lưu thì không còn gì để hiện nên lan lỗi. */

@@ -61,6 +61,7 @@ describe('reviews repo + sổ quán', () => {
   test('findPlace theo id và google_place_id, chỗ nhóm khác không thấy', async () => {
     const places = createPlacesRepo(user.db);
     const p = await places.upsertPlaceFromGoogle(G, candidate('gp-find'), 'cafe', 'Hải Phòng', user.id);
+    expect(p.verified).toBe(true);
     expect((await places.findPlace(G, { id: p.id }))?.id).toBe(p.id);
     expect((await places.findPlace(G, { googlePlaceId: 'gp-find' }))?.id).toBe(p.id);
     expect(await places.findPlace(GX, { id: p.id })).toBeNull();

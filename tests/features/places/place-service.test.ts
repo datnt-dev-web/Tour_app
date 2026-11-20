@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { getPlaceView } from '@/features/places/services/place-service';
+import { decodePlaceKey, getPlaceView } from '@/features/places/services/place-service';
 import type { Place } from '@/features/places/repositories/places-repo';
 import type { InternalReview } from '@/features/places/repositories/reviews-repo';
 import type { PlaceDetails, PlacesClient } from '@/integrations/google-places/types';
@@ -67,7 +67,7 @@ describe('getPlaceView', () => {
     const down = async (): Promise<PlaceDetails> => {
       throw new AppError('PLACES_UNAVAILABLE', 'down');
     };
-    const { deps } = setup(place({ google_place_id: 'g1' }), down);
+    const { deps } = setup(place({ google_place_id: 'g1', verified: true }), down);
     const view = await getPlaceView(deps, 'G', 'g1');
     expect(view).toMatchObject({ details: null, verified: true, googlePlaceId: 'g1' });
   });
@@ -77,5 +77,10 @@ describe('getPlaceView', () => {
       throw new AppError('PLACES_UNAVAILABLE', 'down');
     };
     await expect(getPlaceView(setup(null, down).deps, 'G', 'g1')).rejects.toMatchObject({ code: 'PLACES_UNAVAILABLE' });
+  });
+
+  test('decodePlaceKey: giải mã đúng, chuỗi hỏng trả null', () => {
+    expect(decodePlaceKey('local%3Aabc')).toBe('local:abc');
+    expect(decodePlaceKey('100%')).toBeNull();
   });
 });
