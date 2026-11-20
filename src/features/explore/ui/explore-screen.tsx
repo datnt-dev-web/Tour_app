@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { queryKeys } from '@/shared/query/keys';
 import { Skeleton } from '@/shared/ui/skeleton';
 import type { RankedPlace } from '../services/ranking';
-import { buildExploreQuery, readParams, type ExploreParams } from './explore-params';
+import { buildExploreQuery, readParams, syncCityFromUrl, type ExploreParams } from './explore-params';
 import { Filters } from './filters';
 import { ResultCard } from './result-card';
 
@@ -43,7 +43,9 @@ export function ExploreScreen() {
   const [syncedCity, setSyncedCity] = useState(params.city);
   if (syncedCity !== params.city) {
     setSyncedCity(params.city);
-    if (params.city !== pushedCity) setCityInput(params.city); // URL đổi từ ngoài (back/forward)
+    const sync = syncCityFromUrl(params.city, pushedCity);
+    if (sync.input !== null) setCityInput(sync.input); // URL đổi từ ngoài (back/forward)
+    setPushedCity(sync.pushed);
   }
 
   useEffect(() => {

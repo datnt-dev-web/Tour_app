@@ -29,3 +29,11 @@ export function buildExploreQuery(current: ExploreParams, patch: Partial<Explore
   if (next.price) qs.set('price', String(next.price));
   return qs.toString();
 }
+
+/**
+ * Quyết định có đồng bộ ô nhập từ URL không. URL mang đúng city ta vừa đẩy thì giữ ô nhập (người dùng có thể đã gõ tiếp);
+ * ngược lại là điều hướng ngoài: lấy city từ URL và coi nó là mốc mới để lần back/forward sau không bị bỏ qua.
+ */
+export function syncCityFromUrl(urlCity: string, pushed: string): { input: string | null; pushed: string } {
+  return urlCity === pushed ? { input: null, pushed } : { input: urlCity, pushed: urlCity };
+}
