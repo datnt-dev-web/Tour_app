@@ -7,7 +7,7 @@ const BASE_URL = 'https://places.googleapis.com/v1';
 const SEARCH_MASK =
   'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.currentOpeningHours.openNow,places.googleMapsUri';
 const DETAILS_MASK =
-  'id,displayName,formattedAddress,rating,userRatingCount,priceLevel,currentOpeningHours.openNow,googleMapsUri,regularOpeningHours.weekdayDescriptions,nationalPhoneNumber';
+  'id,displayName,formattedAddress,rating,userRatingCount,priceLevel,currentOpeningHours.openNow,googleMapsUri,regularOpeningHours.weekdayDescriptions,nationalPhoneNumber,location';
 const PAGE_SIZE = 20;
 
 interface RawPlace {
@@ -21,6 +21,7 @@ interface RawPlace {
   googleMapsUri?: string;
   regularOpeningHours?: { weekdayDescriptions?: string[] };
   nationalPhoneNumber?: string;
+  location?: { latitude?: number; longitude?: number };
 }
 
 function toCandidate(p: RawPlace): PlaceCandidate {
@@ -88,6 +89,10 @@ export function createGooglePlacesClient(apiKey: string): PlacesClient {
         ...toCandidate(p),
         weekdayHours: p.regularOpeningHours?.weekdayDescriptions ?? [],
         phone: p.nationalPhoneNumber ?? null,
+        location:
+          typeof p.location?.latitude === 'number' && typeof p.location.longitude === 'number'
+            ? { lat: p.location.latitude, lng: p.location.longitude }
+            : null,
       };
     },
   };

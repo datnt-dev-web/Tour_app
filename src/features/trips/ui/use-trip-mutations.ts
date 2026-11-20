@@ -21,7 +21,11 @@ function useOptimisticTripEdit(tripId: string) {
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
     },
     settle: () =>
-      Promise.all([qc.invalidateQueries({ queryKey: key }), qc.invalidateQueries({ queryKey: queryKeys.tripsAll })]),
+      Promise.all([
+        qc.invalidateQueries({ queryKey: key }),
+        qc.invalidateQueries({ queryKey: queryKeys.tripsAll }),
+        qc.invalidateQueries({ queryKey: queryKeys.tripLocations(tripId) }),
+      ]),
   };
 }
 
@@ -62,6 +66,7 @@ export function useAddToTrip(handlers: { onMutate: (key: string) => void; onErro
     onSettled: (_d, _e, v) =>
       Promise.all([
         qc.invalidateQueries({ queryKey: queryKeys.trip(v.input.tripId) }),
+        qc.invalidateQueries({ queryKey: queryKeys.tripLocations(v.input.tripId) }),
         qc.invalidateQueries({ queryKey: queryKeys.tripsAll }),
         // Chỗ mới được lưu (hoặc đổi trạng thái) nên màn chỗ và sổ quán phải tải lại.
         qc.invalidateQueries({ queryKey: queryKeys.placeAll }),

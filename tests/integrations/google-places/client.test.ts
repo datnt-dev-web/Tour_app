@@ -157,6 +157,15 @@ describe('getDetails', () => {
     expect(d.phone).toBe('024 1234');
   });
 
+  test('location: map tọa độ, thiếu thì null', async () => {
+    const fetchMock = mockFetch({ id: 'p1', displayName: { text: 'A' }, location: { latitude: 20.85, longitude: 106.68 } });
+    const d = await createGooglePlacesClient(KEY).getDetails('p1');
+    expect(fetchMock.mock.calls[0][1].headers['X-Goog-FieldMask']).toContain('location');
+    expect(d.location).toEqual({ lat: 20.85, lng: 106.68 });
+    mockFetch({ id: 'p1', displayName: { text: 'A' } });
+    expect((await createGooglePlacesClient(KEY).getDetails('p1')).location).toBeNull();
+  });
+
   test('thiếu giờ/điện thoại → [] / null', async () => {
     mockFetch({ id: 'p1', displayName: { text: 'A' } });
     const d = await createGooglePlacesClient(KEY).getDetails('p1');

@@ -11,7 +11,7 @@ vi.mock('@/shared/config/env', () => ({ getEnv: () => ({ PLACES_TTL_SEC: 86400 }
 const LOCAL_ID = '11111111-1111-4111-8111-111111111111';
 const details: PlaceDetails = {
   googlePlaceId: 'g1', name: 'Chè Hường', address: 'Số 1', rating: 4.6, reviewCount: 120, priceTier: 1, openNow: true, mapsUrl: 'u',
-  weekdayHours: ['Thứ Hai: 08:00 - 22:00'], phone: null,
+  weekdayHours: ['Thứ Hai: 08:00 - 22:00'], phone: null, location: null,
 };
 const place = (over: Partial<Place>): Place => ({
   id: LOCAL_ID, group_id: 'G', google_place_id: null, name: 'Quán nhà', city: 'Hải Phòng', city_norm: 'hai phong', address: null,

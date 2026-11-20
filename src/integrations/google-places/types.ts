@@ -12,9 +12,16 @@ export interface PlaceCandidate {
   mapsUrl: string;
 }
 
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
+
 export interface PlaceDetails extends PlaceCandidate {
   weekdayHours: string[];
   phone: string | null;
+  /** null khi Google không trả tọa độ (hoặc bản cache cũ trước khi có trường này). Chỉ giữ ở cache, không ghi Postgres. */
+  location: LatLng | null;
 }
 
 export interface PlacesClient {

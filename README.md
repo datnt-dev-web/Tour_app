@@ -23,7 +23,7 @@ Supabase vẫn để `enable_signup = true` vì OAuth và OTP cần tạo user m
 
 ## Chạy app
 
-Biến môi trường: xem `.env.example` (Supabase URL/anon/service role, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY`, Upstash tùy chọn ở dev, `BOOTSTRAP_OWNER_EMAILS`, giới hạn AI và TTL cache). Sao chép thành `.env.local`; với Supabase local lấy khóa từ `npx supabase status`.
+Biến môi trường: xem `.env.example` (Supabase URL/anon/service role, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` và `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` (bản đồ chuyến), Upstash tùy chọn ở dev, `BOOTSTRAP_OWNER_EMAILS`, giới hạn AI và TTL cache). Sao chép thành `.env.local`; với Supabase local lấy khóa từ `npx supabase status`.
 
 ```bash
 npm install
@@ -46,6 +46,10 @@ Script tạo user nếu chưa có, cho vào nhóm "Con lợn nhựa", seed Hải
 ### Bật Google OAuth
 
 Tạo OAuth client loại Web trong Google Cloud Console, thêm `<supabase-url>/auth/v1/callback` vào Authorized redirect URIs. Local: đặt `SUPABASE_AUTH_GOOGLE_CLIENT_ID`, `SUPABASE_AUTH_GOOGLE_SECRET` trước `supabase start`. Cloud: bật provider Google trong Dashboard (xem mục cấu hình ở trên).
+
+## Bản đồ chuyến
+
+Tab "Bản đồ" của chuyến dùng Google Maps JavaScript. `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` là khóa trình duyệt (lộ ra client), nên phải tạo khóa riêng trong Google Cloud Console, giới hạn theo HTTP referrer (domain production và `localhost`) và chỉ bật Maps JavaScript API. Tọa độ lấy ở server (Places Details và Geocoding API, dùng `GOOGLE_PLACES_API_KEY`, cần bật thêm Geocoding API) và chỉ cache ở Redis, không ghi vào Postgres.
 
 ## Lệnh kiểm tra
 

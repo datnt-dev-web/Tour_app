@@ -2,17 +2,27 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Search, Trash2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { CATEGORY_LABELS, placeKeyOf, STORED_CATEGORIES } from '@/features/places/constants';
 import { Badge } from '@/shared/ui/badge';
 import { staggerStyle } from '@/shared/ui/stagger';
 import { Chip } from '@/shared/ui/chip';
+import { Skeleton } from '@/shared/ui/skeleton';
 import { STATUS_LABELS, STATUS_TONES, TAB_STATUSES, TRIP_PLACE_STATUSES, TRIP_TABS, type TripTab } from '../constants';
 import type { TripDetail, TripPlaceItem } from '../repositories/trips-repo';
 import { dateRange } from './home-screen';
 import { tripQuery } from './trip-queries';
+import { parseTripView, TRIP_VIEWS, tripViewHref } from './trip-view';
 import { useRemoveFromTrip, useSetStatus } from './use-trip-mutations';
+
+// Tải lười để thư viện bản đồ không nằm trong bundle đầu của trang chuyến (LCP).
+const TripMap = dynamic(() => import('./trip-map'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[max(420px,calc(100dvh-24rem))]" />,
+});
 
 function PlaceRow({ index, tripId, item, onStatus, onRemove }: { index: number; tripId: string; item: TripPlaceItem; onStatus: (s: TripPlaceItem['status']) => void; onRemove: () => void }) {
   return (
@@ -59,6 +69,9 @@ function PlaceRow({ index, tripId, item, onStatus, onRemove }: { index: number; 
 
 export function TripScreen({ tripId, initialData }: { tripId: string; initialData: TripDetail }) {
   const [tab, setTab] = useState<TripTab>('all');
+  const router = useRouter();
+  const pathname = usePathname();
+  const view = parseTripView(useSearchParams().get('view'));
   const { data } = useQuery({ ...tripQuery(tripId), initialData });
   const setStatus = useSetStatus(tripId);
   const remove = useRemoveFromTrip(tripId);
@@ -84,6 +97,20 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
         </p>
       </header>
 
+      <div className="flex rounded border border-line bg-white p-1" role="group" aria-label="Kiểu hiển thị">
+        {TRIP_VIEWS.map((v) => (
+          <button
+            key={v.value}
+            type="button"
+            aria-pressed={view === v.value}
+            onClick={() => router.push(tripViewHref(pathname, v.value), { scroll: false })}
+            className={`min-h-11 flex-1 rounded-sm text-sm font-semibold pressable ${view === v.value ? 'bg-accent text-white' : 'text-ink hover:bg-surface'}`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex gap-2" role="group" aria-label="Lọc theo trạng thái">
         {TRIP_TABS.map((t) => (
           <Chip key={t.value} selected={tab === t.value} onClick={() => setTab(t.value)}>
@@ -98,7 +125,9 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
         </p>
       )}
 
-      {groups.length === 0 ? (
+      {view === 'map' ? (
+        <TripMap tripId={tripId} tab={tab} />
+      ) : groups.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted">Chưa có chỗ nào ở đây. Bấm &quot;Tìm thêm&quot; để thêm chỗ.</p>
       ) : (
         groups.map(({ category, rows }) => (
@@ -122,15 +151,17 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
         ))
       )}
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+16px)] mx-auto flex max-w-[480px] justify-end px-4">
-        <Link
-          href={exploreHref}
-          className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded bg-accent px-5 text-sm font-semibold text-white pressable shadow-md hover:bg-accent-strong"
-        >
-          <Search size={18} aria-hidden />
-          Tìm thêm
-        </Link>
-      </div>
+      {view === 'list' && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+16px)] mx-auto flex max-w-[480px] justify-end px-4">
+          <Link
+            href={exploreHref}
+            className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded bg-accent px-5 text-sm font-semibold text-white pressable shadow-md hover:bg-accent-strong"
+          >
+            <Search size={18} aria-hidden />
+            Tìm thêm
+          </Link>
+        </div>
+      )}
     </main>
   );
 }
