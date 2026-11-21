@@ -1,0 +1,8 @@
+# Không đẩy lên Vercel khi deploy từ máy (CLI): biến môi trường lấy trên Vercel, không từ file.
+.env*
+!.env.example
+graphify-out
+.superpowers
+assets
+supabase/.temp
+supabase/.branches
