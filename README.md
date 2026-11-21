@@ -51,11 +51,13 @@ npx vitest run && npm run test:db && npm run typecheck && npm run lint && npm ru
 
 ## PWA
 
-`src/app/manifest.ts` + `public/sw.js` (đăng ký bởi `src/shared/pwa/register-sw.tsx`, chỉ production). Service worker viết tay vì `@serwist/next` dựa trên webpack, không hợp build Turbopack của Next 16. Chiến lược: precache icon/manifest; StaleWhileRevalidate cho `/_next/static` và font; NetworkFirst (timeout 3s) cho trang; không cache `/api/*` và `/auth/*`. Icon sinh bằng `node scripts/make-icons.mjs`.
+`src/app/manifest.ts` + `public/sw.js` (đăng ký bởi `src/shared/pwa/register-sw.tsx`, chỉ production). Service worker viết tay vì `@serwist/next` dựa trên webpack, không hợp build Turbopack của Next 16. Chiến lược: precache icon/manifest; StaleWhileRevalidate cho `/_next/static` và font; NetworkFirst (timeout 3s) cho trang; không cache `/api/*` và `/auth/*`. Icon sinh bằng `node scripts/make-icons.mjs` từ ảnh gốc `assets/main-icon.jpg` (ra icon PWA, `src/app/favicon.ico`, `src/app/apple-icon.png` và emblem màn login); đổi icon thì thay ảnh gốc rồi chạy lại.
 
 ## Hiệu năng (Lighthouse mobile, bản `npm start`, máy dev)
 
-LCP: `/login` 1.6 s, `/` 2.1 s (có phiên, điểm 0.74 ở lần đo cuối, 1.9 s ở lần đo trước), `/explore` 1.9 s. Đã tắt preload font (10 file woff2) để giảm LCP của `/login` từ 2.4 s xuống 1.6 s. Số đo dao động giữa các lần chạy.
+Đo 21/11/2026 (đã đăng nhập, trừ `/login`): `/login` LCP 1.8–2.0 s, 350 KB (chỉ dùng font Be Vietnam Pro); `/` 0.92, LCP 1.6 s; `/trips/[id]` 0.79, LCP 1.5 s, TBT 840 ms; `/info` và `/explore` 0.87–0.88, LCP 2.8 s (đo khi màn chờ còn 1 giây; nay đã rút còn 0,4 giây). TTFB thật trên Vercel khoảng 0.2–0.3 s khi server đã ấm, 1.5–1.8 s lần khởi động nguội. Số đo dao động giữa các lần chạy.
+
+Lưu ý khi viết code: client component không được import giá trị (không chỉ type) từ file có `node:crypto`/module Node, vì bundler sẽ kéo polyfill (~140 KB gzip) vào trình duyệt. Hằng số dùng chung đặt ở `features/*/constants.ts`.
 
 ## Lỗ hổng đã biết
 

@@ -5,7 +5,7 @@
  * - Ô bản đồ OpenStreetMap: CacheFirst, giữ tối đa MAX_TILES ô (vùng đã xem vẫn hiện khi mất sóng).
  * - Trang chưa từng mở lúc offline: trả trang /offline đã lưu sẵn.
  * - /api/* và mọi request không phải GET: không bao giờ cache. */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const SHELL = `ft-shell-${VERSION}`;
 const STATIC = `ft-static-${VERSION}`;
 const PAGES = `ft-pages-${VERSION}`;

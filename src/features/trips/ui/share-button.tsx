@@ -8,7 +8,7 @@ import { formatDayMonth } from '@/shared/date';
 import { queryKeys } from '@/shared/query/keys';
 import { Button } from '@/shared/ui/button';
 import { createShareLinkAction, revokeShareLinkAction } from '../actions/share-actions';
-import { SHARE_TTL_DAYS } from '../services/share';
+import { SHARE_TTL_DAYS } from '../constants';
 import type { Trip } from '../repositories/trips-repo';
 
 const linkOf = (token: string) => `${window.location.origin}/s/${token}`;

@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import { generateShareToken, loadSharedTrip, SHARE_TTL_DAYS, shareExpiry } from '@/features/trips/services/share';
+import { SHARE_TTL_DAYS } from '@/features/trips/constants';
+import { generateShareToken, loadSharedTrip, shareExpiry } from '@/features/trips/services/share';
 
 describe('share token', () => {
   test('ngẫu nhiên, an toàn cho URL, đủ dài để không đoán được', () => {

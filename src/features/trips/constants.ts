@@ -45,3 +45,7 @@ export const TAB_STATUSES: Record<TripTab, TripPlaceStatus[]> = {
   confirmed: ['confirmed', 'visited'],
   wanted: ['wanted'],
 };
+
+/** Link xem lịch trình tự hết hạn sau ngần này ngày (chia sẻ xong chuyến là thôi).
+ *  Để ở đây chứ không ở services/share.ts: file đó dùng node:crypto, client import vào sẽ kéo theo polyfill crypto ~140 KB. */
+export const SHARE_TTL_DAYS = 30;

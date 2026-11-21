@@ -1,7 +1,6 @@
 import { randomBytes } from 'node:crypto';
+import { SHARE_TTL_DAYS } from '../constants';
 
-/** Link xem lịch trình tự hết hạn sau ngần này ngày (chia sẻ xong chuyến là thôi). */
-export const SHARE_TTL_DAYS = 30;
 const TOKEN_BYTES = 32;
 /** base64url của 32 byte = 43 ký tự. */
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;

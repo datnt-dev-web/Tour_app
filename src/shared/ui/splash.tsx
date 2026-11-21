@@ -1,7 +1,7 @@
 import Image from 'next/image';
 
 /**
- * Màn chờ ~1 giây mỗi lần mở web (tải trang đầy đủ). Có sẵn trong HTML từ server và tự ẩn bằng CSS
+ * Màn chờ ~0,4 giây mỗi lần mở web (tải trang đầy đủ). Có sẵn trong HTML từ server và tự ẩn bằng CSS
  * (`.splash`), không cần JS, nên không nháy nội dung trước khi hiện. Điều hướng trong app không hiện lại.
  */
 export function Splash() {

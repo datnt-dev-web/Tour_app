@@ -182,7 +182,7 @@ textarea {
   animation: sheet-up var(--dur-enter) var(--ease-out) both;
 }
 
-/* Màn chờ: hiện 1 giây rồi mờ dần và ẩn hẳn (visibility để không chặn bấm). Không cần JS. */
+/* Màn chờ: hiện 0,4 giây rồi mờ dần và ẩn hẳn (visibility để không chặn bấm). Không cần JS. */
 @keyframes splash-out {
   to {
     opacity: 0;
@@ -190,7 +190,7 @@ textarea {
   }
 }
 .splash {
-  animation: splash-out 320ms var(--ease-out) 1s forwards;
+  animation: splash-out 320ms var(--ease-out) 0.4s forwards;
 }
 
 /* Meme góc dưới: ngoi lên kiểu lò xo (vượt nhẹ rồi về chỗ, nghiêng theo đà), lặn xuống nhanh và gọn. */
@@ -253,6 +253,145 @@ textarea {
   animation: shimmer 1.2s linear infinite;
 }
 
+/* Màn login: rèm nhung đen tách đôi, khung gai bạc "thắp sáng", rồi chữ và form hiện ra.
+   --login-delay chờ màn chờ (splash 0,4 giây) tắt, để lúc trang hiện rèm mới bắt đầu mở. */
+.login-scene {
+  --login-delay: 0.4s;
+}
+@keyframes login-curtain-l {
+  25% {
+    transform: translateX(-4%);
+  }
+  to {
+    transform: translateX(-102%) scaleX(0.55) skewY(-6deg);
+  }
+}
+@keyframes login-curtain-r {
+  25% {
+    transform: translateX(4%);
+  }
+  to {
+    transform: translateX(102%) scaleX(0.55) skewY(6deg);
+  }
+}
+@keyframes login-seam {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.2);
+  }
+  40% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes login-ignite {
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+    filter: brightness(2.4) blur(6px);
+  }
+  60% {
+    opacity: 1;
+    filter: brightness(1.4) blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes login-glint {
+  0%,
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+  90% {
+    opacity: 0;
+    transform: scale(0.4) rotate(90deg);
+  }
+}
+@keyframes login-ripple {
+  0% {
+    opacity: 0;
+    transform: translateY(-50%) scaleY(0.16) scale(0.2);
+  }
+  15% {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-50%) scaleY(0.16) scale(1.5);
+  }
+}
+@keyframes login-dust {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  20% {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-140px);
+  }
+}
+.login-curtain-l {
+  transform-origin: 0 0;
+  animation: login-curtain-l 1.7s cubic-bezier(0.7, 0, 0.2, 1) calc(var(--login-delay) + 0.35s) both;
+}
+.login-curtain-r {
+  transform-origin: 100% 0;
+  animation: login-curtain-r 1.7s cubic-bezier(0.7, 0, 0.2, 1) calc(var(--login-delay) + 0.35s) both;
+}
+.login-seam {
+  animation: login-seam 1s ease-out var(--login-delay) both;
+}
+.login-stage {
+  animation: login-ignite 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--login-delay) + 0.95s) both;
+}
+.login-rise {
+  animation: login-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--login-delay) + 1.8s + var(--rise-step, 0s)) both;
+}
+.login-glint {
+  opacity: 0;
+  animation: login-glint 4.2s ease-in-out infinite;
+}
+.login-ripple {
+  opacity: 0;
+  border-radius: 50%;
+  border: 1px solid rgb(235 235 245 / 0.55);
+  animation: login-ripple 5s ease-out infinite;
+}
+.login-dust {
+  opacity: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px #fff;
+  animation: login-dust linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
@@ -260,5 +399,14 @@ textarea {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  /* Rèm không chờ splash; vệt sáng và bụi chỉ để trang trí nên ẩn hẳn. */
+  .login-scene * {
+    animation-delay: 0s !important;
+  }
+  .login-glint,
+  .login-ripple,
+  .login-dust {
+    display: none;
   }
 }

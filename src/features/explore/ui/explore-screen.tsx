@@ -28,18 +28,20 @@ import { pickBookForExplore } from '../services/nearby-service';
 const AddToTripSheet = dynamic(() => import('@/features/trips/ui/add-to-trip-sheet').then((m) => m.AddToTripSheet), { ssr: false });
 
 const CITY_DEBOUNCE_MS = 400;
+// Một ký tự ("H") chưa phải tên thành phố: không tốn một lượt geocode + Overpass cho nó.
+const MIN_CITY_CHARS = 2;
 const SKELETON_COUNT = 4;
 const BOOK_LIMIT = 6;
 
 type Mode = { kind: 'city' } | { kind: 'near'; lat: number; lng: number };
 
-async function fetchNearby(category: StoredPlaceCategory, mode: Mode, city: string): Promise<ExploreNearbyResult> {
+async function fetchNearby(category: StoredPlaceCategory, mode: Mode, city: string, signal: AbortSignal): Promise<ExploreNearbyResult> {
   const qs = new URLSearchParams({ category });
   if (mode.kind === 'near') {
     qs.set('lat', String(mode.lat));
     qs.set('lng', String(mode.lng));
   } else qs.set('city', city);
-  const res = await fetch(`/api/explore?${qs}`);
+  const res = await fetch(`/api/explore?${qs}`, { signal });
   const body = (await res.json().catch(() => null)) as (ExploreNearbyResult & { error?: { message?: string } }) | null;
   if (res.ok && body) return body;
   throw new Error(body?.error?.message ?? 'Không tải được dữ liệu bản đồ, thử lại sau.');
@@ -58,10 +60,12 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
   // Làm tròn vị trí (~100 m) để đi lại vài bước không bắn truy vấn mới.
   const modeKey = mode.kind === 'near' ? `${mode.lat.toFixed(3)},${mode.lng.toFixed(3)}` : city;
 
+  const searching = nearMe || city.length >= MIN_CITY_CHARS;
+
   const nearby = useQuery({
     queryKey: queryKeys.explore({ category, modeKey }),
-    queryFn: () => fetchNearby(category, mode, city),
-    enabled: nearMe || city !== '',
+    queryFn: ({ signal }) => fetchNearby(category, mode, city, signal),
+    enabled: searching,
     placeholderData: keepPreviousData,
     retry: 1,
   });
@@ -152,10 +156,10 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
       )}
 
       <section aria-live="polite" className="flex flex-col gap-2">
-        {(nearMe || city) && (
+        {searching && (
           <h2 className="text-sm font-bold uppercase tracking-wide text-muted">{nearMe ? 'Quanh đây' : `Ở ${city}`}</h2>
         )}
-        {!nearMe && !city ? (
+        {!searching ? (
           <p className="py-8 text-center text-sm text-muted">Nhập thành phố hoặc bấm “Gần tôi” để tìm quán quanh bạn.</p>
         ) : nearby.isError ? (
           <p className="py-8 text-center text-sm text-bad">{nearby.error.message}</p>

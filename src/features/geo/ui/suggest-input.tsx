@@ -12,10 +12,10 @@ import { MIN_SUGGEST_CHARS } from '../constants';
 export const SUGGEST_DEBOUNCE_MS = 300;
 const SUGGEST_STALE_MS = 5 * 60 * 1000;
 
-async function fetchSuggestions(kind: SuggestKind, q: string, city?: string): Promise<GeoSuggestion[]> {
+async function fetchSuggestions(kind: SuggestKind, q: string, city: string | undefined, signal: AbortSignal): Promise<GeoSuggestion[]> {
   const qs = new URLSearchParams({ q, kind });
   if (city) qs.set('city', city);
-  const res = await fetch(`/api/geo/suggest?${qs}`);
+  const res = await fetch(`/api/geo/suggest?${qs}`, { signal });
   if (!res.ok) throw new Error('suggest failed');
   return ((await res.json()) as { suggestions: GeoSuggestion[] }).suggestions;
 }
@@ -41,7 +41,8 @@ export function SuggestInput({ value, onChange, kind, city, onPick, wrapperClass
 
   const { data = [] } = useQuery({
     queryKey: queryKeys.geoSuggest(kind, q, city),
-    queryFn: () => fetchSuggestions(kind, q, city),
+    // signal: gõ tiếp thì React Query hủy request cũ thay vì để nó chạy hết.
+    queryFn: ({ signal }) => fetchSuggestions(kind, q, city, signal),
     enabled: open && q.length >= MIN_SUGGEST_CHARS,
     staleTime: SUGGEST_STALE_MS,
     placeholderData: keepPreviousData,
