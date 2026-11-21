@@ -1,40 +1,41 @@
 import { z } from 'zod';
-import { requireGroup } from '@/features/ai/server/ai-request';
-import { exploreSearch } from '@/features/explore/services/explore-service';
-import { createGooglePlacesClient } from '@/integrations/google-places/client';
-import { getEnv } from '@/shared/config/env';
+import { appErrorResponse, errorResponse, requireGroup } from '@/features/ai/server/ai-request';
+import { exploreNearby } from '@/features/explore/services/nearby-service';
+import { STORED_CATEGORIES } from '@/features/places/constants';
+import { createNominatimClient } from '@/integrations/nominatim/client';
+import { createOverpassClient } from '@/integrations/overpass/client';
 import { getCacheStore } from '@/shared/cache/get-cache-store';
-import { AppError } from '@/shared/errors';
+import { getEnv } from '@/shared/config/env';
 
-const querySchema = z.object({
-  city: z.string().trim().min(1).max(100),
-  category: z.enum(['food', 'snack', 'cafe', 'play', 'stay']),
-  price: z.coerce.number().int().min(1).max(3).optional(),
-  minReviews: z.coerce.number().int().min(0).optional(),
-});
+// Overpass có thể chậm vài giây khi máy chủ bận.
+export const maxDuration = 30;
 
-const errorResponse = (code: string, message: string, status: number) =>
-  Response.json({ error: { code, message } }, { status });
+const querySchema = z
+  .object({
+    category: z.enum(STORED_CATEGORIES),
+    city: z.string().trim().min(1).max(100).optional(),
+    lat: z.coerce.number().min(-90).max(90).optional(),
+    lng: z.coerce.number().min(-180).max(180).optional(),
+  })
+  .refine((q) => q.city || (q.lat !== undefined && q.lng !== undefined));
 
+/** Khám phá: chỗ trên OpenStreetMap quanh vị trí (lat,lng) hoặc trung tâm thành phố. */
 export async function GET(request: Request) {
-  // Chỉ thành viên nhóm mới được tiêu quota Google (người lạ tự đăng ký vẫn có phiên).
   const auth = await requireGroup();
   if (auth instanceof Response) return auth;
 
-  const raw = Object.fromEntries(new URL(request.url).searchParams);
-  // Tham số rỗng (vd. price=) coi như không truyền.
-  const parsed = querySchema.safeParse(Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== '')));
+  const raw = Object.fromEntries([...new URL(request.url).searchParams].filter(([, v]) => v !== ''));
+  const parsed = querySchema.safeParse(raw);
   if (!parsed.success) return errorResponse('INVALID_QUERY', 'Tham số tìm kiếm không hợp lệ.', 400);
-  const { city, category, price, minReviews } = parsed.data;
+  const { category, city, lat, lng } = parsed.data;
 
   try {
-    const results = await exploreSearch(
-      { places: createGooglePlacesClient(getEnv().GOOGLE_PLACES_API_KEY), cache: getCacheStore() },
-      { city, category, priceTier: price as 1 | 2 | 3 | undefined, minReviews },
+    const result = await exploreNearby(
+      { osm: createOverpassClient({ url: getEnv().OVERPASS_API_URL }), geocoder: createNominatimClient(), cache: getCacheStore() },
+      { category, ...(lat !== undefined && lng !== undefined ? { at: { lat, lng } } : { city }) },
     );
-    return Response.json({ results }, { headers: { 'Cache-Control': 'private, max-age=60' } });
+    return Response.json(result, { headers: { 'Cache-Control': 'private, max-age=60' } });
   } catch (e) {
-    if (e instanceof AppError) return errorResponse(e.code, e.message, 502);
-    throw e;
+    return appErrorResponse(e);
   }
 }
