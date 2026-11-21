@@ -2,7 +2,13 @@ import type { PlaceCandidate, PlacesClient } from '@/integrations/google-places/
 import { hasRealAddress } from '@/features/places/constants';
 import { createPlacesRepo, type StoredPlaceCategory } from '@/features/places/repositories/places-repo';
 import type { ReviewVerdict } from '@/features/places/repositories/reviews-repo';
-import { createTripsRepo, type TripPlaceStatus } from '@/features/trips/repositories/trips-repo';
+import {
+  createTripsRepo,
+  type TripPlace,
+  type TripPlacePatch,
+  type TripPlaceStatus,
+  type VisitSchedule,
+} from '@/features/trips/repositories/trips-repo';
 import type { Db } from '@/shared/supabase/db';
 import { normalizeText } from '@/shared/text';
 
@@ -13,13 +19,22 @@ export interface SeedPlace {
   status: 'confirmed' | 'wanted' | null;
   verdict: ReviewVerdict | null;
   note: string;
+  /** Khung giờ, cách đi và tổng tiền cả nhóm (VND) theo bảng kế hoạch; chỉ dùng khi chỗ có trong chuyến (status khác null). */
+  schedule?: VisitSchedule;
+  transport?: string;
+  cost?: number;
 }
 export interface SeedTrip {
   name: string;
   city: string;
   startDate: string;
   endDate: string;
+  partySize?: number;
   places: SeedPlace[];
+  /** Chi phí không gắn với chỗ nào (vé tàu...), nhận diện theo label. */
+  expenses?: { label: string; amount: number }[];
+  /** Ghi chú ở tab "Thông tin", nhận diện theo title. */
+  notes?: { title: string; body: string }[];
 }
 export interface SeedResult {
   created: number;
@@ -48,8 +63,19 @@ export interface SeedDeps {
     city: string;
     category: StoredPlaceCategory;
   }): Promise<{ id: string }>;
-  addPlaceToTrip(tripId: string, placeId: string, userId: string, note: string): Promise<{ id: string; status: string }>;
+  addPlaceToTrip(
+    tripId: string,
+    placeId: string,
+    userId: string,
+    note: string,
+  ): Promise<Pick<TripPlace, 'id' | 'status' | 'visit_date' | 'transport' | 'cost'>>;
   setTripPlaceStatus(tripPlaceId: string, status: TripPlaceStatus): Promise<void>;
+  updateTripPlace(tripPlaceId: string, patch: TripPlacePatch): Promise<void>;
+  setPartySize(tripId: string, partySize: number): Promise<void>;
+  listExpenseLabels(tripId: string): Promise<string[]>;
+  addExpense(i: { tripId: string; userId: string; label: string; amount: number }): Promise<void>;
+  listNoteTitles(tripId: string): Promise<string[]>;
+  addNote(i: { tripId: string; userId: string; title: string; body: string }): Promise<void>;
   hasReview(placeId: string, userId: string, verdict: ReviewVerdict): Promise<boolean>;
   addReview(i: { placeId: string; userId: string; verdict: ReviewVerdict; note: string }): Promise<void>;
 }
@@ -58,9 +84,12 @@ export async function seedTrip(
   deps: SeedDeps,
   { groupId, userId, data }: { groupId: string; userId: string; data: SeedTrip },
 ): Promise<SeedResult> {
+  const existingTrip = await deps.findTrip(groupId, data.name, data.startDate);
   const trip =
-    (await deps.findTrip(groupId, data.name, data.startDate)) ??
+    existingTrip ??
     (await deps.createTrip({ groupId, name: data.name, city: data.city, startDate: data.startDate, endDate: data.endDate }));
+  // Chuyến đã có thì giữ số người nhóm đã chỉnh.
+  if (!existingTrip && data.partySize) await deps.setPartySize(trip.id, data.partySize);
   const result: SeedResult = { created: 0, verified: 0, unverified: 0 };
   const cityNorm = normalizeText(data.city);
 
@@ -86,10 +115,26 @@ export async function seedTrip(
       const tp = await deps.addPlaceToTrip(trip.id, placeId, userId, p.note);
       // Chỉ nâng trạng thái khi dòng còn ở mặc định; không đè lựa chọn nhóm đã đổi sau đó.
       if (p.status !== 'wanted' && tp.status === 'wanted') await deps.setTripPlaceStatus(tp.id, p.status);
+      // Tương tự: chỉ điền ô còn trống, không đè giờ/cách đi/giá nhóm đã sửa trong app.
+      const patch: TripPlacePatch = {
+        ...(p.schedule && tp.visit_date === null && { schedule: p.schedule }),
+        ...(p.transport && tp.transport === null && { transport: p.transport }),
+        ...(p.cost !== undefined && tp.cost === null && { cost: p.cost }),
+      };
+      if (Object.keys(patch).length > 0) await deps.updateTripPlace(tp.id, patch);
     }
     if (p.verdict && !(await deps.hasReview(placeId, userId, p.verdict))) {
       await deps.addReview({ placeId, userId, verdict: p.verdict, note: p.note });
     }
+  }
+
+  const labels = new Set(await deps.listExpenseLabels(trip.id));
+  for (const e of data.expenses ?? []) {
+    if (!labels.has(e.label)) await deps.addExpense({ tripId: trip.id, userId, ...e });
+  }
+  const titles = new Set(await deps.listNoteTitles(trip.id));
+  for (const n of data.notes ?? []) {
+    if (!titles.has(n.title)) await deps.addNote({ tripId: trip.id, userId, ...n });
   }
   return result;
 }
@@ -120,6 +165,21 @@ export function createSeedDeps(db: Db, places: PlacesClient | null): SeedDeps {
     createLocalPlace: (i) => placesRepo.createLocalPlace(i),
     addPlaceToTrip: (tripId, placeId, userId, note) => tripsRepo.addPlaceToTrip(tripId, placeId, userId, note || undefined),
     setTripPlaceStatus: (id, status) => tripsRepo.setTripPlaceStatus(id, status),
+    updateTripPlace: (id, patch) => tripsRepo.updateTripPlace(id, patch),
+    setPartySize: (tripId, n) => tripsRepo.setPartySize(tripId, n),
+    async listExpenseLabels(tripId) {
+      return mustData(await db.from('trip_expenses').select('label').eq('trip_id', tripId)).map((r) => r.label);
+    },
+    async addExpense({ tripId, userId, label, amount }) {
+      // Repo lấy người tạo từ phiên (default auth.uid()); seed chạy bằng admin nên ghi thẳng created_by.
+      must(await db.from('trip_expenses').insert({ trip_id: tripId, label, amount, created_by: userId }));
+    },
+    async listNoteTitles(tripId) {
+      return mustData(await db.from('trip_infos').select('title').eq('trip_id', tripId)).map((r) => r.title);
+    },
+    async addNote({ tripId, userId, title, body }) {
+      must(await db.from('trip_infos').insert({ trip_id: tripId, kind: 'note', title, body, created_by: userId }));
+    },
     async hasReview(placeId, userId, verdict) {
       const rows = mustData(await db.from('place_reviews_internal').select('id').eq('place_id', placeId).eq('user_id', userId).eq('verdict', verdict).limit(1));
       return rows.length > 0;

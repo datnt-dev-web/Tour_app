@@ -39,4 +39,13 @@ test('seed Hải Phòng 2 lần: 17 chỗ, 14 trip_places, không nhân đôi', 
   expect(after1[0]).toBeGreaterThanOrEqual(17);
   const { count } = await admin.from('places').select('*', { count: 'exact', head: true }).eq('group_id', groupId);
   expect(count).toBe(17);
+
+  const trip = (await admin.from('trips').select('id, party_size').eq('group_id', groupId).single()).data!;
+  expect(trip.party_size).toBe(4);
+  const tps = (await admin.from('trip_places').select('cost, visit_date').eq('trip_id', trip.id)).data!;
+  expect(tps).toHaveLength(14);
+  expect(tps.reduce((s, r) => s + (r.cost ?? 0), 0)).toBe(660000);
+  expect(tps.every((r) => r.visit_date !== null)).toBe(true);
+  expect((await admin.from('trip_expenses').select('amount').eq('trip_id', trip.id)).data).toEqual([{ amount: 1062000 }]);
+  expect((await admin.from('trip_infos').select('id').eq('trip_id', trip.id)).data).toHaveLength(3);
 });

@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { seedTrip, type SeedDeps, type SeedTrip } from '@/features/places/services/seed-service';
 import { normalizeText } from '@/shared/text';
 import type { PlaceCandidate } from '@/integrations/google-places/types';
+import type { TripPlaceStatus } from '@/features/trips/repositories/trips-repo';
 
 const data: SeedTrip = {
   name: 'Hải Phòng',
@@ -21,7 +22,19 @@ const ids = { groupId: 'g1', userId: 'u1' };
 function fakeDeps(search: (q: string) => PlaceCandidate | null = () => null) {
   const places: { id: string; googleId: string | null; name: string; verified: boolean }[] = [];
   const trips: { id: string; name: string; startDate: string }[] = [];
-  const tripPlaces: { id: string; tripId: string; placeId: string; status: string }[] = [];
+  type FakeTripPlace = {
+    id: string;
+    tripId: string;
+    placeId: string;
+    status: TripPlaceStatus;
+    visit_date: string | null;
+    transport: string | null;
+    cost: number | null;
+  };
+  const tripPlaces: FakeTripPlace[] = [];
+  const partySizes = new Map<string, number>();
+  const expenses: { tripId: string; label: string; amount: number }[] = [];
+  const notes: { tripId: string; title: string; body: string }[] = [];
   const reviews: { placeId: string; verdict: string; note: string }[] = [];
   let n = 0;
   const searchOne = vi.fn(async (q: string) => search(q));
@@ -49,16 +62,27 @@ function fakeDeps(search: (q: string) => PlaceCandidate | null = () => null) {
     },
     addPlaceToTrip: async (tripId, placeId) => {
       let tp = tripPlaces.find((x) => x.tripId === tripId && x.placeId === placeId);
-      if (!tp) tripPlaces.push((tp = { id: `tp${++n}`, tripId, placeId, status: 'wanted' }));
-      return { id: tp.id, status: tp.status };
+      if (!tp) tripPlaces.push((tp = { id: `tp${++n}`, tripId, placeId, status: 'wanted', visit_date: null, transport: null, cost: null }));
+      return { ...tp };
     },
+    updateTripPlace: async (id, { schedule, transport, cost }) => {
+      const tp = tripPlaces.find((x) => x.id === id)!;
+      if (schedule !== undefined) tp.visit_date = schedule?.date ?? null;
+      if (transport !== undefined) tp.transport = transport;
+      if (cost !== undefined) tp.cost = cost;
+    },
+    setPartySize: async (tripId, size) => void partySizes.set(tripId, size),
+    listExpenseLabels: async (tripId) => expenses.filter((e) => e.tripId === tripId).map((e) => e.label),
+    addExpense: async ({ tripId, label, amount }) => void expenses.push({ tripId, label, amount }),
+    listNoteTitles: async (tripId) => notes.filter((x) => x.tripId === tripId).map((x) => x.title),
+    addNote: async ({ tripId, title, body }) => void notes.push({ tripId, title, body }),
     setTripPlaceStatus: async (id, status) => {
       tripPlaces.find((x) => x.id === id)!.status = status;
     },
     hasReview: async (placeId, _u, verdict) => reviews.some((r) => r.placeId === placeId && r.verdict === verdict),
     addReview: async (r) => void reviews.push(r),
   };
-  return { deps, places, trips, tripPlaces, reviews, searchOne };
+  return { deps, places, trips, tripPlaces, reviews, searchOne, partySizes, expenses, notes };
 }
 
 const found = (q: string): PlaceCandidate => ({
@@ -117,5 +141,35 @@ describe('seedTrip', () => {
     const f = fakeDeps();
     await seedTrip(f.deps, { ...ids, data });
     expect(f.tripPlaces.map((t) => t.status).sort()).toEqual(['confirmed', 'wanted', 'wanted']);
+  });
+
+  test('ghi giờ, cách đi, giá, số người, khoản chi và ghi chú; chạy lại không nhân đôi', async () => {
+    const f = fakeDeps();
+    const full: SeedTrip = {
+      ...data,
+      partySize: 4,
+      places: [
+        { ...data.places[0], schedule: { date: '2026-11-23', time: '08:45', endTime: '09:30' }, transport: 'xe máy thuê', cost: 100000 },
+        ...data.places.slice(1),
+      ],
+      expenses: [{ label: 'Vé tàu', amount: 1062000 }],
+      notes: [{ title: 'Tàu đi', body: '06:00' }],
+    };
+    await seedTrip(f.deps, { ...ids, data: full });
+    await seedTrip(f.deps, { ...ids, data: full });
+    expect(f.tripPlaces[0]).toMatchObject({ visit_date: '2026-11-23', transport: 'xe máy thuê', cost: 100000 });
+    expect(f.partySizes.get(f.trips[0].id)).toBe(4);
+    expect(f.expenses).toHaveLength(1);
+    expect(f.notes).toHaveLength(1);
+  });
+
+  test('không đè giờ/giá nhóm đã sửa, không đổi số người của chuyến đã có', async () => {
+    const f = fakeDeps();
+    const withCost: SeedTrip = { ...data, partySize: 4, places: [{ ...data.places[0], cost: 100000 }] };
+    await seedTrip(f.deps, { ...ids, data: { ...data, places: [data.places[0]] } });
+    f.tripPlaces[0].cost = 50000;
+    await seedTrip(f.deps, { ...ids, data: withCost });
+    expect(f.tripPlaces[0].cost).toBe(50000);
+    expect(f.partySizes.size).toBe(0);
   });
 });
