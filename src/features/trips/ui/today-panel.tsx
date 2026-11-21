@@ -15,6 +15,7 @@ import { distanceMeters, formatDistance } from './geo';
 import { tripLocationsQuery, tripStopsQuery } from './trip-queries';
 import { addressDirectionsUrl, directionsUrl } from './trip-view';
 import { useMyLocation } from './use-my-location';
+import { ReminderActions, useInAppReminder } from './reminders';
 import { useSetStatus } from './use-trip-mutations';
 import { WeatherChip } from './weather-chip';
 
@@ -47,6 +48,12 @@ export function TodayPanel({ tripId }: { tripId: string }) {
   const { data: locations } = useQuery(tripLocationsQuery(tripId));
   const { location, start } = useMyLocation();
   const setStatus = useSetStatus(tripId);
+  const nextForReminder = (() => {
+    if (!data) return null;
+    const n = planToday(data.items, now).next;
+    return n ? { id: n.stop.id, name: n.stop.place.name, minutesUntil: n.minutesUntil } : null;
+  })();
+  useInAppReminder(nextForReminder);
 
   if (isPending) return <div className="flex flex-col gap-3">{Array.from({ length: SKELETON_ROWS }, (_, i) => <Skeleton key={i} className="h-24" />)}</div>;
   if (isError) return <p className="py-8 text-center text-sm text-bad">Không tải được lịch hôm nay, thử lại sau.</p>;
@@ -69,7 +76,10 @@ export function TodayPanel({ tripId }: { tripId: string }) {
 
   return (
     <section className="flex flex-col gap-4" aria-label="Lịch hôm nay">
-      <WeatherChip tripId={tripId} date={today} className="self-end text-sm text-ink" />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <ReminderActions tripId={tripId} />
+        <WeatherChip tripId={tripId} date={today} className="text-sm text-ink" />
+      </div>
       {focus ? (
         <article className="flex flex-col gap-3 rounded bg-deep p-4 text-white">
           <div className="flex items-center justify-between gap-2">
