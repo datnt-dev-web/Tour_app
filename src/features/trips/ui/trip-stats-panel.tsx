@@ -1,6 +1,7 @@
 'use client';
 
-import { Minus, Plus, Trash2, Users } from 'lucide-react';
+import Link from 'next/link';
+import { Minus, Plus, Trash2, Users, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useRef, useState, type FormEvent } from 'react';
 import { CATEGORY_LABELS } from '@/features/places/constants';
@@ -288,6 +289,11 @@ export function TripStatsPanel({
       </Card>
 
       {stats && <SettlePanel trip={info.trip} total={stats.total} />}
+
+      <Link href={`/trips/${tripId}/recap`} className="pressable flex min-h-11 items-center justify-center gap-2 rounded bg-deep text-sm font-semibold text-white">
+        <Sparkles size={18} aria-hidden />
+        Tổng kết chuyến
+      </Link>
     </div>
   );
 }
