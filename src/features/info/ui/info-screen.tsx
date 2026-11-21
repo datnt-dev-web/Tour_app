@@ -29,7 +29,18 @@ const hostOf = (url: string | null) => {
 };
 
 /** Tab Thông tin: chọn chuyến, xem/thêm/xóa ghi chú, link, tệp của chuyến đó. */
-export function InfoScreen({ trips, selectedId, uploadEnabled }: { trips: TripOption[]; selectedId: string | null; uploadEnabled: boolean }) {
+export function InfoScreen({
+  trips,
+  selectedId,
+  initialItems,
+  uploadEnabled,
+}: {
+  trips: TripOption[];
+  selectedId: string | null;
+  /** Danh sách của chuyến đang chọn, lấy ở server. */
+  initialItems: TripInfo[];
+  uploadEnabled: boolean;
+}) {
   return (
     <main className="animate-enter flex flex-col gap-4 px-2 py-4">
       <h1 className="text-xl font-extrabold">Thông tin</h1>
@@ -53,15 +64,15 @@ export function InfoScreen({ trips, selectedId, uploadEnabled }: { trips: TripOp
             ))}
           </nav>
           {/* key: đổi chuyến thì form và danh sách làm mới hẳn, không giữ chữ đang gõ của chuyến trước. */}
-          <TripInfoBoard key={selectedId} tripId={selectedId} uploadEnabled={uploadEnabled} />
+          <TripInfoBoard key={selectedId} tripId={selectedId} initialItems={initialItems} uploadEnabled={uploadEnabled} />
         </>
       )}
     </main>
   );
 }
 
-function TripInfoBoard({ tripId, uploadEnabled }: { tripId: string; uploadEnabled: boolean }) {
-  const { data, isPending, isError, error } = useQuery(tripInfosQuery(tripId));
+function TripInfoBoard({ tripId, initialItems, uploadEnabled }: { tripId: string; initialItems: TripInfo[]; uploadEnabled: boolean }) {
+  const { data, isPending, isError, error } = useQuery({ ...tripInfosQuery(tripId), initialData: initialItems });
   const remove = useRemoveInfo(tripId);
 
   return (
