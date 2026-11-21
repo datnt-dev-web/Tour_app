@@ -2,19 +2,18 @@
 
 App mobile cho nhóm bạn chọn quán ăn theo chuyến đi. Không có đăng ký: admin cấp tài khoản, người dùng chỉ nhập username để vào (không mật khẩu).
 
-## Đăng nhập bằng username + PIN
+## Đăng nhập bằng username
 
 Tài khoản cố định: `wibu` (admin, owner nhóm) và `sucvat` (thành viên), khai báo trong `scripts/seed-accounts.ts`. Các script đọc Supabase trong `.env.local` (local hoặc cloud), cần `SUPABASE_SERVICE_ROLE_KEY`:
 
 ```bash
 npm run account:seed        # tạo/cập nhật wibu + sucvat, chạy lại an toàn (cần chạy lại sau `supabase db reset`)
-npm run account:create -- --username an.vu --name "An Vũ" [--group <groupId>] [--role owner|member] [--pin 123456]
-npm run account:pin -- --username wibu [--pin 123456]   # đặt/đổi PIN; bỏ --pin thì tạo ngẫu nhiên và in ra một lần
+npm run account:create -- --username an.vu --name "An Vũ" [--group <groupId>] [--role owner|member]
 ```
 
 Username 3–32 ký tự `a-z 0-9 . _`, lưu ở `profiles.username` (người dùng không tự sửa được). User mới dùng email giả `<username>@food-tour.local`. `account:seed` đưa cả hai vào nhóm wibu đang ở, nếu chưa thì nhóm "Con lợn nhựa" (tạo mới nếu chưa có). `account:create` không có `--group` thì vào nhóm duy nhất, hoặc tạo "Con lợn nhựa" nếu chưa có nhóm nào; có nhiều nhóm thì phải truyền `--group`.
 
-Khi đăng nhập, server action tìm user theo username (phải thuộc ít nhất một nhóm) bằng service role, rồi `signInWithPassword` với PIN 6 số (PIN là mật khẩu Supabase Auth: Supabase băm và giới hạn số lần thử). Sai username hay sai PIN đều cùng một thông báo. Tài khoản chưa có PIN không đăng nhập được: chạy `account:pin`. Người dùng tự đổi PIN bằng nút "Đổi PIN" ở màn Chuyến đi.
+Khi đăng nhập, server action tìm user theo username (phải thuộc ít nhất một nhóm), tạo magic link bằng service role rồi xác thực ngay ở server để ghi phiên vào cookie, không gửi email.
 
 **Lưu ý bảo mật:** ai biết username là vào được; đừng dùng username dễ đoán.
 

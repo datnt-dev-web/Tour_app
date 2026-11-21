@@ -10,7 +10,6 @@ import { staggerStyle } from '@/shared/ui/stagger';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
-import { ChangePinButton } from '@/features/auth/ui/change-pin-button';
 import { SignOutButton } from '@/features/auth/ui/sign-out-button';
 import type { TripSummary } from '../repositories/trips-repo';
 import { isTripOngoing } from '../services/today';
@@ -99,10 +98,7 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips }: { userI
           <p className="text-sm text-muted">Nhóm</p>
           <h1 className="truncate text-xl font-extrabold">{groupName}</h1>
         </div>
-        <div className="flex shrink-0">
-          <ChangePinButton />
-          <SignOutButton userId={userId} />
-        </div>
+        <SignOutButton userId={userId} />
       </header>
 
       {upcoming.map((t, i) => (
