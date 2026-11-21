@@ -215,6 +215,58 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"group_tracks": {
+                  Row: {
+                    "artist": string | null,"created_at": string,"created_by": string | null,"duration_sec": number | null,"file_format": string | null,"file_public_id": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["track_kind"],"title": string,"youtube_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "artist"?: string | null,"created_at"?: string,"created_by"?: string | null,"duration_sec"?: number | null,"file_format"?: string | null,"file_public_id"?: string | null,"group_id": string,"id"?: string,"kind": Database["public"]['Enums']["track_kind"],"title": string,"youtube_id"?: string | null
+                  }
+                  Update: {
+                    "artist"?: string | null,"created_at"?: string,"created_by"?: string | null,"duration_sec"?: number | null,"file_format"?: string | null,"file_public_id"?: string | null,"group_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["track_kind"],"title"?: string,"youtube_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_tracks_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_tracks_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"trip_photos": {
+                  Row: {
+                    "created_at": string,"file_format": string | null,"file_public_id": string,"height": number | null,"id": string,"trip_id": string,"user_id": string | null,"width": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"file_format"?: string | null,"file_public_id": string,"height"?: number | null,"id"?: string,"trip_id": string,"user_id"?: string | null,"width"?: number | null
+                  }
+                  Update: {
+                    "created_at"?: string,"file_format"?: string | null,"file_public_id"?: string,"height"?: number | null,"id"?: string,"trip_id"?: string,"user_id"?: string | null,"width"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "trip_photos_trip_id_fkey"
+      columns: ["trip_id"]
+isOneToOne: false
+      referencedRelation: "trips"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trip_photos_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"trip_expenses": {
                   Row: {
                     "amount": number,"created_at": string,"created_by": string | null,"id": string,"label": string,"trip_id": string
@@ -386,7 +438,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "place_category": "food"|"snack"|"cafe"|"play"|"stay"|"gift","trip_info_kind": "note"|"link"|"file","trip_place_status": "wanted"|"confirmed"|"visited"|"dropped"
+            "place_category": "food"|"snack"|"cafe"|"play"|"stay"|"gift","track_kind": "file"|"youtube","trip_info_kind": "note"|"link"|"file","trip_place_status": "wanted"|"confirmed"|"visited"|"dropped"
           }
           CompositeTypes: {
             [_ in never]: never

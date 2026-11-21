@@ -21,3 +21,27 @@ export interface FileStorage {
   /** Link ảnh đã ký kèm thu nhỏ theo bề rộng (ảnh nhóm chụp, không nhạy cảm như vé: không hết hạn). */
   imageUrl(file: Pick<StoredFile, 'publicId' | 'format'>, opts: { width: number }): string;
 }
+
+/** Vé để trình duyệt tải thẳng lên Cloudinary (Vercel giới hạn body request 4,5 MB, ảnh/nhạc thường lớn hơn). */
+export interface UploadTicket {
+  url: string;
+  /** Gửi nguyên các trường này kèm `file` trong form multipart; chữ ký khóa cứng thư mục, public id và kiểu asset. */
+  fields: Record<string, string>;
+  publicId: string;
+}
+
+export interface InspectedFile extends StoredFile {
+  width: number | null;
+  height: number | null;
+  durationSec: number | null;
+  isAudio: boolean;
+}
+
+/** Tải thẳng từ trình duyệt: server ký trước, kiểm lại sau khi tải xong rồi mới ghi DB. */
+export interface DirectUploadStorage {
+  signUpload(opts: { folder: string; resourceType: 'image' | 'video' }): UploadTicket;
+  /** null nếu chưa có asset (trình duyệt chưa tải xong hoặc gửi public id bịa). */
+  inspect(publicId: string, resourceType: 'image' | 'video'): Promise<InspectedFile | null>;
+  /** Link phát âm thanh/video đã ký (asset authenticated), không hết hạn như ảnh nhóm. */
+  mediaUrl(file: Pick<StoredFile, 'publicId' | 'format'>): string;
+}

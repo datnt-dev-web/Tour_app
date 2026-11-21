@@ -1,7 +1,8 @@
 import 'server-only';
+import { randomUUID } from 'node:crypto';
 import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import { AppError } from '@/shared/errors';
-import type { FileStorage, StoredResourceType } from './types';
+import type { DirectUploadStorage, FileStorage, StoredResourceType } from './types';
 
 export interface CloudinaryConfig {
   cloudName: string;
@@ -15,7 +16,7 @@ const unavailable = () => new AppError('UPLOAD_UNAVAILABLE', 'Không tải đư�
  * Kho tệp Cloudinary. Asset kiểu `authenticated`: chỉ mở được bằng link có chữ ký do server tạo,
  * nên không duyệt/đoán được tệp của nhóm khác. Cấu hình truyền theo từng lần gọi (không đụng cấu hình toàn cục của SDK).
  */
-export function createCloudinaryStorage(cfg: CloudinaryConfig): FileStorage {
+export function createCloudinaryStorage(cfg: CloudinaryConfig): FileStorage & DirectUploadStorage {
   const auth = { cloud_name: cfg.cloudName, api_key: cfg.apiKey, api_secret: cfg.apiSecret };
   return {
     upload(data, { folder, publicId, resourceType }) {
@@ -55,6 +56,43 @@ export function createCloudinaryStorage(cfg: CloudinaryConfig): FileStorage {
         // Tự chọn định dạng/chất lượng nhẹ nhất trình duyệt đọc được; không phóng to ảnh nhỏ.
         transformation: [{ width, crop: 'limit', fetch_format: 'auto', quality: 'auto' }],
       });
+    },
+
+    signUpload({ folder, resourceType }) {
+      const publicId = randomUUID();
+      // Ký đúng các tham số trình duyệt sẽ gửi: đổi thư mục/public id/kiểu asset là chữ ký sai, Cloudinary từ chối.
+      const params = { folder, public_id: publicId, timestamp: Math.floor(Date.now() / 1000), type: 'authenticated' };
+      const signature = cloudinary.utils.api_sign_request(params, cfg.apiSecret);
+      return {
+        url: `https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/${resourceType}/upload`,
+        fields: { ...params, timestamp: String(params.timestamp), api_key: cfg.apiKey, signature },
+        publicId: `${folder}/${publicId}`,
+      };
+    },
+
+    async inspect(publicId, resourceType) {
+      try {
+        // Thời lượng và có hình/có tiếng chỉ có khi xin media_metadata (asset âm thanh/video).
+        const r = await cloudinary.api.resource(publicId, { ...auth, resource_type: resourceType, type: 'authenticated', ...(resourceType === 'video' && { media_metadata: true }) });
+        return {
+          publicId: r.public_id,
+          resourceType,
+          format: r.format ?? null,
+          bytes: r.bytes,
+          width: r.width ?? null,
+          height: r.height ?? null,
+          durationSec: typeof r.duration === 'number' ? Math.round(r.duration) : null,
+          isAudio: r.is_audio === true || (r.has_audio === true && r.has_video !== true),
+        };
+      } catch (e) {
+        if ((e as { error?: { http_code?: number } })?.error?.http_code === 404) return null;
+        console.error('[cloudinary] inspect lỗi', e);
+        throw unavailable();
+      }
+    },
+
+    mediaUrl({ publicId, format }) {
+      return cloudinary.url(publicId, { ...auth, resource_type: 'video', type: 'authenticated', sign_url: true, secure: true, ...(format ? { format } : {}) });
     },
 
     fileUrl({ publicId, resourceType, format }, { download, ttlSec, now = Date.now() }) {

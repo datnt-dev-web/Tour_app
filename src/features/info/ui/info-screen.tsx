@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download, ExternalLink, FileText, Link2, StickyNote, Trash2, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { MemoriesBoard } from '@/features/memories/ui/memories-board';
 import { Skeleton } from '@/shared/ui/skeleton';
 import type { InfoKind } from '../constants';
 import type { TripInfo } from '../repositories/infos-repo';
@@ -11,6 +12,12 @@ import { AddInfoForm } from './add-info-form';
 import { tripInfosQuery, useRemoveInfo } from './info-queries';
 
 type TripOption = { id: string; name: string; city: string };
+export type InfoSection = 'info' | 'photos';
+const SECTIONS: { value: InfoSection; label: string }[] = [
+  { value: 'info', label: 'Thông tin' },
+  { value: 'photos', label: 'Ảnh kỉ niệm' },
+];
+const sectionHref = (tripId: string, section: InfoSection) => `/info?${new URLSearchParams({ trip: tripId, ...(section === 'photos' && { section }) })}`;
 
 const ICONS: Record<InfoKind, LucideIcon> = { note: StickyNote, link: Link2, file: FileText };
 const SKELETON_ROWS = 3;
@@ -32,11 +39,13 @@ const hostOf = (url: string | null) => {
 export function InfoScreen({
   trips,
   selectedId,
+  section,
   initialItems,
   uploadEnabled,
 }: {
   trips: TripOption[];
   selectedId: string | null;
+  section: InfoSection;
   /** Danh sách của chuyến đang chọn, lấy ở server. */
   initialItems: TripInfo[];
   uploadEnabled: boolean;
@@ -52,7 +61,7 @@ export function InfoScreen({
             {trips.map((t) => (
               <Link
                 key={t.id}
-                href={`/info?trip=${t.id}`}
+                href={sectionHref(t.id, section)}
                 replace
                 aria-current={t.id === selectedId ? 'page' : undefined}
                 className={`inline-flex min-h-11 shrink-0 items-center rounded-sm border px-4 text-sm font-medium pressable ${
@@ -63,8 +72,25 @@ export function InfoScreen({
               </Link>
             ))}
           </nav>
+          <div className="flex rounded border border-line bg-card p-1" role="group" aria-label="Mục">
+            {SECTIONS.map((s) => (
+              <Link
+                key={s.value}
+                href={sectionHref(selectedId, s.value)}
+                replace
+                aria-current={section === s.value ? 'page' : undefined}
+                className={`flex min-h-11 flex-1 items-center justify-center rounded-sm text-sm font-semibold pressable ${section === s.value ? 'bg-accent text-white' : 'text-ink hover:bg-surface'}`}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
           {/* key: đổi chuyến thì form và danh sách làm mới hẳn, không giữ chữ đang gõ của chuyến trước. */}
-          <TripInfoBoard key={selectedId} tripId={selectedId} initialItems={initialItems} uploadEnabled={uploadEnabled} />
+          {section === 'photos' ? (
+            <MemoriesBoard key={selectedId} tripId={selectedId} />
+          ) : (
+            <TripInfoBoard key={selectedId} tripId={selectedId} initialItems={initialItems} uploadEnabled={uploadEnabled} />
+          )}
         </>
       )}
     </main>

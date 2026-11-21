@@ -10,6 +10,8 @@ export const queryKeys = {
   tripStats: (tripId: string) => ['tripStats', tripId] as const,
   tripLocations: (tripId: string) => ['tripLocations', tripId] as const,
   tripInfos: (tripId: string) => ['tripInfos', tripId] as const,
+  tripPhotos: (tripId: string) => ['tripPhotos', tripId] as const,
+  groupTracks: ['groupTracks'] as const,
   tripParticipants: (tripId: string) => ['tripParticipants', tripId] as const,
   tripWeather: (tripId: string) => ['tripWeather', tripId] as const,
   placePhotos: (placeId: string) => ['placePhotos', placeId] as const,

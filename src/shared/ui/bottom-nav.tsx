@@ -1,6 +1,6 @@
 'use client';
 
-import { Compass, FolderOpen, Luggage, Map, NotebookText, type LucideIcon } from 'lucide-react';
+import { Compass, FolderOpen, Luggage, Map, Music, NotebookText, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
@@ -18,6 +18,7 @@ export const NAV_TABS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: '/explore', label: 'Khám phá', Icon: Compass },
   { href: '/book', label: 'Sổ quán', Icon: NotebookText },
   { href: '/info', label: 'Thông tin', Icon: FolderOpen },
+  { href: '/music', label: 'Nhạc', Icon: Music },
 ];
 
 export function BottomNav() {
@@ -36,7 +37,7 @@ export function BottomNav() {
             key={href}
             href={href}
             aria-current={active ? 'page' : undefined}
-            className={`pressable relative flex min-h-11 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold ${
+            className={`pressable relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold ${
               active ? 'text-accent' : 'text-muted'
             }`}
           >
