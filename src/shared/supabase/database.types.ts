@@ -207,6 +207,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"trip_participants": {
+                  Row: {
+                    "created_at": string,"id": string,"is_payer": boolean,"name": string,"paid": boolean,"trip_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"is_payer"?: boolean,"name": string,"paid"?: boolean,"trip_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"is_payer"?: boolean,"name"?: string,"paid"?: boolean,"trip_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "trip_participants_trip_id_fkey"
+      columns: ["trip_id"]
+isOneToOne: false
+      referencedRelation: "trips"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"trip_places": {
                   Row: {
                     "added_by": string | null,"cost": number | null,"id": string,"note": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"transport": string | null,"trip_id": string,"visit_date": string | null,"visit_end_time": string | null,"visit_time": string | null
@@ -241,14 +261,14 @@ isOneToOne: false
                   ]
                 },"trips": {
                   Row: {
-                    "city": string,"created_by": string | null,"end_date": string | null,"group_id": string,"id": string,"name": string,"party_size": number,"start_date": string | null
+                    "payer_account_name": string | null,"payer_account_no": string | null,"payer_bank_bin": string | null,"city": string,"created_by": string | null,"end_date": string | null,"group_id": string,"id": string,"name": string,"party_size": number,"start_date": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "city": string,"created_by"?: string | null,"end_date"?: string | null,"group_id": string,"id"?: string,"name": string,"party_size"?: number,"start_date"?: string | null
+                    "payer_account_name"?: string | null,"payer_account_no"?: string | null,"payer_bank_bin"?: string | null,"city": string,"created_by"?: string | null,"end_date"?: string | null,"group_id": string,"id"?: string,"name": string,"party_size"?: number,"start_date"?: string | null
                   }
                   Update: {
-                    "city"?: string,"created_by"?: string | null,"end_date"?: string | null,"group_id"?: string,"id"?: string,"name"?: string,"party_size"?: number,"start_date"?: string | null
+                    "payer_account_name"?: string | null,"payer_account_no"?: string | null,"payer_bank_bin"?: string | null,"city"?: string,"created_by"?: string | null,"end_date"?: string | null,"group_id"?: string,"id"?: string,"name"?: string,"party_size"?: number,"start_date"?: string | null
                   }
                   Relationships: [
                     {

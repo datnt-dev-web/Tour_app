@@ -10,6 +10,7 @@ export const queryKeys = {
   tripStats: (tripId: string) => ['tripStats', tripId] as const,
   tripLocations: (tripId: string) => ['tripLocations', tripId] as const,
   tripInfos: (tripId: string) => ['tripInfos', tripId] as const,
+  tripParticipants: (tripId: string) => ['tripParticipants', tripId] as const,
   book: (groupId: string, filter: unknown) => ['book', groupId, filter] as const,
   explore: (params: unknown) => ['explore', params] as const,
   /** Tiền tố chung của mọi màn chỗ / sổ quán, để invalidate khi chưa biết khóa cụ thể. */

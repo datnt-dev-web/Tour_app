@@ -13,6 +13,7 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
 import { tripDays } from '../services/timeline';
 import { toTripStats } from '../services/trip-stats';
+import { SettlePanel } from './settle-panel';
 import { MoneyInput } from './money-input';
 import { FIELD } from './stop-editor';
 import { tripStatsQuery } from './trip-queries';
@@ -285,6 +286,8 @@ export function TripStatsPanel({
         )}
         <ExpenseForm onAdd={(v) => addExpense.mutate(v)} />
       </Card>
+
+      {stats && <SettlePanel trip={info.trip} total={stats.total} />}
     </div>
   );
 }
