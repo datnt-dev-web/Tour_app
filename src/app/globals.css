@@ -248,7 +248,8 @@ textarea {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.6), transparent);
+  /* Theo màu thẻ thay vì trắng cố định, để chế độ tối không bị vệt sáng chói. */
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-card) 60%, transparent), transparent);
   animation: shimmer 1.2s linear infinite;
 }
 
