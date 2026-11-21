@@ -41,6 +41,16 @@ Seed chuyến Hải Phòng: `npm run seed:haiphong -- --group <groupId> --user <
 
 Tab "Bản đồ" của chuyến dùng OpenStreetMap (Leaflet), không cần khóa API. Tọa độ lấy ở server: Google Place Details nếu `GOOGLE_PLACES_API_KEY` là khóa thật, ngược lại hoặc khi không có tọa độ thì geocode bằng Nominatim (tối đa 1 request/giây theo chính sách, nên lần đầu mở có thể mất khoảng 1 giây mỗi quán chưa có cache). Tọa độ chỉ cache ở Redis (`GEOCODE_TTL_SEC`), không ghi vào Postgres. Nút "Chỉ đường" vẫn mở Google Maps.
 
+## Thông báo nhắc giờ (Web Push)
+
+Nhắc trước 30 phút mỗi chỗ có giờ trong chuyến, kể cả khi đã đóng app. Người dùng bấm "Bật thông báo nhắc giờ" ở tab Timeline/Hôm nay; iPhone phải mở app từ biểu tượng ngoài màn hình chính (iOS 16.4+). Không có push (bản dev, trình duyệt cũ) thì vẫn còn nhắc trong app lúc đang mở và file lịch `.ics`.
+
+- Env: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (tạo bằng `npx web-push generate-vapid-keys`), `CRON_SECRET`. Thiếu khóa VAPID thì tính năng tắt.
+- Bộ hẹn giờ: pg_cron trên Supabase gọi `GET /api/cron/reminders` mỗi 5 phút (migration `..._push_reminder_cron.sql`). URL và khóa nằm trong Vault, tạo tay ở từng môi trường:
+  `select vault.create_secret('https://<domain>/api/cron/reminders', 'push_cron_url'); select vault.create_secret('<CRON_SECRET>', 'push_cron_secret');`
+- Kiểm tra: `select * from cron.job_run_details order by start_time desc limit 5;` và `select status_code, content from net._http_response order by created desc limit 5;`
+- Mỗi chỗ chỉ nhắc một lần cho mỗi giờ hẹn (`push_reminders_sent`); đổi giờ thì nhắc lại theo giờ mới. Đánh dấu trước khi gửi, nên gửi lỗi tạm thời thì bỏ lượt đó.
+
 ## Lệnh kiểm tra
 
 ```bash

@@ -28,6 +28,11 @@ const schema = z.object({
   INFO_FILE_URL_TTL_SEC: num(300),
   // Khám phá: Overpass (OpenStreetMap), có thể đổi sang máy chủ khác nếu máy chủ chính quá tải.
   OVERPASS_API_URL: z.string().url().default('https://overpass-api.de/api/interpreter'),
+  // Thông báo đẩy nhắc giờ (Web Push): tùy chọn, thiếu khóa VAPID thì tắt. CRON_SECRET bảo vệ /api/cron/reminders.
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().min(1).optional(),
+  VAPID_PRIVATE_KEY: z.string().min(1).optional(),
+  VAPID_SUBJECT: z.string().min(1).optional(),
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 // Giá trị giữ chỗ trong .env.example / .env.local; coi như chưa cấu hình để khỏi gọi Google vô ích.
@@ -45,6 +50,13 @@ export function cloudinaryConfig(e: Env): { cloudName: string; apiKey: string; a
   const { CLOUDINARY_CLOUD_NAME: cloudName, CLOUDINARY_API_KEY: apiKey, CLOUDINARY_API_SECRET: apiSecret } = e;
   if (!cloudName || !apiKey || !apiSecret || [cloudName, apiKey, apiSecret].some((v) => PLACEHOLDER_KEY.test(v))) return null;
   return { cloudName, apiKey, apiSecret };
+}
+
+/** Cấu hình Web Push nếu đủ khóa VAPID thật; null thì tắt thông báo đẩy. */
+export function webPushConfig(e: Env): { publicKey: string; privateKey: string; subject: string } | null {
+  const { NEXT_PUBLIC_VAPID_PUBLIC_KEY: publicKey, VAPID_PRIVATE_KEY: privateKey, VAPID_SUBJECT: subject } = e;
+  if (!publicKey || !privateKey || !subject || [publicKey, privateKey].some((v) => PLACEHOLDER_KEY.test(v))) return null;
+  return { publicKey, privateKey, subject };
 }
 
 /** Validate env thô; throw lỗi nêu rõ khóa thiếu/sai. Thuần, không đọc process.env. */

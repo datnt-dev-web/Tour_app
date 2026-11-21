@@ -2,6 +2,7 @@
 
 import { BellRing, CalendarPlus } from 'lucide-react';
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import { PushToggle } from '@/features/push/ui/push-toggle';
 import { REMINDER_MIN } from '../services/calendar';
 
 const NOTIFIED_KEY = 'ft:notified';
@@ -40,7 +41,7 @@ export function useInAppReminder(next: { id: string; name: string; minutesUntil:
   }, [id, name, minutesUntil]);
 }
 
-/** Hai nút: thêm lịch trình vào lịch điện thoại (.ics, nhắc trước 30 phút) và bật nhắc trong app. */
+/** Thêm lịch trình vào lịch điện thoại (.ics, nhắc trước 30 phút) và bật thông báo đẩy (nhắc cả khi đóng app). */
 export function ReminderActions({ tripId, light = false }: { tripId: string; light?: boolean }) {
   // Quyền thông báo không có sự kiện đổi: đọc lại sau khi hỏi (bump), server luôn coi là chưa hỗ trợ.
   const [, bump] = useState(0);
@@ -57,12 +58,19 @@ export function ReminderActions({ tripId, light = false }: { tripId: string; lig
         <CalendarPlus size={16} aria-hidden />
         Thêm vào lịch điện thoại
       </a>
-      {permission === 'default' && (
-        <button type="button" onClick={() => void Notification.requestPermission().then(() => bump((n) => n + 1))} className={btn}>
-          <BellRing size={16} aria-hidden />
-          Bật nhắc trong app
-        </button>
-      )}
+      <PushToggle
+        btnClass={btn}
+        hintClass={`w-full text-sm ${light ? 'text-white/70' : 'text-muted'}`}
+        // Máy không dùng được push: vẫn nhắc được khi đang mở app.
+        fallback={
+          permission === 'default' && (
+            <button type="button" onClick={() => void Notification.requestPermission().then(() => bump((n) => n + 1))} className={btn}>
+              <BellRing size={16} aria-hidden />
+              Bật nhắc trong app
+            </button>
+          )
+        }
+      />
     </div>
   );
 }

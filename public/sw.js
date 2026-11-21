@@ -4,7 +4,8 @@
  * - Trang (navigate): NetworkFirst, timeout 3s rồi dùng bản cache.
  * - Ô bản đồ OpenStreetMap: CacheFirst, giữ tối đa MAX_TILES ô (vùng đã xem vẫn hiện khi mất sóng).
  * - Trang chưa từng mở lúc offline: trả trang /offline đã lưu sẵn.
- * - /api/* và mọi request không phải GET: không bao giờ cache. */
+ * - /api/* và mọi request không phải GET: không bao giờ cache.
+ * - Web Push: hiện thông báo nhắc giờ do /api/cron/reminders gửi; bấm vào thì mở đúng chuyến. */
 const VERSION = 'v4';
 const SHELL = `ft-shell-${VERSION}`;
 const STATIC = `ft-static-${VERSION}`;
@@ -96,4 +97,37 @@ self.addEventListener('fetch', (event) => {
   } else if (PRECACHE.includes(url.pathname)) {
     event.respondWith(caches.match(request).then((hit) => hit || fetch(request)));
   }
+});
+
+// Payload từ server: { title, body, tag, url }. tag trùng id chỗ nên nhắc trong app và push không hiện hai lần.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Food Tour nhóm', {
+      body: data.body || '',
+      tag: data.tag,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: data.url || '/' },
+    }),
+  );
+});
+
+// Chỉ mở đường dẫn trong app (cùng origin); đã có cửa sổ app thì chuyển sang đó thay vì mở thêm.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || '/', self.location.origin);
+  const url = target.origin === self.location.origin ? target.href : self.location.origin + '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => c.url.startsWith(self.location.origin));
+      if (open) return open.focus().then((c) => c.navigate(url));
+      return self.clients.openWindow(url);
+    }),
+  );
 });

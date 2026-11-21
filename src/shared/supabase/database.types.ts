@@ -169,6 +169,52 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"push_reminders_sent": {
+                  Row: {
+                    "sent_at": string,"trip_place_id": string,"visit_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "sent_at"?: string,"trip_place_id": string,"visit_at": string
+                  }
+                  Update: {
+                    "sent_at"?: string,"trip_place_id"?: string,"visit_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_reminders_sent_trip_place_id_fkey"
+      columns: ["trip_place_id"]
+isOneToOne: false
+      referencedRelation: "trip_places"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_reminders_sent_trip_place_id_fkey"
+      columns: ["trip_place_id"]
+isOneToOne: false
+      referencedRelation: "trip_stops"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"push_subscriptions": {
+                  Row: {
+                    "auth": string,"created_at": string,"endpoint": string,"id": string,"p256dh": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "auth": string,"created_at"?: string,"endpoint": string,"id"?: string,"p256dh": string,"user_id": string
+                  }
+                  Update: {
+                    "auth"?: string,"created_at"?: string,"endpoint"?: string,"id"?: string,"p256dh"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_subscriptions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"trip_expenses": {
                   Row: {
                     "amount": number,"created_at": string,"created_by": string | null,"id": string,"label": string,"trip_id": string
@@ -324,6 +370,11 @@ isOneToOne: false
                 }
           }
           Functions: {
+            "due_push_reminders":
+{ Args: { "p_window_min": number }; Returns: {
+              "group_id": string,"place_name": string,"trip_id": string,"trip_name": string,"trip_place_id": string,"visit_at": string
+            }[]
+                           },
             "import_trip_places":
 { Args: { "p_trip_id": string,"p_rows": Json }; Returns: Json
                            },
