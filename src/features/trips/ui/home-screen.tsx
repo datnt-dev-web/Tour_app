@@ -11,6 +11,7 @@ import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SignOutButton } from '@/features/auth/ui/sign-out-button';
+import { ThemeToggle } from '@/shared/ui/theme-toggle';
 import type { TripSummary } from '../repositories/trips-repo';
 import { dateRange } from '../services/timeline';
 import { isTripOngoing } from '../services/today';
@@ -92,7 +93,10 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips }: { userI
           <p className="text-sm text-muted">Nhóm</p>
           <h1 className="truncate text-xl font-extrabold">{groupName}</h1>
         </div>
-        <SignOutButton userId={userId} />
+        <div className="flex shrink-0 items-center">
+          <ThemeToggle />
+          <SignOutButton userId={userId} />
+        </div>
       </header>
 
       {upcoming.map((t, i) => (

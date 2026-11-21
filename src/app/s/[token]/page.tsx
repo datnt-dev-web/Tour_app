@@ -63,7 +63,7 @@ export default async function SharedTripPage({ params }: PageProps<'/s/[token]'>
               {list.map((s) => {
                 const directions = addressDirectionsUrl(s.place);
                 return (
-                  <li key={s.id} className="flex items-center justify-between gap-3 rounded border border-line bg-white p-3">
+                  <li key={s.id} className="flex items-center justify-between gap-3 rounded border border-line bg-card p-3">
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{s.place.name}</p>
                       <p className="truncate text-sm text-muted">

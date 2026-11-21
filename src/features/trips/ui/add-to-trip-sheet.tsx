@@ -21,7 +21,7 @@ export function AddToTripSheet({ groupId, placeName, isAdded, onPick, onClose }:
         aria-modal="true"
         aria-label="Chọn chuyến"
         onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-up flex max-h-[70dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        className="animate-sheet-up flex max-h-[70dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -51,7 +51,7 @@ export function AddToTripSheet({ groupId, placeName, isAdded, onPick, onClose }:
                   type="button"
                   disabled={isAdded(t.id)}
                   onClick={() => onPick(t.id)}
-                  className="flex min-h-11 w-full flex-col pressable rounded border border-line bg-white p-3 text-left hover:bg-surface disabled:opacity-60"
+                  className="flex min-h-11 w-full flex-col pressable rounded border border-line bg-card p-3 text-left hover:bg-surface disabled:opacity-60"
                 >
                   <span className="font-semibold">
                     {t.name}

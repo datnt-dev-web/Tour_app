@@ -94,7 +94,7 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
       <h1 className="text-xl font-extrabold">Khám phá</h1>
 
       <div className="flex gap-2">
-        <label className="relative flex min-h-11 flex-1 items-center gap-2 rounded border border-line bg-white px-3 focus-within:border-accent">
+        <label className="relative flex min-h-11 flex-1 items-center gap-2 rounded border border-line bg-card px-3 focus-within:border-accent">
           <MapPin size={18} className="shrink-0 text-muted" aria-hidden />
           <SuggestInput
             kind="city"
@@ -115,7 +115,7 @@ export function ExploreScreen({ groupId }: { groupId: string | null }) {
           type="button"
           aria-pressed={nearMe}
           onClick={nearMe ? stop : start}
-          className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded border px-3 text-sm font-semibold pressable ${nearMe ? 'border-accent bg-accent text-white' : 'border-line bg-white text-ink hover:bg-surface'}`}
+          className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded border px-3 text-sm font-semibold pressable ${nearMe ? 'border-accent bg-accent text-white' : 'border-line bg-card text-ink hover:bg-surface'}`}
         >
           <LocateFixed size={18} aria-hidden />
           Gần tôi

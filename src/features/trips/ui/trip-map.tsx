@@ -83,7 +83,7 @@ function MyLocationLayer({ coords, accuracy }: { coords: LatLng; accuracy: numbe
 
 function PointCard({ point, tripId, distance, onClose }: { point: TripMapPoint; tripId: string; distance: number | null; onClose: () => void }) {
   return (
-    <div className="animate-sheet-up absolute inset-x-3 bottom-3 z-[1000] flex flex-col gap-3 rounded border border-line bg-white p-3 shadow-card">
+    <div className="animate-sheet-up absolute inset-x-3 bottom-3 z-[1000] flex flex-col gap-3 rounded border border-line bg-card p-3 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-semibold leading-snug">{point.name}</p>
@@ -114,7 +114,7 @@ function PointCard({ point, tripId, distance, onClose }: { point: TripMapPoint; 
         </a>
         <Link
           href={placeDetailHref(point, tripId)}
-          className="inline-flex min-h-11 items-center justify-center rounded border border-line bg-white px-4 text-sm font-semibold pressable hover:bg-surface"
+          className="inline-flex min-h-11 items-center justify-center rounded border border-line bg-card px-4 text-sm font-semibold pressable hover:bg-surface"
         >
           Xem chi tiết
         </Link>
@@ -124,7 +124,7 @@ function PointCard({ point, tripId, distance, onClose }: { point: TripMapPoint; 
 }
 
 const Notice = ({ children }: { children: React.ReactNode }) => (
-  <p className="rounded border border-line bg-white p-6 text-center text-sm text-muted">{children}</p>
+  <p className="rounded border border-line bg-card p-6 text-center text-sm text-muted">{children}</p>
 );
 
 export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab }) {
@@ -153,7 +153,7 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
   }
   if (error) {
     return (
-      <div role="alert" className="flex flex-col items-center gap-3 rounded border border-line bg-white p-6 text-center text-sm">
+      <div role="alert" className="flex flex-col items-center gap-3 rounded border border-line bg-card p-6 text-center text-sm">
         <p className="text-bad">{error.message}</p>
         <Button variant="secondary" disabled={isRefetching} onClick={() => refetch()}>
           Thử lại
@@ -197,7 +197,7 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
             onClick={toggleLocation}
             aria-label={locationOn ? 'Tắt vị trí của tôi' : 'Hiện vị trí của tôi'}
             aria-pressed={locationOn}
-            className={`absolute right-3 top-3 z-[1000] inline-flex size-11 items-center justify-center rounded border border-line bg-white shadow-card pressable hover:bg-surface disabled:opacity-60 ${
+            className={`absolute right-3 top-3 z-[1000] inline-flex size-11 items-center justify-center rounded border border-line bg-card shadow-card pressable hover:bg-surface disabled:opacity-60 ${
               location.status === 'ok' ? 'text-ai' : 'text-ink'
             }`}
           >
@@ -228,7 +228,7 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
                 <button
                   type="button"
                   onClick={() => setSelectedId(point.tripPlaceId)}
-                  className="pressable flex min-h-11 w-full items-center justify-between gap-3 rounded border border-line bg-white px-3 text-left text-sm hover:bg-surface"
+                  className="pressable flex min-h-11 w-full items-center justify-between gap-3 rounded border border-line bg-card px-3 text-left text-sm hover:bg-surface"
                 >
                   <span className="min-w-0 truncate font-medium">{point.name}</span>
                   <span className="shrink-0 font-semibold text-ai">{formatDistance(meters)}</span>

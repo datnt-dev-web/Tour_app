@@ -41,7 +41,7 @@ function PlaceRow({
 }) {
   const scheduled = item.visit_date !== null && item.visit_time !== null;
   return (
-    <li className="stagger flex flex-col gap-2 rounded border border-line bg-white p-3 shadow-card" style={staggerStyle(index)}>
+    <li className="stagger flex flex-col gap-2 rounded border border-line bg-card p-3 shadow-card" style={staggerStyle(index)}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <Link
@@ -63,7 +63,7 @@ function PlaceRow({
           aria-label={scheduled ? `Đổi giờ ${item.place.name}` : `Xếp giờ ${item.place.name}`}
           aria-expanded={editing.editingId === item.id}
           onClick={() => (editing.editingId === item.id ? editing.close() : editing.open(item))}
-          className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded border border-line bg-white px-3 text-sm font-semibold tabular-nums text-accent pressable hover:bg-surface"
+          className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded border border-line bg-card px-3 text-sm font-semibold tabular-nums text-accent pressable hover:bg-surface"
         >
           <Clock size={16} aria-hidden />
           {scheduled ? `${formatSlot(item.visit_time!, item.visit_end_time)} · ${formatDayMonth(item.visit_date!)}` : 'Giờ'}
@@ -72,7 +72,7 @@ function PlaceRow({
           type="button"
           aria-label={`Xóa ${item.place.name} khỏi chuyến`}
           onClick={onRemove}
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded border border-line bg-white pressable text-bad hover:bg-surface"
+          className="inline-flex size-11 shrink-0 items-center justify-center rounded border border-line bg-card pressable text-bad hover:bg-surface"
         >
           <Trash2 size={18} aria-hidden />
         </button>

@@ -8,7 +8,7 @@ export function Chip({ selected = false, className = '', type = 'button', ...pro
       type={type}
       aria-pressed={selected}
       className={`inline-flex min-h-11 items-center gap-1 rounded-sm border px-4 text-sm font-medium pressable ${
-        selected ? 'border-accent bg-accent text-white' : 'border-line bg-white text-ink hover:bg-surface'
+        selected ? 'border-accent bg-accent text-white' : 'border-line bg-card text-ink hover:bg-surface'
       } ${className}`}
       {...props}
     />

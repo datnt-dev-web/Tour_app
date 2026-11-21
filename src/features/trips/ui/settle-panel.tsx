@@ -17,7 +17,7 @@ import { createSettleRepo, type TripParticipant } from '../repositories/settle-r
 import type { Trip } from '../repositories/trips-repo';
 import { computeSettlement } from '../services/settle';
 
-const FIELD = 'min-h-11 w-full rounded border border-line bg-white px-3 text-sm outline-none focus:border-accent';
+const FIELD = 'min-h-11 w-full rounded border border-line bg-card px-3 text-sm outline-none focus:border-accent';
 
 const participantsQuery = (tripId: string) =>
   queryOptions({ queryKey: queryKeys.tripParticipants(tripId), queryFn: () => createSettleRepo(createBrowserSupabase()).list(tripId) });
@@ -215,7 +215,7 @@ function QrSheet({ trip, payerName, participant, amount, onClose }: { trip: Trip
         aria-modal="true"
         aria-label={`Mã QR chuyển tiền cho ${payerName}`}
         onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-up flex w-full max-w-[480px] flex-col items-center gap-3 rounded-sm bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        className="animate-sheet-up flex w-full max-w-[480px] flex-col items-center gap-3 rounded-sm bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
       >
         <div className="flex w-full items-start justify-between gap-3">
           <div className="min-w-0">

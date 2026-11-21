@@ -5,6 +5,7 @@
   --color-muted: #4a5a52;
   --color-line: #dce7e1;
   --color-surface: #f2f7f4;
+  --color-card: #ffffff;
   --color-accent: #047857;
   --color-accent-strong: #065f46;
   --color-deep: #0b3b2a;
@@ -39,6 +40,58 @@
   /* Đầu nhạt của dải màu timeline (cùng tông accent). Để ngoài @theme vì chỉ dùng trong style inline:
      Tailwind v4 bỏ biến theme không có class nào dùng. */
   --color-accent-soft: #6ee7b7;
+}
+
+:root {
+  color-scheme: light;
+}
+
+/* Chế độ tối: theo máy (trừ khi người dùng chọn Sáng), hoặc khi chọn Tối. Ghi đè đúng các biến màu của @theme. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+  --color-ink: #e3efe8;
+  --color-muted: #9fb5aa;
+  --color-line: #263a30;
+  --color-surface: #0b1611;
+  --color-card: #13221b;
+  --color-accent: #10b981;
+  --color-accent-strong: #059669;
+  --color-deep: #0e3526;
+  --color-highlight: #14532d;
+  --color-good: #4ade80;
+  --color-good-bg: #12301f;
+  --color-bad: #fb7185;
+  --color-bad-bg: #3b1219;
+  --color-ai: #93c5fd;
+  --color-ai-bg: #172554;
+  --color-warn: #fbbf24;
+  --color-warn-bg: #3a2a0a;
+  --color-accent-soft: #065f46;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --color-ink: #e3efe8;
+  --color-muted: #9fb5aa;
+  --color-line: #263a30;
+  --color-surface: #0b1611;
+  --color-card: #13221b;
+  --color-accent: #10b981;
+  --color-accent-strong: #059669;
+  --color-deep: #0e3526;
+  --color-highlight: #14532d;
+  --color-good: #4ade80;
+  --color-good-bg: #12301f;
+  --color-bad: #fb7185;
+  --color-bad-bg: #3b1219;
+  --color-ai: #93c5fd;
+  --color-ai-bg: #172554;
+  --color-warn: #fbbf24;
+  --color-warn-bg: #3a2a0a;
+  --color-accent-soft: #065f46;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
 }
 
 body {

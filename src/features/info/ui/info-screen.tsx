@@ -45,7 +45,7 @@ export function InfoScreen({ trips, selectedId, uploadEnabled }: { trips: TripOp
                 replace
                 aria-current={t.id === selectedId ? 'page' : undefined}
                 className={`inline-flex min-h-11 shrink-0 items-center rounded-sm border px-4 text-sm font-medium pressable ${
-                  t.id === selectedId ? 'border-accent bg-accent text-white' : 'border-line bg-white text-ink hover:bg-surface'
+                  t.id === selectedId ? 'border-accent bg-accent text-white' : 'border-line bg-card text-ink hover:bg-surface'
                 }`}
               >
                 {t.city} · {t.name}
@@ -103,7 +103,7 @@ function InfoRow({ item, onRemove }: { item: TripInfo; onRemove: () => void }) {
   const sub = item.kind === 'link' ? hostOf(item.url) : item.kind === 'file' ? [item.file_name, formatBytes(item.file_bytes)].filter(Boolean).join(' · ') : null;
 
   return (
-    <li className="flex items-start gap-2 rounded border border-line bg-white p-3">
+    <li className="flex items-start gap-2 rounded border border-line bg-card p-3">
       <Icon size={20} aria-hidden className="mt-0.5 shrink-0 text-muted" />
       <div className="min-w-0 flex-1">
         <p className="font-semibold leading-snug break-words">{item.title}</p>

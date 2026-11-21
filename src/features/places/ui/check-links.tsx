@@ -20,7 +20,7 @@ export function CheckLinks({ name, city }: { name: string; city: string }) {
             href={i.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center justify-between gap-2 rounded border border-line bg-white px-3 text-sm font-semibold hover:bg-surface"
+            className="inline-flex min-h-11 items-center justify-between gap-2 rounded border border-line bg-card px-3 text-sm font-semibold hover:bg-surface"
           >
             {i.label}
             <ExternalLink size={16} className="text-muted" aria-hidden />

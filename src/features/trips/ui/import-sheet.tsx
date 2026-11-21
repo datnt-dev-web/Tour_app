@@ -37,7 +37,7 @@ export function ImportSheet({ tripId, tripName, onClose }: { tripId: string; tri
         aria-modal="true"
         aria-label="Nhập danh sách từ file"
         onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-up flex max-h-[90dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        className="animate-sheet-up flex max-h-[90dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

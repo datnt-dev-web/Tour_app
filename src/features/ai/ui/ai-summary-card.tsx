@@ -79,7 +79,7 @@ export function AiSummaryCard({ placeKey, unavailableReason }: { placeKey: strin
                   href={s.uri}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-11 max-w-full items-center gap-1 rounded-sm border border-line bg-white px-3 text-sm font-medium hover:bg-surface"
+                  className="inline-flex min-h-11 max-w-full items-center gap-1 rounded-sm border border-line bg-card px-3 text-sm font-medium hover:bg-surface"
                 >
                   <span className="truncate">{s.title}</span>
                   <ExternalLink size={14} className="shrink-0 text-muted" aria-hidden />

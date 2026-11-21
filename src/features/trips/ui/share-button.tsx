@@ -45,7 +45,7 @@ export function ShareButton({ trip }: { trip: Trip }) {
         aria-label="Chia sẻ lịch trình"
         title="Chia sẻ lịch trình"
         onClick={() => setOpen(true)}
-        className="inline-flex size-11 items-center justify-center rounded border border-line bg-white text-ink pressable hover:bg-surface"
+        className="inline-flex size-11 items-center justify-center rounded border border-line bg-card text-ink pressable hover:bg-surface"
       >
         <Share2 size={18} aria-hidden />
       </button>
@@ -56,7 +56,7 @@ export function ShareButton({ trip }: { trip: Trip }) {
             aria-modal="true"
             aria-label="Chia sẻ lịch trình"
             onClick={(e) => e.stopPropagation()}
-            className="animate-sheet-up flex w-full max-w-[480px] flex-col gap-3 rounded-sm bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+            className="animate-sheet-up flex w-full max-w-[480px] flex-col gap-3 rounded-sm bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
           >
             <div className="flex items-start justify-between gap-3">
               <div>

@@ -54,7 +54,7 @@ export function PlacePhotos({ placeId, tripId }: { placeId: string; tripId?: str
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-base font-bold">Ảnh của nhóm</h2>
-        <label htmlFor={inputId} className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded border border-line bg-white px-3 text-sm font-semibold pressable hover:bg-surface ${upload.isPending ? 'pointer-events-none opacity-50' : ''}`}>
+        <label htmlFor={inputId} className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded border border-line bg-card px-3 text-sm font-semibold pressable hover:bg-surface ${upload.isPending ? 'pointer-events-none opacity-50' : ''}`}>
           <Camera size={18} aria-hidden />
           {upload.isPending ? 'Đang tải…' : 'Thêm ảnh'}
         </label>

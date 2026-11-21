@@ -139,7 +139,7 @@ function TodayList({ title, stops, distanceTo, muted = false }: { title: string;
       <h3 className="text-sm font-bold uppercase tracking-wide text-muted">{title}</h3>
       <ul className="flex flex-col gap-2">
         {stops.map((s) => (
-          <li key={s.id} className={`flex items-center justify-between gap-3 rounded border border-line bg-white p-3 ${muted ? 'opacity-60' : ''}`}>
+          <li key={s.id} className={`flex items-center justify-between gap-3 rounded border border-line bg-card p-3 ${muted ? 'opacity-60' : ''}`}>
             <div className="min-w-0">
               <p className={`truncate font-semibold ${muted ? 'line-through' : ''}`}>{s.place.name}</p>
               <p className="truncate text-sm text-muted">

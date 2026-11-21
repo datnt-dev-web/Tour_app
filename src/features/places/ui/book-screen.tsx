@@ -23,7 +23,7 @@ function BookRowItem({ row }: { row: BookRow }) {
   // Ảnh mới nhất của quán (cả nhóm dùng chung một truy vấn).
   const cover = useQuery(photoCoversQuery).data?.[row.placeId];
   return (
-    <Link href={`/places/${encodeURIComponent(placeKeyOf(row))}`} className="pressable flex min-h-11 gap-3 rounded border border-line bg-white p-3 shadow-card">
+    <Link href={`/places/${encodeURIComponent(placeKeyOf(row))}`} className="pressable flex min-h-11 gap-3 rounded border border-line bg-card p-3 shadow-card">
       {/* eslint-disable-next-line @next/next/no-img-element -- ảnh Cloudinary đã thu nhỏ sẵn */}
       {cover && <img src={cover} alt="" loading="lazy" className="size-16 shrink-0 rounded-sm object-cover" />}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -113,7 +113,7 @@ export function BookScreen({ groupId, initialRows, preferredCityKey }: { groupId
           onChange={(e) => setInput(e.target.value)}
           placeholder="Tìm tên, địa chỉ hoặc ghi chú"
           aria-label="Tìm trong sổ quán"
-          className="min-h-11 w-full rounded border border-line bg-white pl-10 pr-3 text-sm outline-none focus:border-accent"
+          className="min-h-11 w-full rounded border border-line bg-card pl-10 pr-3 text-sm outline-none focus:border-accent"
         />
       </label>
 

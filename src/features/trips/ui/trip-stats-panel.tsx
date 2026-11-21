@@ -250,7 +250,7 @@ export function TripStatsPanel({
                   placeholder="Chưa có giá"
                   value={item.cost}
                   onCommit={(cost) => updateStop.mutate({ tripPlaceId: item.id, patch: { cost } })}
-                  className="min-h-11 w-32 shrink-0 rounded border border-line bg-white px-3 text-right text-sm"
+                  className="min-h-11 w-32 shrink-0 rounded border border-line bg-card px-3 text-right text-sm"
                 />
               </li>
             ))}

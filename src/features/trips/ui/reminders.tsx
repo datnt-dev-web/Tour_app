@@ -49,7 +49,7 @@ export function ReminderActions({ tripId, light = false }: { tripId: string; lig
     () => (typeof Notification === 'undefined' ? 'unsupported' : Notification.permission),
     () => 'unsupported' as const,
   );
-  const btn = `inline-flex min-h-11 items-center gap-1.5 rounded px-3 text-sm font-semibold pressable ${light ? 'bg-white/10 text-white hover:bg-white/15' : 'border border-line bg-white text-ink hover:bg-surface'}`;
+  const btn = `inline-flex min-h-11 items-center gap-1.5 rounded px-3 text-sm font-semibold pressable ${light ? 'bg-white/10 text-white hover:bg-white/15' : 'border border-line bg-card text-ink hover:bg-surface'}`;
 
   return (
     <div className="flex flex-wrap gap-2">

@@ -51,7 +51,7 @@ function ReviewForm({ groupId, placeKey, placeId, tripId }: { groupId: string; p
 
   return (
     <form
-      className="flex flex-col gap-2 rounded border border-line bg-white p-3"
+      className="flex flex-col gap-2 rounded border border-line bg-card p-3"
       onSubmit={(e) => {
         e.preventDefault();
         add.mutate(
@@ -82,7 +82,7 @@ function ReviewForm({ groupId, placeKey, placeId, tripId }: { groupId: string; p
         onChange={(e) => setNote(e.target.value)}
         placeholder="Ghi chú ngắn: món nên gọi, giá, thái độ..."
         rows={2}
-        className="w-full rounded border border-line bg-white p-3 text-sm"
+        className="w-full rounded border border-line bg-card p-3 text-sm"
       />
       {add.error && (
         <p role="alert" className="text-sm text-bad">
@@ -118,7 +118,7 @@ export function InternalReviews({
       ) : (
         <ul className="flex flex-col gap-2">
           {reviews.map((r, i) => (
-            <li key={r.id} style={staggerStyle(i)} className="stagger flex gap-3 rounded border border-line bg-white p-3 shadow-card">
+            <li key={r.id} style={staggerStyle(i)} className="stagger flex gap-3 rounded border border-line bg-card p-3 shadow-card">
               <span
                 aria-hidden
                 style={{ backgroundColor: r.avatarColor }}

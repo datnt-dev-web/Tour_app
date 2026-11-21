@@ -90,7 +90,7 @@ export function ManualPlaceSheet({
         aria-modal="true"
         aria-label="Thêm chỗ"
         onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-up flex max-h-[90dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        className="animate-sheet-up flex max-h-[90dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -164,7 +164,7 @@ export function ManualPlaceSheet({
 
           <label className="flex flex-col gap-1 text-sm font-medium">
             Ghi chú
-            <textarea maxLength={500} rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Món nên gọi, giá, đặt bàn..." className="w-full rounded border border-line bg-white p-3 text-sm" />
+            <textarea maxLength={500} rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Món nên gọi, giá, đặt bàn..." className="w-full rounded border border-line bg-card p-3 text-sm" />
           </label>
 
           {add.error && (

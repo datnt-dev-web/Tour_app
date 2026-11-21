@@ -101,7 +101,7 @@ export function Dropdown<T extends string>({
         aria-activedescendant={open ? `${listId}-${active}` : undefined}
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={onKeyDown}
-        className={`flex items-center gap-2 rounded border bg-white font-medium pressable hover:bg-surface ${SIZES[size]} ${open ? 'border-accent' : 'border-line'}`}
+        className={`flex items-center gap-2 rounded border bg-card font-medium pressable hover:bg-surface ${SIZES[size]} ${open ? 'border-accent' : 'border-line'}`}
       >
         <Dot className={current.dot} />
         <span className="flex-1 truncate text-left">
@@ -115,7 +115,7 @@ export function Dropdown<T extends string>({
           id={listId}
           role="listbox"
           aria-label={label}
-          className={`animate-fade-in absolute left-0 z-30 min-w-full w-max max-w-[calc(100vw-2rem)] overflow-hidden rounded border border-line bg-white p-1 shadow-card ${
+          className={`animate-fade-in absolute left-0 z-30 min-w-full w-max max-w-[calc(100vw-2rem)] overflow-hidden rounded border border-line bg-card p-1 shadow-card ${
             up ? 'bottom-full mb-1' : 'top-full mt-1'
           }`}
         >

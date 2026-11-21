@@ -126,7 +126,7 @@ export function PlaceScreen({ groupId, placeKey, initialData, aiSlot }: { groupI
         </p>
       )}
 
-      <div className="fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))] z-30 mx-auto max-w-[480px] border-t border-line bg-white px-2 py-3">
+      <div className="fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))] z-30 mx-auto max-w-[480px] border-t border-line bg-card px-2 py-3">
         <Button className="w-full" disabled={isAddedToParam || (tripParam !== undefined && !cityOf(tripParam))} onClick={() => (tripParam ? addTo(tripParam) : setChoosing(true))}>
           {isAddedToParam ? '✓ Đã thêm' : `Thêm vào chuyến${tripName ? ` ${tripName}` : ''}`}
         </Button>

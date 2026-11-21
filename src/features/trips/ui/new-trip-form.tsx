@@ -10,7 +10,7 @@ import { celebrate } from '@/shared/ui/celebrate';
 import { Card } from '@/shared/ui/card';
 import { createTripAction } from '../actions/trip-actions';
 
-const FIELD = 'min-h-11 w-full rounded border border-line bg-white px-3 text-sm outline-none focus:border-accent';
+const FIELD = 'min-h-11 w-full rounded border border-line bg-card px-3 text-sm outline-none focus:border-accent';
 
 export function NewTripForm({ groupId, onCancel }: { groupId: string; onCancel: () => void }) {
   const router = useRouter();

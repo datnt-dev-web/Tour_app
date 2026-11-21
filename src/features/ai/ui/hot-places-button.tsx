@@ -69,7 +69,7 @@ export function UnverifiedHotPlaces({ places, city }: { places: HotPlace[]; city
                   href={l.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center justify-between gap-2 rounded border border-line bg-white px-3 text-sm font-semibold hover:bg-surface"
+                  className="inline-flex min-h-11 items-center justify-between gap-2 rounded border border-line bg-card px-3 text-sm font-semibold hover:bg-surface"
                 >
                   {l.label}
                   <ExternalLink size={16} className="text-muted" aria-hidden />

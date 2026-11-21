@@ -63,7 +63,7 @@ function StopCard({
   return (
     <div
       className={`flex min-w-0 flex-1 flex-col gap-2 rounded border p-3 transition-colors duration-(--dur-base) ${
-        visited ? 'border-line bg-surface' : 'border-line bg-white shadow-card'
+        visited ? 'border-line bg-surface' : 'border-line bg-card shadow-card'
       }`}
     >
       <div className="flex items-start gap-2">
@@ -121,7 +121,7 @@ function StopCard({
           <button
             type="button"
             onClick={() => editing.open(item)}
-            className={`inline-flex min-h-11 items-center gap-2 rounded-sm px-2 text-sm font-semibold pressable hover:bg-white ${visited ? 'text-muted' : 'text-accent'}`}
+            className={`inline-flex min-h-11 items-center gap-2 rounded-sm px-2 text-sm font-semibold pressable hover:bg-card ${visited ? 'text-muted' : 'text-accent'}`}
           >
             <Clock size={16} aria-hidden />
             {scheduled ? 'Sửa giờ, giá' : 'Xếp giờ'}

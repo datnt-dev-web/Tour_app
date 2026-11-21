@@ -96,7 +96,7 @@ export function SuggestInput({ value, onChange, kind, city, onPick, wrapperClass
         <ul
           id={listId}
           role="listbox"
-          className="animate-fade-in absolute inset-x-0 top-full z-40 mt-1 overflow-hidden rounded border border-line bg-white shadow-card"
+          className="animate-fade-in absolute inset-x-0 top-full z-40 mt-1 overflow-hidden rounded border border-line bg-card shadow-card"
         >
           {items.map((s, i) => (
             <li

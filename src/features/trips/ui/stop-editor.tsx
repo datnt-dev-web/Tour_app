@@ -7,7 +7,7 @@ import { Chip } from '@/shared/ui/chip';
 import { DURATION_PRESETS_MIN, TRANSPORT_PRESETS } from '../constants';
 import { addMinutes } from '../services/timeline';
 
-export const FIELD = 'min-h-11 w-full rounded border border-line bg-white px-3 text-sm';
+export const FIELD = 'min-h-11 w-full rounded border border-line bg-card px-3 text-sm';
 
 /** Giá trị đang sửa của khung giờ; `endTime` rỗng là không có giờ kết thúc. */
 export interface ScheduleDraft {
@@ -73,7 +73,7 @@ export function ScheduleFields({ days, value, onChange }: { days: string[]; valu
                 aria-pressed={value.endTime === end}
                 onClick={() => onChange({ ...value, endTime: end })}
                 className={`min-h-9 rounded-sm border px-2.5 text-xs font-semibold pressable ${
-                  value.endTime === end ? 'border-accent bg-accent text-white' : 'border-line bg-white text-ink hover:bg-surface'
+                  value.endTime === end ? 'border-accent bg-accent text-white' : 'border-line bg-card text-ink hover:bg-surface'
                 }`}
               >
                 +{durationLabel(m)}
@@ -104,7 +104,7 @@ export function TransportField({ value, onChange }: { value: string; onChange: (
             aria-pressed={value === t}
             onClick={() => onChange(value === t ? '' : t)}
             className={`min-h-9 rounded-sm border px-2.5 text-xs font-semibold pressable ${
-              value === t ? 'border-accent bg-accent text-white' : 'border-line bg-white text-ink hover:bg-surface'
+              value === t ? 'border-accent bg-accent text-white' : 'border-line bg-card text-ink hover:bg-surface'
             }`}
           >
             {t}

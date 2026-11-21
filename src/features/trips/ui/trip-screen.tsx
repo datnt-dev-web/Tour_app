@@ -88,7 +88,7 @@ export function TripScreen({
               onClick={() => setAdding(true)}
               onPointerEnter={() => void loadManualSheet()}
               onFocus={() => void loadManualSheet()}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded border border-line bg-white px-3 text-sm font-semibold text-ink pressable hover:bg-surface"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded border border-line bg-card px-3 text-sm font-semibold text-ink pressable hover:bg-surface"
             >
               <Plus size={18} aria-hidden />
               Thêm
@@ -105,7 +105,7 @@ export function TripScreen({
         </div>
       </header>
 
-      <div className="flex rounded border border-line bg-white p-1" role="group" aria-label="Kiểu hiển thị">
+      <div className="flex rounded border border-line bg-card p-1" role="group" aria-label="Kiểu hiển thị">
         {visibleTripViews(isTripOngoing(trip, todayInVietnam())).map((v) => (
           <button
             key={v.value}

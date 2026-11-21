@@ -44,7 +44,7 @@ export function LoginForm() {
         aria-label="Tên đăng nhập"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="min-h-11 rounded border border-line bg-white px-3 text-base"
+        className="min-h-11 rounded border border-line bg-card px-3 text-base"
       />
       <Button type="submit" disabled={pending || !username.trim()}>
         Đăng nhập

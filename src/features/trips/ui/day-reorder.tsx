@@ -67,7 +67,7 @@ function SortableRow({ stop }: { stop: TripStop }) {
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-2 rounded border border-line bg-white p-3 ${isDragging ? 'z-10 shadow-card' : ''}`}
+      className={`flex items-center gap-2 rounded border border-line bg-card p-3 ${isDragging ? 'z-10 shadow-card' : ''}`}
     >
       <button
         type="button"
