@@ -1,7 +1,7 @@
 import { AppError } from '@/shared/errors';
-import type { Database } from '@/shared/supabase/database.types';
+import type { Database, Json } from '@/shared/supabase/database.types';
 import type { Db } from '@/shared/supabase/db';
-import type { Place } from '@/features/places/repositories/places-repo';
+import type { Place, StoredPlaceCategory } from '@/features/places/repositories/places-repo';
 
 export type Trip = Database['public']['Tables']['trips']['Row'];
 export type TripPlace = Database['public']['Tables']['trip_places']['Row'];
@@ -21,6 +21,17 @@ export interface TripInfo {
 }
 /** Một chỗ còn hiệu lực trong chuyến (view trip_stops): kèm loại chỗ và cờ trùng giờ tính ở database. */
 export type TripStop = Database['public']['Views']['trip_stops']['Row'] & { place: Place };
+
+/** Một dòng gửi vào RPC import_trip_places; place_id null = tạo chỗ mới trong nhóm của chuyến. */
+export interface ImportRpcRow {
+  place_id: string | null;
+  name: string;
+  category: StoredPlaceCategory;
+  address: string | null;
+  maps_url: string | null;
+  note: string | null;
+  city_norm: string;
+}
 
 /** Mỗi trang của Danh sách / Timeline / giá từng chỗ. */
 export const STOPS_PAGE_SIZE = 20;
@@ -93,6 +104,8 @@ export interface TripsRepo {
   addExpense(tripId: string, label: string, amount: number): Promise<TripExpense>;
   removeExpense(expenseId: string): Promise<void>;
   removeFromTrip(tripPlaceId: string): Promise<void>;
+  /** Thêm cả lô trong một transaction; chỗ đã có trong chuyến thì bỏ qua (kể cả đang ở trạng thái Bỏ). */
+  importPlaces(tripId: string, rows: ImportRpcRow[]): Promise<{ added: number; skipped: number }>;
 }
 
 type TripRow = Trip & { trip_places: { status: TripPlaceStatus }[] };
@@ -175,6 +188,12 @@ export function createTripsRepo(db: Db): TripsRepo {
       }
       if (error) throw error;
       return { items: data.flatMap((row) => (row.place ? [{ ...row, place: row.place }] : [])), total: count ?? 0 };
+    },
+
+    async importPlaces(tripId, rows) {
+      const { data, error } = await db.rpc('import_trip_places', { p_trip_id: tripId, p_rows: rows as unknown as Json });
+      if (error) throw error;
+      return data as { added: number; skipped: number };
     },
 
     async getTripStats(tripId) {

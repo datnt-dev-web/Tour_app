@@ -2,6 +2,7 @@ import type { PlaceCandidate } from '@/integrations/google-places/types';
 import type { PlacesRepo, StoredPlaceCategory } from '@/features/places/repositories/places-repo';
 import { AppError } from '@/shared/errors';
 import { normalizeText } from '@/shared/text';
+import type { ImportRow } from '../import/import-rows';
 import type { NewTripInput, Trip, TripPlace, TripPlacePatch, TripPlaceStatus, TripsRepo, TripSummary, VisitSchedule } from '../repositories/trips-repo';
 import { tripDays } from './timeline';
 
@@ -104,6 +105,34 @@ export interface ManualPlaceInput {
  * Thêm chỗ nhóm đã biết tên mà không cần tìm trên Google. Trùng tên (đã chuẩn hóa) với chỗ thêm tay
  * cùng thành phố thì dùng lại chỗ đó, để sổ quán và đánh giá không bị tách đôi.
  */
+/**
+ * Nhập cả lô chỗ từ file vào chuyến. Chỗ thêm tay cùng tên (bỏ dấu) đã có trong nhóm thì dùng lại, như addManualPlace;
+ * ghi một lần qua RPC nên lỗi ở dòng nào thì cả lô không ghi.
+ */
+export async function importTripPlaces(
+  deps: { trips: Pick<TripsRepo, 'getTrip' | 'importPlaces'>; places: Pick<PlacesRepo, 'listLocalPlaces'> },
+  input: { tripId: string; rows: ImportRow[] },
+): Promise<{ added: number; skipped: number }> {
+  if (input.rows.length === 0) throw new AppError('IMPORT_EMPTY', 'Không có dòng hợp lệ để nhập.');
+  const trip = await deps.trips.getTrip(input.tripId);
+  if (!trip) throw new AppError('NOT_FOUND', 'Không tìm thấy chuyến đi.');
+
+  const cityNorm = normalizeText(trip.city);
+  const known = new Map((await deps.places.listLocalPlaces(trip.group_id, cityNorm)).map((p) => [normalizeText(p.name), p.id]));
+  return deps.trips.importPlaces(
+    trip.id,
+    input.rows.map((r) => ({
+      place_id: known.get(normalizeText(r.name)) ?? null,
+      name: r.name,
+      category: r.category,
+      address: r.address,
+      maps_url: r.mapsUrl,
+      note: r.note,
+      city_norm: cityNorm,
+    })),
+  );
+}
+
 export async function addManualPlace(
   deps: {
     trips: Pick<TripsRepo, 'getTrip' | 'addPlaceToTrip' | 'updateTripPlace'>;

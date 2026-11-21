@@ -264,6 +264,9 @@ isOneToOne: false
                 }
           }
           Functions: {
+            "import_trip_places":
+{ Args: { "p_trip_id": string,"p_rows": Json }; Returns: Json
+                           },
             "is_group_member":
 { Args: { "gid": string }; Returns: boolean
                            },

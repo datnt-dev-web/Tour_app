@@ -37,10 +37,24 @@ export interface PlacesRepo {
   /** Chỗ thêm tay (không có Google id) trùng tên đã chuẩn hóa trong cùng thành phố. */
   findLocalPlace(groupId: string, cityNorm: string, nameNorm: string): Promise<{ id: string } | null>;
   createLocalPlace(input: NewLocalPlace): Promise<{ id: string }>;
+  /** Chỗ thêm tay (không có Google id) của nhóm trong một thành phố; so tên ở app vì cần bỏ dấu. */
+  listLocalPlaces(groupId: string, cityNorm: string): Promise<{ id: string; name: string }[]>;
 }
 
 export function createPlacesRepo(db: Db): PlacesRepo {
+  async function listLocalPlaces(groupId: string, cityNorm: string) {
+    const { data, error } = await db
+      .from('places')
+      .select('id, name')
+      .eq('group_id', groupId)
+      .eq('city_norm', cityNorm)
+      .is('google_place_id', null);
+    if (error) throw error;
+    return data;
+  }
+
   return {
+    listLocalPlaces,
     async findPlace(groupId, ref) {
       const q = db.from('places').select('*').eq('group_id', groupId);
       const { data, error } = await ('id' in ref ? q.eq('id', ref.id) : q.eq('google_place_id', ref.googlePlaceId)).maybeSingle();
@@ -86,14 +100,7 @@ export function createPlacesRepo(db: Db): PlacesRepo {
     },
 
     async findLocalPlace(groupId, cityNorm, nameNorm) {
-      const { data, error } = await db
-        .from('places')
-        .select('id, name')
-        .eq('group_id', groupId)
-        .eq('city_norm', cityNorm)
-        .is('google_place_id', null);
-      if (error) throw error;
-      const hit = data.find((r) => normalizeText(r.name) === nameNorm);
+      const hit = (await listLocalPlaces(groupId, cityNorm)).find((r) => normalizeText(r.name) === nameNorm);
       return hit ? { id: hit.id } : null;
     },
 

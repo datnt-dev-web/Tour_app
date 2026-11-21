@@ -4,7 +4,7 @@ import { daysUntil, todayInVietnam } from '@/shared/date';
 import { AppError } from '@/shared/errors';
 import { toSummary, type Trip, type TripPlace, type TripSummary } from '@/features/trips/repositories/trips-repo';
 import type { Place } from '@/features/places/repositories/places-repo';
-import { addManualPlace, addToTrip, createTrip, listTrips, splitTrips, updateStop } from '@/features/trips/services/trips-service';
+import { addManualPlace, addToTrip, createTrip, importTripPlaces, listTrips, splitTrips, updateStop } from '@/features/trips/services/trips-service';
 
 const trip = (id: string, startDate: string | null, endDate: string | null): Trip => ({
   id, group_id: 'g1', name: id, city: 'Hải Phòng', start_date: startDate, end_date: endDate, created_by: 'u1', party_size: 4,
@@ -182,3 +182,33 @@ describe('updateStop', () => {
   });
 });
 
+describe('importTripPlaces', () => {
+  const rows = [
+    { name: 'Bánh Đa Cua', category: 'food' as const, address: null, mapsUrl: 'https://m/x', note: 'sáng' },
+    { name: 'Cafe mới', category: 'cafe' as const, address: '1 Lạch Tray', mapsUrl: null, note: null },
+  ];
+  const deps = (found: Trip | null = trip('t1', '2026-11-23', '2026-11-24')) => ({
+    trips: { getTrip: vi.fn(async () => found), importPlaces: vi.fn(async () => ({ added: 1, skipped: 1 })) },
+    places: { listLocalPlaces: vi.fn(async () => [{ id: 'p-old', name: 'banh da cua' }]) },
+  });
+
+  test('ghép chỗ sẵn có theo tên bỏ dấu, chỗ mới gửi place_id null; gọi RPC một lần', async () => {
+    const d = deps();
+    expect(await importTripPlaces(d, { tripId: 't1', rows })).toEqual({ added: 1, skipped: 1 });
+    expect(d.places.listLocalPlaces).toHaveBeenCalledWith('g1', 'hai phong');
+    expect(d.trips.importPlaces).toHaveBeenCalledTimes(1);
+    expect(d.trips.importPlaces).toHaveBeenCalledWith('t1', [
+      { place_id: 'p-old', name: 'Bánh Đa Cua', category: 'food', address: null, maps_url: 'https://m/x', note: 'sáng', city_norm: 'hai phong' },
+      { place_id: null, name: 'Cafe mới', category: 'cafe', address: '1 Lạch Tray', maps_url: null, note: null, city_norm: 'hai phong' },
+    ]);
+  });
+
+  test('không có dòng → IMPORT_EMPTY; chuyến không có → NOT_FOUND; không gọi RPC', async () => {
+    const d = deps();
+    await expect(importTripPlaces(d, { tripId: 't1', rows: [] })).rejects.toMatchObject({ code: 'IMPORT_EMPTY' });
+    const gone = deps(null);
+    await expect(importTripPlaces(gone, { tripId: 't1', rows })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(d.trips.importPlaces).not.toHaveBeenCalled();
+    expect(gone.trips.importPlaces).not.toHaveBeenCalled();
+  });
+});

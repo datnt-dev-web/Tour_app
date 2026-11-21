@@ -23,6 +23,14 @@ export const TRANSPORT_PRESETS = ['Đi bộ', 'Xe máy', 'Xe máy thuê', 'Taxi/
 /** Nút chọn nhanh thời lượng ở một chỗ (phút), để đặt giờ kết thúc theo giờ bắt đầu. */
 export const DURATION_PRESETS_MIN = [30, 45, 60, 90, 120];
 
+/** Cột của file nhập danh sách chỗ (dấu * = bắt buộc). Ghép theo tiêu đề nên người dùng đổi thứ tự cột vẫn được. */
+export const IMPORT_COLUMNS = ['Tên quán*', 'Loại*', 'Địa chỉ', 'Link bản đồ', 'Ghi chú'] as const;
+/** Một lần nhập tối đa ngần này dòng: đủ cho một chuyến, chặn file rác làm nặng server. */
+export const IMPORT_MAX_ROWS = 200;
+export const IMPORT_MAX_BYTES = 1_000_000;
+/** xlsx là file zip: 1 MB nén có thể bung ra hàng trăm MB. Kiểm trước khi nạp để không làm cạn bộ nhớ server. */
+export const IMPORT_MAX_UNZIPPED_BYTES = 20_000_000;
+
 export type TripTab = 'all' | 'confirmed' | 'wanted';
 
 export const TRIP_TABS: { value: TripTab; label: string }[] = [
