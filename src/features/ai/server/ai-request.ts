@@ -31,7 +31,7 @@ export function createAiDeps(): AiDeps {
   };
 }
 
-const STATUS_BY_CODE: Record<string, number> = { AI_QUOTA: 429, AI_UNUSABLE: 502, AI_UNAVAILABLE: 503, PLACES_UNAVAILABLE: 502, GEO_UNAVAILABLE: 503, NOT_FOUND: 404 };
+const STATUS_BY_CODE: Record<string, number> = { AI_QUOTA: 429, AI_UNUSABLE: 502, AI_UNAVAILABLE: 503, PLACES_UNAVAILABLE: 502, GEO_UNAVAILABLE: 503, GEOCODE_UNAVAILABLE: 503, NOT_FOUND: 404 };
 
 /** Đổi AppError đã biết thành JSON lỗi; lỗi lạ ném lại để Next trả 500. */
 export function appErrorResponse(e: unknown): Response {
