@@ -173,7 +173,8 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
       ) : (
         <div className={`animate-fade-in relative isolate overflow-hidden rounded border border-line ${MAP_HEIGHT}`}>
           <MapContainer center={DEFAULT_CENTER} zoom={12} zoomControl attributionControl className="size-full">
-            <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
+            {/* crossOrigin: ô tải kiểu CORS để service worker lưu được bản thường (không phải opaque tốn bộ nhớ). */}
+            <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} crossOrigin="anonymous" />
             <FitBounds points={points} resetKey={fitKey} />
             <ClearOnMapClick onClear={() => setSelectedId(null)} />
             {points.map((p) => {
