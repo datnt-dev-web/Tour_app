@@ -19,3 +19,6 @@ next-env.d.ts
 .vercel
 .env*
 !.env.example
+
+# graphify (đồ thị tri thức, sinh lại được)
+graphify-out/
