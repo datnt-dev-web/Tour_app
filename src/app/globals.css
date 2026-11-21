@@ -392,6 +392,157 @@ textarea {
   animation: login-dust linear infinite;
 }
 
+/* Cổng hỏi "có thuộc nhóm không": rèm đứng yên (paused) cho tới khi trả lời Có; lúc đó không còn splash nên rèm mở ngay. */
+.login-scene:not([data-gate="ok"]) :is(.login-curtain-l, .login-curtain-r, .login-seam, .login-stage, .login-rise) {
+  animation-play-state: paused;
+}
+.login-scene[data-gate="ok"] {
+  --login-delay: 0.05s;
+}
+@keyframes login-gate-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes login-gate-out {
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+    filter: blur(6px);
+    visibility: hidden;
+  }
+}
+.login-gate {
+  animation: login-gate-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--login-delay) + 0.1s) both;
+}
+.login-scene[data-gate="ok"] .login-gate {
+  animation: login-gate-out 0.35s ease-in both;
+}
+
+/* Màn "CÚT": chớp trắng, ảnh zoom vào, chữ đập xuống, rung màn hình, rồi nhiễu tách màu lặp lại. */
+@keyframes login-deny-flash {
+  0%,
+  12% {
+    background: #fff;
+  }
+  to {
+    background: #000;
+  }
+}
+@keyframes login-deny-zoom {
+  from {
+    opacity: 0;
+    transform: scale(1.4);
+    filter: blur(10px) brightness(2.2);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.04);
+    filter: none;
+  }
+}
+@keyframes login-deny-red {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.75;
+  }
+}
+@keyframes login-slam {
+  0% {
+    opacity: 0;
+    transform: scale(3.4) rotate(-7deg);
+    filter: blur(14px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.9) rotate(1.5deg);
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes login-glitch {
+  0%,
+  84%,
+  100% {
+    transform: none;
+    clip-path: none;
+    text-shadow: 3px 0 #00e5ff, -3px 0 #ff1744, 0 0 28px rgb(255 23 68 / 0.75);
+  }
+  86% {
+    transform: translate(5px, -2px) skewX(-10deg);
+    text-shadow: -9px 0 #00e5ff, 9px 0 #ff1744, 0 0 28px rgb(255 23 68 / 0.75);
+  }
+  88% {
+    transform: translate(-6px, 1px) skewX(8deg);
+    clip-path: inset(12% 0 45% 0);
+  }
+  90% {
+    transform: translate(4px, 0);
+    clip-path: inset(58% 0 6% 0);
+  }
+  92% {
+    transform: translate(-2px, 2px);
+    clip-path: none;
+    text-shadow: 6px 2px #00e5ff, -6px -2px #ff1744, 0 0 40px rgb(255 23 68 / 0.9);
+  }
+}
+@keyframes login-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  15% {
+    transform: translate(-14px, 8px) rotate(-1deg);
+  }
+  30% {
+    transform: translate(12px, -10px) rotate(1deg);
+  }
+  45% {
+    transform: translate(-9px, 5px);
+  }
+  60% {
+    transform: translate(7px, -4px);
+  }
+  80% {
+    transform: translate(-3px, 2px);
+  }
+}
+.login-deny {
+  animation: login-deny-flash 0.45s ease-out both;
+}
+.login-deny-img {
+  animation: login-deny-zoom 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s both;
+}
+.login-deny-redflash {
+  opacity: 0;
+  animation: login-deny-red 0.9s ease-out 0.85s both;
+}
+.login-deny-word {
+  text-shadow: 3px 0 #00e5ff, -3px 0 #ff1744, 0 0 28px rgb(255 23 68 / 0.75);
+  animation:
+    login-slam 0.45s cubic-bezier(0.2, 1.4, 0.3, 1) 0.55s both,
+    login-glitch 2.4s steps(1) 1.4s infinite;
+}
+.login-deny-shake {
+  animation: login-shake 0.45s ease-out 0.85s both;
+}
+.login-deny-back {
+  animation: fade-in 0.6s ease-out 2.4s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

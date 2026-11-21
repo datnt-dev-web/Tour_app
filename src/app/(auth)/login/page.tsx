@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import type { CSSProperties } from 'react';
 import { LoginForm } from '@/features/auth/ui/login-form';
+import { LoginGate } from '@/features/auth/ui/login-gate';
 
 // Vị trí theo % của ảnh khung (tỷ lệ 1:2): ánh lóe trên các mũi gai, bụi sáng trên vòng phép dưới chân.
 const GLINTS = [
@@ -22,7 +23,7 @@ const CURTAIN_FOLDS =
 
 export default function LoginPage() {
   return (
-    <main className={`login-scene relative flex min-h-dvh items-center justify-center overflow-hidden bg-black text-[#f1f1f6]`}>
+    <LoginGate>
       {/* Sân khấu giữ tỷ lệ ảnh 1:2; chữ co theo bề rộng sân khấu (cqw). svh để bàn phím ảo không làm sân khấu co lại. */}
       <div className="relative aspect-[1/2] w-[min(100vw,480px,50svh)] [container-type:inline-size]">
         <div className="login-stage absolute inset-0">
@@ -87,6 +88,6 @@ export default function LoginPage() {
         />
         <div className="login-seam absolute inset-y-0 left-1/2 -ml-px w-0.5 bg-[linear-gradient(180deg,transparent,#fff_50%,transparent)] shadow-[0_0_18px_4px_rgb(230_230_255/0.6)]" />
       </div>
-    </main>
+    </LoginGate>
   );
 }
