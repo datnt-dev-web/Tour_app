@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRef, type CSSProperties } from 'react';
 import { placeKeyOf } from '@/features/places/constants';
 import { formatDayMonth } from '@/shared/date';
+import { WeatherChip } from './weather-chip';
 import { formatVnd, perPerson } from '@/shared/money';
 import { Badge } from '@/shared/ui/badge';
 import { Pagination } from '@/shared/ui/pagination';
@@ -202,9 +203,12 @@ export function TripTimeline({
           )}
           {timelineDays.map((d) => (
             <section key={d.date} className="flex flex-col gap-2">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
-                {d.dayNumber ? `Ngày ${d.dayNumber} · ` : ''}
-                {formatDayMonth(d.date)}
+              <h2 className="flex items-center justify-between gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+                <span>
+                  {d.dayNumber ? `Ngày ${d.dayNumber} · ` : ''}
+                  {formatDayMonth(d.date)}
+                </span>
+                <WeatherChip tripId={tripId} date={d.date} className="text-ink" />
               </h2>
               <ol className="flex flex-col">
                 {d.stops.map(({ item, clash }, index) => {

@@ -16,6 +16,7 @@ import { tripLocationsQuery, tripStopsQuery } from './trip-queries';
 import { addressDirectionsUrl, directionsUrl } from './trip-view';
 import { useMyLocation } from './use-my-location';
 import { useSetStatus } from './use-trip-mutations';
+import { WeatherChip } from './weather-chip';
 
 const CLOCK_TICK_MS = 30_000;
 const SKELETON_ROWS = 3;
@@ -68,6 +69,7 @@ export function TodayPanel({ tripId }: { tripId: string }) {
 
   return (
     <section className="flex flex-col gap-4" aria-label="Lịch hôm nay">
+      <WeatherChip tripId={tripId} date={today} className="self-end text-sm text-ink" />
       {focus ? (
         <article className="flex flex-col gap-3 rounded bg-deep p-4 text-white">
           <div className="flex items-center justify-between gap-2">
