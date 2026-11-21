@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { todayInVietnam } from '@/shared/date';
 import { splitTrips } from '../services/trips-service';
-import { dateRange } from './home-screen';
+import { dateRange } from '../services/timeline';
 import { tripsQuery } from './trip-queries';
 
 /** Bottom sheet chọn chuyến sắp đi để thêm chỗ vào. */

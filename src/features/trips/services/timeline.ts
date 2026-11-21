@@ -1,3 +1,4 @@
+import { formatDayMonth } from '@/shared/date';
 import type { Trip, TripPlace } from '../repositories/trips-repo';
 
 /** Chuyến dài hơn mức này coi là nhập nhầm ngày; không liệt kê để khỏi dựng danh sách ngày khổng lồ. */
@@ -91,4 +92,10 @@ export function lastTransport(items: (Slot & Pick<TripPlace, 'transport'>)[]): s
 /** Ngày mặc định khi xếp giờ: hôm nay nếu đang trong chuyến, ngược lại ngày đầu. */
 export function defaultDay(days: string[], today: string): string | null {
   return days.includes(today) ? today : (days[0] ?? null);
+}
+
+/** "23/11 - 24/11" (hoặc một ngày); rỗng khi chuyến chưa có ngày. File thuần để Server Component dùng được. */
+export function dateRange(t: Pick<Trip, 'start_date' | 'end_date'>): string {
+  if (!t.start_date) return '';
+  return t.end_date && t.end_date !== t.start_date ? `${formatDayMonth(t.start_date)} - ${formatDayMonth(t.end_date)}` : formatDayMonth(t.start_date);
 }

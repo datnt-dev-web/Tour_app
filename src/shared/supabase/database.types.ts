@@ -261,14 +261,14 @@ isOneToOne: false
                   ]
                 },"trips": {
                   Row: {
-                    "payer_account_name": string | null,"payer_account_no": string | null,"payer_bank_bin": string | null,"city": string,"created_by": string | null,"end_date": string | null,"group_id": string,"id": string,"name": string,"party_size": number,"start_date": string | null
+                    "share_expires_at": string | null,"share_token": string | null,"payer_account_name": string | null,"payer_account_no": string | null,"payer_bank_bin": string | null,"city": string,"created_by": string | null,"end_date": string | null,"group_id": string,"id": string,"name": string,"party_size": number,"start_date": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "payer_account_name"?: string | null,"payer_account_no"?: string | null,"payer_bank_bin"?: string | null,"city": string,"created_by"?: string | null,"end_date"?: string | null,"group_id": string,"id"?: string,"name": string,"party_size"?: number,"start_date"?: string | null
+                    "share_expires_at"?: string | null,"share_token"?: string | null,"payer_account_name"?: string | null,"payer_account_no"?: string | null,"payer_bank_bin"?: string | null,"city": string,"created_by"?: string | null,"end_date"?: string | null,"group_id": string,"id"?: string,"name": string,"party_size"?: number,"start_date"?: string | null
                   }
                   Update: {
-                    "payer_account_name"?: string | null,"payer_account_no"?: string | null,"payer_bank_bin"?: string | null,"city"?: string,"created_by"?: string | null,"end_date"?: string | null,"group_id"?: string,"id"?: string,"name"?: string,"party_size"?: number,"start_date"?: string | null
+                    "share_expires_at"?: string | null,"share_token"?: string | null,"payer_account_name"?: string | null,"payer_account_no"?: string | null,"payer_bank_bin"?: string | null,"city"?: string,"created_by"?: string | null,"end_date"?: string | null,"group_id"?: string,"id"?: string,"name"?: string,"party_size"?: number,"start_date"?: string | null
                   }
                   Relationships: [
                     {

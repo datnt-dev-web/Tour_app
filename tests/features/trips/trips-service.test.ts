@@ -8,7 +8,7 @@ import { addManualPlace, addToTrip, createTrip, importTripPlaces, listTrips, spl
 
 const trip = (id: string, startDate: string | null, endDate: string | null): Trip => ({
   id, group_id: 'g1', name: id, city: 'Hải Phòng', start_date: startDate, end_date: endDate, created_by: 'u1', party_size: 4,
-  payer_bank_bin: null, payer_account_no: null, payer_account_name: null,
+  payer_bank_bin: null, payer_account_no: null, payer_account_name: null, share_token: null, share_expires_at: null,
 });
 const summary = (t: Trip, confirmedCount = 0, pendingCount = 0): TripSummary => ({ ...t, confirmedCount, pendingCount });
 

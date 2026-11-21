@@ -7,6 +7,8 @@ describe('isPublicPath', () => {
     ['/sw.js', true],
     ['/manifest.webmanifest', true],
     ['/offline', true],
+    ['/s/abc', true],
+    ['/sx', false],
     ['/', false],
     ['/explore', false],
     ['/loginx', false],

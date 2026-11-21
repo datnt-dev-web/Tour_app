@@ -13,9 +13,10 @@ import { TRIP_TABS, type TripTab } from '../constants';
 import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
 import { tripDays } from '../services/timeline';
 import { isTripOngoing } from '../services/today';
-import { dateRange } from './home-screen';
+import { dateRange } from '../services/timeline';
 import { tripQuery } from './trip-queries';
 import { TripList } from './trip-list';
+import { ShareButton } from './share-button';
 import { TodayPanel } from './today-panel';
 import { parseTripView, tripViewHref, visibleTripViews, type TripView } from './trip-view';
 import { cachedStops, type InitialStops } from './use-paged-stops';
@@ -81,6 +82,7 @@ export function TripScreen({
             </p>
           </div>
           <div className="flex shrink-0 gap-2">
+            <ShareButton trip={trip} />
             <button
               type="button"
               onClick={() => setAdding(true)}

@@ -5,13 +5,14 @@ import { FileSpreadsheet, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useState } from 'react';
-import { daysUntil, formatDayMonth, todayInVietnam } from '@/shared/date';
+import { daysUntil, todayInVietnam } from '@/shared/date';
 import { staggerStyle } from '@/shared/ui/stagger';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SignOutButton } from '@/features/auth/ui/sign-out-button';
 import type { TripSummary } from '../repositories/trips-repo';
+import { dateRange } from '../services/timeline';
 import { isTripOngoing } from '../services/today';
 import { splitTrips } from '../services/trips-service';
 import { NewTripForm } from './new-trip-form';
@@ -35,13 +36,6 @@ function ImportButton({ trip, onImport, className = '' }: { trip: ImportTarget; 
       <FileSpreadsheet size={20} aria-hidden />
     </button>
   );
-}
-
-export function dateRange(t: Pick<TripSummary, 'start_date' | 'end_date'>) {
-  if (!t.start_date) return '';
-  return t.end_date && t.end_date !== t.start_date
-    ? `${formatDayMonth(t.start_date)} - ${formatDayMonth(t.end_date)}`
-    : formatDayMonth(t.start_date);
 }
 
 function countdown(t: TripSummary, today: string) {
