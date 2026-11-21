@@ -1,6 +1,7 @@
 /**
  * Admin cấp tài khoản (app không có đăng ký):
- * `npm run account:create -- --username an.vu [--name "An Vũ"] [--email a@gmail.com] [--group <groupId>] [--role owner|member]`.
+ * `npm run account:create -- --username an.vu [--name "An Vũ"] [--email a@gmail.com] [--group <groupId>] [--role owner|member] [--pin 123456]`.
+ * - PIN đăng nhập: `--pin` nếu có, không thì tạo ngẫu nhiên và in ra một lần (gửi riêng cho người đó).
  * - Không có `--email`: tạo user mới với email giả `<username>@food-tour.local`.
  * - Có `--email` của user đã tồn tại: chỉ gắn username cho user đó.
  * - Nhóm: `--group` nếu có; chưa có nhóm nào thì tạo "Con lợn nhựa" với user này là owner; có đúng 1 nhóm thì vào nhóm đó.
@@ -9,7 +10,8 @@
 import { parseArgs } from 'node:util';
 import { DEFAULT_GROUP_NAME } from '@/features/groups/constants';
 import { createMembersRepo } from '@/features/groups/repositories/members-repo';
-import { createScriptDb, ensureAccount, validUsername, type Role } from './lib/provision-account';
+import { generatePin } from '@/features/auth/services/username-login-service';
+import { createScriptDb, ensureAccount, setPin, validUsername, type Role } from './lib/provision-account';
 
 const { values } = parseArgs({
   options: {
@@ -18,9 +20,10 @@ const { values } = parseArgs({
     email: { type: 'string' },
     group: { type: 'string' },
     role: { type: 'string', default: 'member' },
+    pin: { type: 'string' },
   },
 });
-if (!values.username) throw new Error('Dùng: npm run account:create -- --username <username> [--name <tên>] [--email <email>] [--group <groupId>] [--role owner|member]');
+if (!values.username) throw new Error('Dùng: npm run account:create -- --username <username> [--name <tên>] [--email <email>] [--group <groupId>] [--role owner|member] [--pin <6 số>]');
 if (values.role !== 'owner' && values.role !== 'member') throw new Error('--role chỉ nhận owner hoặc member.');
 const role: Role = values.role;
 const username = validUsername(values.username);
@@ -42,7 +45,10 @@ async function main() {
   const members = createMembersRepo(db);
   if (picked) await members.addMember(picked, userId, role);
   const groupId = picked ?? (await members.createGroupWithOwner(DEFAULT_GROUP_NAME, userId));
+  const pin = values.pin ?? generatePin();
+  await setPin(db, userId, pin);
   console.log(`Đã cấp tài khoản "${username}" (user ${userId}) trong nhóm ${groupId}.`);
+  if (!values.pin) console.log(`PIN đăng nhập: ${pin}  (chỉ hiện một lần, gửi riêng cho người dùng)`);
 }
 
 main().catch((e) => {

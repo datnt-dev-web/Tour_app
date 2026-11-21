@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
-import { ACCOUNT_EMAIL_DOMAIN, normalizeUsername, USERNAME_PATTERN } from '@/features/auth/constants';
+import { ACCOUNT_EMAIL_DOMAIN, normalizeUsername, PIN_PATTERN, USERNAME_PATTERN } from '@/features/auth/constants';
 import { createAccountsRepo } from '@/features/auth/repositories/accounts-repo';
 import type { Db } from '@/shared/supabase/db';
 import type { Database } from '@/shared/supabase/database.types';
@@ -61,4 +61,11 @@ export async function ensureAccount(db: Db, spec: AccountSpec): Promise<string> 
   });
   if (error) throw error;
   return data.user.id;
+}
+
+/** Đặt PIN đăng nhập (mật khẩu Supabase Auth) cho user. */
+export async function setPin(db: Db, userId: string, pin: string): Promise<void> {
+  if (!PIN_PATTERN.test(pin)) throw new Error('PIN phải gồm đúng 6 chữ số.');
+  const { error } = await db.auth.admin.updateUserById(userId, { password: pin });
+  if (error) throw error;
 }

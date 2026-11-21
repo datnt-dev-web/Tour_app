@@ -12,6 +12,7 @@
     "seed:haiphong": "tsx --conditions=react-server scripts/seed-haiphong.ts",
     "account:create": "tsx --conditions=react-server scripts/create-account.ts",
     "account:seed": "tsx --conditions=react-server scripts/seed-accounts.ts",
+    "account:pin": "tsx --conditions=react-server scripts/set-pin.ts",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
