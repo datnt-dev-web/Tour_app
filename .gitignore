@@ -15,3 +15,7 @@ next-env.d.ts
 *.pem
 /out/
 /build
+
+.vercel
+.env*
+!.env.example
