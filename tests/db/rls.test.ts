@@ -112,6 +112,31 @@ describe('RLS', () => {
     expect((await admin.from('places').insert(row)).error?.code).toBe('23505');
   });
 
+  test('chi phí khác (trip_expenses): thành viên ghi/đọc được, người ngoài thì không', async () => {
+    const mine = await A.client.from('trip_expenses').insert({ trip_id: T, label: 'Vé tàu', amount: 1062000 }).select('id, created_by').single();
+    expect(mine.error).toBeNull();
+    expect(mine.data?.created_by).toBe(A.id);
+    expect((await B.client.from('trip_expenses').select().eq('trip_id', T)).data).toEqual([]);
+    expect((await B.client.from('trip_expenses').insert({ trip_id: T, label: 'x', amount: 1 })).error).not.toBeNull();
+    const del = await B.client.from('trip_expenses').delete().eq('id', mine.data!.id).select('id');
+    expect(del.data ?? []).toEqual([]);
+    expect((await A.client.from('trip_expenses').insert({ trip_id: T, label: 'âm', amount: -1 })).error).not.toBeNull();
+  });
+
+  test('cost và party_size: không nhận số âm / số người 0', async () => {
+    expect((await A.client.from('trip_places').update({ cost: -1 }).eq('trip_id', T)).error).not.toBeNull();
+    expect((await A.client.from('trips').update({ party_size: 0 }).eq('id', T)).error).not.toBeNull();
+    expect((await A.client.from('trip_places').update({ cost: 120000 }).eq('trip_id', T)).error).toBeNull();
+  });
+
+  test('giờ kết thúc: phải có giờ bắt đầu và sau giờ bắt đầu', async () => {
+    const tp = (patch: Record<string, unknown>) => A.client.from('trip_places').update(patch).eq('trip_id', T);
+    expect((await tp({ visit_date: '2026-11-23', visit_time: '09:30', visit_end_time: '09:00' })).error).not.toBeNull();
+    expect((await tp({ visit_date: null, visit_time: null, visit_end_time: '09:00' })).error).not.toBeNull();
+    expect((await tp({ visit_date: '2026-11-23', visit_time: '08:45', visit_end_time: '09:30', transport: 'Xe máy thuê' })).error).toBeNull();
+    expect((await tp({ transport: '   ' })).error).not.toBeNull();
+  });
+
   test('ai_cache chỉ service role truy cập', async () => {
     expect((await A.client.from('ai_cache').select()).data ?? []).toEqual([]);
     expect((await A.client.from('ai_cache').insert({ key: 'z', value: {}, expires_at: new Date().toISOString() })).error).not.toBeNull();

@@ -1,7 +1,7 @@
 import type { GeocodingClient } from '@/integrations/nominatim/client';
 import type { LatLng, PlacesClient } from '@/integrations/google-places/types';
 import type { Place } from '@/features/places/repositories/places-repo';
-import { placeKeyOf } from '@/features/places/constants';
+import { hasRealAddress, placeKeyOf } from '@/features/places/constants';
 import type { CacheStore } from '@/shared/cache/cache-store';
 import { cached } from '@/shared/cache/cached';
 import { cacheKey } from '@/shared/cache/keys';
@@ -35,12 +35,6 @@ export interface TripLocationsDeps {
   tripsRepo: Pick<TripsRepo, 'getTripDetail'>;
 }
 
-/** Địa chỉ dạng "(chưa rõ)" là chữ giữ chỗ, không geocode được. */
-function usableAddress(address: string | null): address is string {
-  const a = address?.trim();
-  return !!a && !a.startsWith('(');
-}
-
 /** Geocode OSM một chuỗi truy vấn; chỉ cache kết quả có tọa độ (null không bao giờ được cache). */
 const geocodeCached = (deps: TripLocationsDeps, q: string) =>
   cached(deps.cache, cacheKey('geo:osm', { q }), getEnv().GEOCODE_TTL_SEC, () => deps.geocoder.geocode(q), {
@@ -54,7 +48,7 @@ async function locate(deps: TripLocationsDeps, place: Place, city: string): Prom
     const details = await cached(deps.cache, cacheKey('places:details', { id }), getEnv().PLACES_TTL_SEC, () => deps.places.getDetails(id));
     if (details.location) return details.location;
   }
-  if (usableAddress(place.address)) {
+  if (hasRealAddress(place.address)) {
     const hit = await geocodeCached(deps, `${place.address.trim()}, ${city}, Việt Nam`);
     if (hit) return hit;
   }

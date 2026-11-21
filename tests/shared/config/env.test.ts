@@ -9,7 +9,6 @@ const validEnv: Record<string, string | undefined> = {
   GEMINI_API_KEY: 'gemini',
   UPSTASH_REDIS_REST_URL: 'https://example.upstash.io',
   UPSTASH_REDIS_REST_TOKEN: 'token',
-  BOOTSTRAP_OWNER_EMAILS: 'a@x.com, b@x.com',
 };
 
 describe('parseEnv', () => {
@@ -27,10 +26,9 @@ describe('parseEnv', () => {
     expect(e.AI_HOT_TTL_SEC).toBe(604800);
     expect(e.GEMINI_MODEL).toBe('gemini-2.5-flash');
   });
-  test('đọc số từ chuỗi và tách danh sách email', () => {
+  test('đọc số từ chuỗi', () => {
     const e = parseEnv({ ...validEnv, AI_DAILY_LIMIT_PER_GROUP: '3' });
     expect(e.AI_DAILY_LIMIT_PER_GROUP).toBe(3);
-    expect(e.BOOTSTRAP_OWNER_EMAILS).toEqual(['a@x.com', 'b@x.com']);
   });
   test('Upstash là tùy chọn (dev)', () => {
     const e = parseEnv({ ...validEnv, UPSTASH_REDIS_REST_URL: undefined, UPSTASH_REDIS_REST_TOKEN: undefined });

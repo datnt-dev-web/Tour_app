@@ -28,5 +28,11 @@ export const BOOK_FILTERS: { value: BookVerdict | 'all'; label: string }[] = [
   { value: 'none', label: VERDICT_LABELS.none },
 ];
 
+/** Địa chỉ dùng được (định vị, chỉ đường): không rỗng và không phải chữ giữ chỗ dạng "(chưa chọn quán)". */
+export function hasRealAddress(address: string | null | undefined): address is string {
+  const a = address?.trim();
+  return !!a && !a.startsWith('(');
+}
+
 /** Khóa dùng trong URL `/places/[placeId]`: Google id, hoặc `local:<uuid>` cho chỗ thêm tay. */
 export const placeKeyOf = (p: { placeId: string; googlePlaceId: string | null }) => p.googlePlaceId ?? `local:${p.placeId}`;

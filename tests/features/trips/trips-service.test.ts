@@ -4,10 +4,10 @@ import { daysUntil, todayInVietnam } from '@/shared/date';
 import { AppError } from '@/shared/errors';
 import { toSummary, type Trip, type TripPlace, type TripSummary } from '@/features/trips/repositories/trips-repo';
 import type { Place } from '@/features/places/repositories/places-repo';
-import { addToTrip, createTrip, listTrips, splitTrips } from '@/features/trips/services/trips-service';
+import { addManualPlace, addToTrip, createTrip, listTrips, splitTrips, updateStop } from '@/features/trips/services/trips-service';
 
 const trip = (id: string, startDate: string | null, endDate: string | null): Trip => ({
-  id, group_id: 'g1', name: id, city: 'Hải Phòng', start_date: startDate, end_date: endDate, created_by: 'u1',
+  id, group_id: 'g1', name: id, city: 'Hải Phòng', start_date: startDate, end_date: endDate, created_by: 'u1', party_size: 4,
 });
 const summary = (t: Trip, confirmedCount = 0, pendingCount = 0): TripSummary => ({ ...t, confirmedCount, pendingCount });
 
@@ -111,3 +111,74 @@ describe('addToTrip', () => {
     expect(deps.trips.addPlaceToTrip).not.toHaveBeenCalled();
   });
 });
+
+describe('addManualPlace', () => {
+  function manualDeps(existing: { id: string } | null = null) {
+    const trips = {
+      getTrip: vi.fn(async () => trip('t1', '2026-11-23', '2026-11-24')),
+      addPlaceToTrip: vi.fn(async () => tripPlace),
+      updateTripPlace: vi.fn(async () => {}),
+    };
+    const places = {
+      findLocalPlace: vi.fn(async () => existing),
+      createLocalPlace: vi.fn(async () => ({ id: 'new-place' })),
+    };
+    return { trips, places };
+  }
+  const input = {
+    tripId: 't1', userId: 'u1', name: '  Bánh đa cua bà Cụ ', address: '', category: 'food' as const, note: '',
+    schedule: { date: '2026-11-23', time: '08:45', endTime: '09:30' }, transport: ' Xe máy thuê ', cost: 120000,
+  };
+
+  test('tạo chỗ thủ công theo thành phố của chuyến, rồi ghi giờ, phương tiện, giá trong một lần', async () => {
+    const deps = manualDeps();
+    const row = await addManualPlace(deps, input);
+    expect(deps.places.findLocalPlace).toHaveBeenCalledWith('g1', 'hai phong', 'banh da cua ba cu');
+    expect(deps.places.createLocalPlace).toHaveBeenCalledWith({ groupId: 'g1', userId: 'u1', name: 'Bánh đa cua bà Cụ', address: null, city: 'Hải Phòng', category: 'food' });
+    expect(deps.trips.addPlaceToTrip).toHaveBeenCalledWith('t1', 'new-place', 'u1', undefined);
+    expect(deps.trips.updateTripPlace).toHaveBeenCalledTimes(1);
+    expect(deps.trips.updateTripPlace).toHaveBeenCalledWith('tp1', {
+      schedule: { date: '2026-11-23', time: '08:45', endTime: '09:30' },
+      transport: 'Xe máy thuê',
+      cost: 120000,
+    });
+    expect(row).toMatchObject({ visit_date: '2026-11-23', visit_time: '08:45', visit_end_time: '09:30', transport: 'Xe máy thuê', cost: 120000 });
+  });
+
+  test('trùng tên chỗ thủ công đã có thì dùng lại; không nhập gì thêm thì không ghi đè', async () => {
+    const deps = manualDeps({ id: 'old' });
+    await addManualPlace(deps, { ...input, schedule: null, transport: '  ', cost: null });
+    expect(deps.places.createLocalPlace).not.toHaveBeenCalled();
+    expect(deps.trips.addPlaceToTrip).toHaveBeenCalledWith('t1', 'old', 'u1', undefined);
+    expect(deps.trips.updateTripPlace).not.toHaveBeenCalled();
+  });
+
+  test('ngày ngoài chuyến, giờ kết thúc không sau giờ bắt đầu, tên rỗng → lỗi, không ghi gì', async () => {
+    const deps = manualDeps();
+    await expect(addManualPlace(deps, { ...input, schedule: { date: '2026-11-30', time: '09:00', endTime: null } })).rejects.toMatchObject({ code: 'INVALID_SCHEDULE' });
+    await expect(addManualPlace(deps, { ...input, schedule: { date: '2026-11-23', time: '09:00', endTime: '09:00' } })).rejects.toMatchObject({ code: 'INVALID_SCHEDULE' });
+    await expect(addManualPlace(deps, { ...input, name: '   ' })).rejects.toMatchObject({ code: 'INVALID_PLACE' });
+    expect(deps.places.createLocalPlace).not.toHaveBeenCalled();
+  });
+});
+
+describe('updateStop', () => {
+  const repo = () => ({ getTrip: vi.fn(async () => trip('t1', '2026-11-23', '2026-11-24')), updateTripPlace: vi.fn(async () => {}) });
+
+  test('bỏ giờ (null) luôn được; chỉ sửa giá thì không đụng lịch', async () => {
+    const r = repo();
+    await updateStop(r, { tripId: 't1', tripPlaceId: 'tp1', patch: { schedule: null } });
+    expect(r.updateTripPlace).toHaveBeenLastCalledWith('tp1', { schedule: null });
+    await updateStop(r, { tripId: 't1', tripPlaceId: 'tp1', patch: { cost: 50000 } });
+    expect(r.updateTripPlace).toHaveBeenLastCalledWith('tp1', { cost: 50000 });
+  });
+
+  test('phương tiện rỗng thành null; lịch sai bị chặn', async () => {
+    const r = repo();
+    await updateStop(r, { tripId: 't1', tripPlaceId: 'tp1', patch: { transport: '   ' } });
+    expect(r.updateTripPlace).toHaveBeenLastCalledWith('tp1', { transport: null });
+    await expect(updateStop(r, { tripId: 't1', tripPlaceId: 'tp1', patch: { schedule: { date: '2026-11-25', time: '08:00', endTime: null } } })).rejects.toMatchObject({ code: 'INVALID_SCHEDULE' });
+    await expect(updateStop(r, { tripId: 't1', tripPlaceId: 'tp1', patch: { schedule: { date: '2026-11-23', time: '10:00', endTime: '09:00' } } })).rejects.toMatchObject({ code: 'INVALID_SCHEDULE' });
+  });
+});
+

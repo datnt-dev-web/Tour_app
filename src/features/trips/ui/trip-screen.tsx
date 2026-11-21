@@ -1,100 +1,104 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Search, Trash2 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Plus, Search } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { CATEGORY_LABELS, placeKeyOf, STORED_CATEGORIES } from '@/features/places/constants';
-import { Badge } from '@/shared/ui/badge';
-import { staggerStyle } from '@/shared/ui/stagger';
-import { Chip } from '@/shared/ui/chip';
+import { formatDayMonth } from '@/shared/date';
+import { Dropdown } from '@/shared/ui/dropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
-import { STATUS_LABELS, STATUS_TONES, TAB_STATUSES, TRIP_PLACE_STATUSES, TRIP_TABS, type TripTab } from '../constants';
-import type { TripDetail, TripPlaceItem } from '../repositories/trips-repo';
+import { TRIP_TABS, type TripTab } from '../constants';
+import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
+import { tripDays } from '../services/timeline';
 import { dateRange } from './home-screen';
 import { tripQuery } from './trip-queries';
-import { parseTripView, TRIP_VIEWS, tripViewHref } from './trip-view';
-import { useRemoveFromTrip, useSetStatus } from './use-trip-mutations';
+import { TripList } from './trip-list';
+import { parseTripView, TRIP_VIEWS, tripViewHref, type TripView } from './trip-view';
+import { cachedStops, type InitialStops } from './use-paged-stops';
 
-// Tải lười để thư viện bản đồ không nằm trong bundle đầu của trang chuyến (LCP).
-const TripMap = dynamic(() => import('./trip-map'), {
-  ssr: false,
-  loading: () => <Skeleton className="h-[max(420px,calc(100dvh-24rem))]" />,
-});
+// Tab ngoài Danh sách và hộp thêm chỗ tách thành chunk riêng: trang chuyến tải nhẹ hơn, tab nào mở mới tải.
+// Hàm import giữ riêng để tải trước khi người dùng rê/chạm vào tab (trước cả lúc bấm).
+const loadMap = () => import('./trip-map');
+const loadTimeline = () => import('./trip-timeline');
+const loadStats = () => import('./trip-stats-panel');
+const loadManualSheet = () => import('./manual-place-sheet');
+const VIEW_LOADERS: Partial<Record<TripView, () => Promise<unknown>>> = { map: loadMap, timeline: loadTimeline, stats: loadStats };
 
-function PlaceRow({ index, tripId, item, onStatus, onRemove }: { index: number; tripId: string; item: TripPlaceItem; onStatus: (s: TripPlaceItem['status']) => void; onRemove: () => void }) {
-  return (
-    <li className="stagger flex flex-col gap-2 rounded border border-line bg-white p-3 shadow-card" style={staggerStyle(index)}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <Link
-            href={`/places/${encodeURIComponent(placeKeyOf({ placeId: item.place.id, googlePlaceId: item.place.google_place_id }))}?trip=${tripId}`}
-            className="block font-semibold leading-snug"
-          >
-            {item.place.name}
-          </Link>
-          <p className="truncate text-sm text-muted">{item.note || item.place.address}</p>
-        </div>
-        <Badge tone={STATUS_TONES[item.status]} className="shrink-0">
-          {STATUS_LABELS[item.status]}
-        </Badge>
-      </div>
-      <div className="flex gap-2">
-        <select
-          aria-label={`Trạng thái của ${item.place.name}`}
-          value={item.status}
-          onChange={(e) => onStatus(e.target.value as TripPlaceItem['status'])}
-          className="min-h-11 flex-1 rounded border border-line bg-white px-3 text-sm"
-        >
-          {TRIP_PLACE_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABELS[s]}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          aria-label={`Xóa ${item.place.name} khỏi chuyến`}
-          onClick={onRemove}
-          className="inline-flex size-11 items-center justify-center rounded border border-line bg-white pressable text-bad hover:bg-surface"
-        >
-          <Trash2 size={18} aria-hidden />
-        </button>
-      </div>
-    </li>
-  );
-}
+const ViewSkeleton = () => <Skeleton className="h-[max(420px,calc(100dvh-24rem))]" />;
+const TripMap = dynamic(loadMap, { ssr: false, loading: ViewSkeleton });
+const TripTimeline = dynamic(() => loadTimeline().then((m) => m.TripTimeline), { loading: ViewSkeleton });
+const TripStatsPanel = dynamic(() => loadStats().then((m) => m.TripStatsPanel), { loading: ViewSkeleton });
+const ManualPlaceSheet = dynamic(() => loadManualSheet().then((m) => m.ManualPlaceSheet), { ssr: false });
 
-export function TripScreen({ tripId, initialData }: { tripId: string; initialData: TripDetail }) {
+/**
+ * Màn chuyến: phần đầu (thông tin chuyến) và các tab. Mỗi tab tự tải dữ liệu của mình theo trang
+ * (Danh sách, Timeline, giá từng chỗ) hoặc số liệu cộng sẵn ở database (Thống kê).
+ */
+export function TripScreen({
+  tripId,
+  initialInfo,
+  initialStops,
+  initialStats,
+}: {
+  tripId: string;
+  initialInfo: TripInfo;
+  initialStops?: InitialStops;
+  initialStats?: RawTripStats;
+}) {
   const [tab, setTab] = useState<TripTab>('all');
+  const [day, setDay] = useState('all');
   const router = useRouter();
   const pathname = usePathname();
+  const qc = useQueryClient();
   const view = parseTripView(useSearchParams().get('view'));
-  const { data } = useQuery({ ...tripQuery(tripId), initialData });
-  const setStatus = useSetStatus(tripId);
-  const remove = useRemoveFromTrip(tripId);
-  const { trip, items } = data;
-
-  const visible = items.filter((i) => TAB_STATUSES[tab].includes(i.status));
-  const groups = STORED_CATEGORIES.map((category) => ({ category, rows: visible.filter((i) => i.place.category === category) })).filter(
-    (g) => g.rows.length > 0,
-  );
+  const { data: info } = useQuery({ ...tripQuery(tripId), initialData: initialInfo });
+  const [adding, setAdding] = useState(false);
+  const { trip } = info;
+  const days = tripDays(trip);
   const exploreHref = `/explore?${new URLSearchParams({ city: trip.city, trip: trip.id })}`;
-  const mutationError = setStatus.error ?? remove.error;
+  const dayOptions = [
+    { value: 'all', label: 'Tất cả ngày' },
+    ...days.map((d, i) => ({ value: d, label: `Ngày ${i + 1} · ${formatDayMonth(d)}` })),
+    { value: 'none', label: 'Chưa xếp giờ' },
+  ];
 
   return (
-    <main className="animate-enter flex flex-col gap-4 px-2 py-4 pb-28">
+    <main className="animate-enter flex flex-col gap-4 px-2 py-4">
       <header className="flex flex-col gap-1">
         <Link href="/" aria-label="Quay lại" className="-ml-2 inline-flex size-11 items-center justify-center pressable rounded text-ink hover:bg-surface">
           <ArrowLeft size={20} aria-hidden />
         </Link>
-        <h1 className="text-xl font-extrabold">{trip.city}</h1>
-        <p className="text-sm text-muted">
-          {trip.name}
-          {dateRange(trip) && ` · ${dateRange(trip)}`}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-extrabold">{trip.city}</h1>
+            <p className="truncate text-sm text-muted">
+              {trip.name}
+              {dateRange(trip) && ` · ${dateRange(trip)}`}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              onPointerEnter={() => void loadManualSheet()}
+              onFocus={() => void loadManualSheet()}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded border border-line bg-white px-3 text-sm font-semibold text-ink pressable hover:bg-surface"
+            >
+              <Plus size={18} aria-hidden />
+              Thêm
+            </button>
+            <Link
+              href={exploreHref}
+              aria-label="Tìm thêm"
+              title="Tìm thêm"
+              className="inline-flex size-11 items-center justify-center rounded bg-accent text-white pressable hover:bg-accent-strong"
+            >
+              <Search size={18} aria-hidden />
+            </Link>
+          </div>
+        </div>
       </header>
 
       <div className="flex rounded border border-line bg-white p-1" role="group" aria-label="Kiểu hiển thị">
@@ -104,6 +108,8 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
             type="button"
             aria-pressed={view === v.value}
             onClick={() => router.push(tripViewHref(pathname, v.value), { scroll: false })}
+            onPointerEnter={() => void VIEW_LOADERS[v.value]?.()}
+            onFocus={() => void VIEW_LOADERS[v.value]?.()}
             className={`min-h-11 flex-1 rounded-sm text-sm font-semibold pressable ${view === v.value ? 'bg-accent text-white' : 'text-ink hover:bg-surface'}`}
           >
             {v.label}
@@ -111,57 +117,26 @@ export function TripScreen({ tripId, initialData }: { tripId: string; initialDat
         ))}
       </div>
 
-      <div className="flex gap-2" role="group" aria-label="Lọc theo trạng thái">
-        {TRIP_TABS.map((t) => (
-          <Chip key={t.value} selected={tab === t.value} onClick={() => setTab(t.value)}>
-            {t.label}
-          </Chip>
-        ))}
-      </div>
-
-      {mutationError && (
-        <p role="alert" className="text-sm text-bad">
-          {mutationError.message}
-        </p>
+      {/* Thống kê luôn tính trên cả chuyến nên không có bộ lọc. */}
+      {view !== 'stats' && (
+        <div className="flex flex-wrap gap-2">
+          <Dropdown size="sm" label="Lọc theo trạng thái" prefix="Trạng thái:" value={tab} options={TRIP_TABS} onChange={setTab} />
+          {view === 'timeline' && <Dropdown size="sm" label="Lọc theo ngày" prefix="Ngày:" value={day} options={dayOptions} onChange={setDay} />}
+        </div>
       )}
 
       {view === 'map' ? (
         <TripMap tripId={tripId} tab={tab} />
-      ) : groups.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted">Chưa có chỗ nào ở đây. Bấm &quot;Tìm thêm&quot; để thêm chỗ.</p>
+      ) : view === 'stats' ? (
+        <TripStatsPanel tripId={tripId} info={info} initialStats={initialStats} initialStops={initialStops} />
+      ) : view === 'timeline' ? (
+        <TripTimeline tripId={tripId} tab={tab} day={day} days={days} people={trip.party_size} initial={initialStops} />
       ) : (
-        groups.map(({ category, rows }) => (
-          <section key={category} className="flex flex-col gap-2">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
-              {CATEGORY_LABELS[category]} ({rows.length})
-            </h2>
-            <ul className="flex flex-col gap-2">
-              {rows.map((item, index) => (
-                <PlaceRow
-                  index={index}
-                  key={item.id}
-                  tripId={tripId}
-                  item={item}
-                  onStatus={(status) => setStatus.mutate({ tripPlaceId: item.id, status })}
-                  onRemove={() => remove.mutate({ tripPlaceId: item.id })}
-                />
-              ))}
-            </ul>
-          </section>
-        ))
+        <TripList tripId={tripId} tab={tab} days={days} initial={initialStops} />
       )}
 
-      {view === 'list' && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+16px)] mx-auto flex max-w-[480px] justify-end px-2">
-          <Link
-            href={exploreHref}
-            className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded bg-accent px-5 text-sm font-semibold text-white pressable shadow-md hover:bg-accent-strong"
-          >
-            <Search size={18} aria-hidden />
-            Tìm thêm
-          </Link>
-        </div>
-      )}
+      {/* Gợi ý giờ/phương tiện dựa trên các chỗ đã tải (mọi trang đã xem). */}
+      {adding && <ManualPlaceSheet tripId={tripId} city={trip.city} days={days} items={cachedStops(qc, tripId)} onClose={() => setAdding(false)} />}
     </main>
   );
 }

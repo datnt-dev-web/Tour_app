@@ -8,9 +8,66 @@ export type TripPlace = Database['public']['Tables']['trip_places']['Row'];
 export type TripPlaceStatus = Database['public']['Enums']['trip_place_status'];
 export type TripSummary = Trip & { confirmedCount: number; pendingCount: number };
 export type TripPlaceItem = TripPlace & { place: Place };
+export type TripExpense = Database['public']['Tables']['trip_expenses']['Row'];
+/** Toàn bộ chỗ của chuyến (kể cả đã bỏ); chỉ dùng ở server cho bản đồ. */
 export interface TripDetail {
   trip: Trip;
   items: TripPlaceItem[];
+}
+/** Phần đầu màn chuyến: thông tin chuyến và chi phí khác (luôn ngắn, không cần phân trang). */
+export interface TripInfo {
+  trip: Trip;
+  expenses: TripExpense[];
+}
+/** Một chỗ còn hiệu lực trong chuyến (view trip_stops): kèm loại chỗ và cờ trùng giờ tính ở database. */
+export type TripStop = Database['public']['Views']['trip_stops']['Row'] & { place: Place };
+
+/** Mỗi trang của Danh sách / Timeline / giá từng chỗ. */
+export const STOPS_PAGE_SIZE = 20;
+
+/**
+ * Truy vấn một trang chỗ của chuyến. `order`: 'category' cho Danh sách (gom theo loại),
+ * 'schedule' cho Timeline (theo ngày, giờ). `day`: 'all', 'none' (chưa xếp giờ) hoặc YYYY-MM-DD.
+ */
+export interface StopsQuery {
+  order: 'category' | 'schedule';
+  statuses: TripPlaceStatus[];
+  day: string;
+  /** Bắt đầu từ 1. */
+  page: number;
+}
+export interface StopsPage {
+  items: TripStop[];
+  total: number;
+}
+/** Số liệu thô từ hàm trip_stats (tiền là tổng cả nhóm, VND). */
+export interface RawTripStats {
+  people: number;
+  placesTotal: number;
+  expensesTotal: number;
+  visitedTotal: number;
+  priced: number;
+  active: number;
+  visited: number;
+  confirmed: number;
+  wanted: number;
+  byCategory: { category: Database['public']['Enums']['place_category']; total: number; count: number }[];
+  byDay: { date: string | null; total: number }[];
+}
+/** Giờ địa phương của chuyến: ngày YYYY-MM-DD, giờ HH:MM; giờ kết thúc không bắt buộc. */
+export interface VisitSchedule {
+  date: string;
+  time: string;
+  endTime: string | null;
+}
+
+/** Các trường nhóm sửa trên một chỗ của chuyến; khóa vắng mặt là giữ nguyên. */
+export interface TripPlacePatch {
+  /** null là bỏ giờ (chỗ quay về mục "Chưa xếp giờ"). */
+  schedule?: VisitSchedule | null;
+  transport?: string | null;
+  /** Tổng tiền cả nhóm (VND); null là chưa có giá. */
+  cost?: number | null;
 }
 export interface NewTripInput {
   groupId: string;
@@ -25,9 +82,16 @@ export interface TripsRepo {
   listTrips(groupId: string): Promise<TripSummary[]>;
   getTrip(tripId: string): Promise<Trip | null>;
   getTripDetail(tripId: string): Promise<TripDetail | null>;
+  getTripInfo(tripId: string): Promise<TripInfo | null>;
+  listStops(tripId: string, query: StopsQuery): Promise<StopsPage>;
+  getTripStats(tripId: string): Promise<RawTripStats | null>;
   /** Đã có (trip_id, place_id) thì trả dòng cũ, giữ nguyên status và note (riêng dropped được đưa về wanted). */
   addPlaceToTrip(tripId: string, placeId: string, userId: string, note?: string): Promise<TripPlace>;
   setTripPlaceStatus(tripPlaceId: string, status: TripPlaceStatus): Promise<void>;
+  updateTripPlace(tripPlaceId: string, patch: TripPlacePatch): Promise<void>;
+  setPartySize(tripId: string, partySize: number): Promise<void>;
+  addExpense(tripId: string, label: string, amount: number): Promise<TripExpense>;
+  removeExpense(expenseId: string): Promise<void>;
   removeFromTrip(tripPlaceId: string): Promise<void>;
 }
 
@@ -43,6 +107,8 @@ export function toSummary({ trip_places, ...trip }: TripRow): TripSummary {
 }
 
 const notFound = () => new AppError('NOT_FOUND', 'Không tìm thấy chỗ trong chuyến.');
+/** PostgREST: offset vượt quá số dòng (HTTP 416). */
+const RANGE_NOT_SATISFIABLE = 'PGRST103';
 
 export function createTripsRepo(db: Db): TripsRepo {
   async function getTrip(tripId: string): Promise<Trip | null> {
@@ -53,9 +119,12 @@ export function createTripsRepo(db: Db): TripsRepo {
 
   return {
     async createTrip({ groupId, name, city, startDate, endDate }) {
+      // Số người mặc định = số thành viên nhóm; nhóm sửa lại ở tab Thống kê nếu có người không đi.
+      const { count, error: countError } = await db.from('group_members').select('user_id', { count: 'exact', head: true }).eq('group_id', groupId);
+      if (countError) throw countError;
       const { data, error } = await db
         .from('trips')
-        .insert({ group_id: groupId, name, city, start_date: startDate, end_date: endDate })
+        .insert({ group_id: groupId, name, city, start_date: startDate, end_date: endDate, party_size: Math.max(1, count ?? 1) })
         .select('*')
         .single();
       if (error) throw error;
@@ -71,13 +140,47 @@ export function createTripsRepo(db: Db): TripsRepo {
     getTrip,
 
     async getTripDetail(tripId) {
-      const [trip, items] = await Promise.all([
-        getTrip(tripId),
-        db.from('trip_places').select('*, place:places(*)').eq('trip_id', tripId).order('id'),
-      ]);
+      const [trip, items] = await Promise.all([getTrip(tripId), db.from('trip_places').select('*, place:places(*)').eq('trip_id', tripId).order('id')]);
       if (items.error) throw items.error;
       if (!trip) return null;
       return { trip, items: items.data.flatMap((row) => (row.place ? [{ ...row, place: row.place }] : [])) };
+    },
+
+    async getTripInfo(tripId) {
+      const [trip, expenses] = await Promise.all([getTrip(tripId), db.from('trip_expenses').select('*').eq('trip_id', tripId).order('created_at')]);
+      if (expenses.error) throw expenses.error;
+      return trip ? { trip, expenses: expenses.data } : null;
+    },
+
+    async listStops(tripId, { order, statuses, day, page }) {
+      const filtered = (columns: string, opts: { count: 'exact'; head?: boolean }) => {
+        let q = db.from('trip_stops').select(columns, opts).eq('trip_id', tripId).in('status', statuses);
+        if (day === 'none') q = q.is('visit_date', null);
+        else if (day !== 'all') q = q.eq('visit_date', day);
+        return q;
+      };
+      let q = filtered('*, place:places(*)', { count: 'exact' }).returns<(Database['public']['Views']['trip_stops']['Row'] & { place: Place | null })[]>();
+      if (order === 'category') q = q.order('category');
+      q = q
+        .order('visit_date', { nullsFirst: false })
+        .order('visit_time', { nullsFirst: false })
+        .order('id');
+      const from = (Math.max(1, page) - 1) * STOPS_PAGE_SIZE;
+      const { data, error, count } = await q.range(from, from + STOPS_PAGE_SIZE - 1);
+      if (error?.code === RANGE_NOT_SATISFIABLE) {
+        // Trang đã vượt tổng (ví dụ nhóm vừa xóa bớt chỗ): trả rỗng kèm tổng mới để giao diện lùi về trang cuối.
+        const head = await filtered('id', { count: 'exact', head: true });
+        if (head.error) throw head.error;
+        return { items: [], total: head.count ?? 0 };
+      }
+      if (error) throw error;
+      return { items: data.flatMap((row) => (row.place ? [{ ...row, place: row.place }] : [])), total: count ?? 0 };
+    },
+
+    async getTripStats(tripId) {
+      const { data, error } = await db.rpc('trip_stats', { p_trip_id: tripId });
+      if (error) throw error;
+      return data as RawTripStats | null;
     },
 
     async addPlaceToTrip(tripId, placeId, userId, note) {
@@ -110,6 +213,45 @@ export function createTripsRepo(db: Db): TripsRepo {
       const { data, error } = await db.from('trip_places').update({ status }).eq('id', tripPlaceId).select('id');
       if (error) throw error;
       if (data.length === 0) throw notFound();
+    },
+
+    async updateTripPlace(tripPlaceId, { schedule, transport, cost }) {
+      const changes = {
+        ...(schedule !== undefined && {
+          visit_date: schedule?.date ?? null,
+          visit_time: schedule?.time ?? null,
+          visit_end_time: schedule?.endTime ?? null,
+        }),
+        ...(transport !== undefined && { transport }),
+        ...(cost !== undefined && { cost }),
+      };
+      // Không có gì để ghi: PostgREST sẽ không chạm dòng nào và bị hiểu nhầm thành "không tìm thấy".
+      if (Object.keys(changes).length === 0) return;
+      const { data, error } = await db
+        .from('trip_places')
+        .update(changes)
+        .eq('id', tripPlaceId)
+        .select('id');
+      if (error) throw error;
+      if (data.length === 0) throw notFound();
+    },
+
+    async setPartySize(tripId, partySize) {
+      const { data, error } = await db.from('trips').update({ party_size: partySize }).eq('id', tripId).select('id');
+      if (error) throw error;
+      if (data.length === 0) throw new AppError('NOT_FOUND', 'Không tìm thấy chuyến đi.');
+    },
+
+    async addExpense(tripId, label, amount) {
+      const { data, error } = await db.from('trip_expenses').insert({ trip_id: tripId, label, amount }).select('*').single();
+      if (error) throw error;
+      return data;
+    },
+
+    async removeExpense(expenseId) {
+      const { data, error } = await db.from('trip_expenses').delete().eq('id', expenseId).select('id');
+      if (error) throw error;
+      if (data.length === 0) throw new AppError('NOT_FOUND', 'Không tìm thấy khoản chi.');
     },
 
     async removeFromTrip(tripPlaceId) {

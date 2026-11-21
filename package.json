@@ -1,6 +1,6 @@
 {
   "name": "food-tour",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:db": "vitest run --config vitest.db.config.ts",
     "seed:haiphong": "tsx --conditions=react-server scripts/seed-haiphong.ts",
-    "dev:login-link": "tsx --conditions=react-server scripts/dev-login-link.ts",
+    "account:create": "tsx --conditions=react-server scripts/create-account.ts",
+    "account:seed": "tsx --conditions=react-server scripts/seed-accounts.ts",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {

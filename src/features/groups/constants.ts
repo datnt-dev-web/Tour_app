@@ -1,3 +1,2 @@
-/** Cookie giữ token lời mời giữa lúc bấm link và lúc đăng nhập xong. */
-export const INVITE_COOKIE = 'ft-invite';
-export const INVITE_COOKIE_MAX_AGE_SEC = 7 * 24 * 60 * 60;
+/** Tên nhóm mặc định khi cấp tài khoản lúc chưa có nhóm nào. */
+export const DEFAULT_GROUP_NAME = 'Con lợn nhựa';

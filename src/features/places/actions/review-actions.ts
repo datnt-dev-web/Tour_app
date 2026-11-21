@@ -8,7 +8,8 @@ import { createReviewsRepo, type InternalReview } from '../repositories/reviews-
 const reviewSchema = z.object({
   placeId: z.uuid(),
   verdict: z.enum(['up', 'down']),
-  note: z.string().trim().max(500),
+  // Bắt buộc có nội dung (sau khi bỏ khoảng trắng), khớp với nút gửi bị khóa ở client.
+  note: z.string().trim().min(1).max(500),
   tripId: z.uuid().optional(),
 });
 
@@ -16,7 +17,6 @@ const reviewSchema = z.object({
 export async function addInternalReviewAction(input: z.input<typeof reviewSchema>): Promise<ActionResult<InternalReview>> {
   return runAction(async () => {
     const { db } = await authed();
-    const { note, ...rest } = parse(reviewSchema, input);
-    return createReviewsRepo(db).addReview({ ...rest, note: note || null });
+    return createReviewsRepo(db).addReview(parse(reviewSchema, input));
   });
 }

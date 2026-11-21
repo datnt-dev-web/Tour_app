@@ -40,8 +40,11 @@ const TILE_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" t
 const MARKER_COLORS = { accent: '#047857', warn: '#d97706' } as const;
 const markerColor = (p: TripMapPoint) => (p.status === 'wanted' ? MARKER_COLORS.warn : MARKER_COLORS.accent);
 
-/** Căn khung nhìn theo các điểm đang hiện; một điểm thì phóng gần thay vì fitBounds (sẽ zoom tối đa). */
-function FitBounds({ points }: { points: TripMapPoint[] }) {
+/**
+ * Căn khung nhìn theo các điểm đang hiện; một điểm thì phóng gần thay vì fitBounds (sẽ zoom tối đa).
+ * Đổi `resetKey` để căn lại (ví dụ tắt "vị trí của tôi" thì quay về khung các quán).
+ */
+function FitBounds({ points, resetKey }: { points: TripMapPoint[]; resetKey: number }) {
   const map = useMap();
   useEffect(() => {
     if (points.length === 0) return;
@@ -50,7 +53,7 @@ function FitBounds({ points }: { points: TripMapPoint[] }) {
       return;
     }
     map.fitBounds(latLngBounds(points.map((p): [number, number] => [p.lat, p.lng])), { padding: FIT_PADDING });
-  }, [map, points]);
+  }, [map, points, resetKey]);
   return null;
 }
 
@@ -127,7 +130,15 @@ const Notice = ({ children }: { children: React.ReactNode }) => (
 export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab }) {
   const { data, isPending, error, refetch, isRefetching } = useQuery(tripLocationsQuery(tripId));
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { location, start } = useMyLocation();
+  const { location, start, stop } = useMyLocation();
+  const [fitKey, setFitKey] = useState(0);
+  const locationOn = location.status === 'ok' || location.status === 'locating';
+  // Bấm lần nữa để tắt: bỏ chấm vị trí, danh sách gần nhất, và đưa bản đồ về khung các quán như lúc chưa bấm.
+  const toggleLocation = () => {
+    if (!locationOn) return start();
+    stop();
+    setFitKey((k) => k + 1);
+  };
   const me = location.status === 'ok' ? location.coords : null;
   // Tham chiếu ổn định để FitBounds không căn lại khung nhìn mỗi lần chọn marker.
   const points = useMemo(() => (data ? data.points.filter((p) => TAB_STATUSES[tab].includes(p.status)) : []), [data, tab]);
@@ -163,7 +174,7 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
         <div className={`animate-fade-in relative isolate overflow-hidden rounded border border-line ${MAP_HEIGHT}`}>
           <MapContainer center={DEFAULT_CENTER} zoom={12} zoomControl attributionControl className="size-full">
             <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
-            <FitBounds points={points} />
+            <FitBounds points={points} resetKey={fitKey} />
             <ClearOnMapClick onClear={() => setSelectedId(null)} />
             {points.map((p) => {
               const isSelected = p.tripPlaceId === selectedId;
@@ -182,10 +193,9 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
           </MapContainer>
           <button
             type="button"
-            onClick={start}
-            disabled={location.status === 'locating'}
-            aria-label="Hiện vị trí của tôi"
-            aria-pressed={location.status === 'ok'}
+            onClick={toggleLocation}
+            aria-label={locationOn ? 'Tắt vị trí của tôi' : 'Hiện vị trí của tôi'}
+            aria-pressed={locationOn}
             className={`absolute right-3 top-3 z-[1000] inline-flex size-11 items-center justify-center rounded border border-line bg-white shadow-card pressable hover:bg-surface disabled:opacity-60 ${
               location.status === 'ok' ? 'text-ai' : 'text-ink'
             }`}

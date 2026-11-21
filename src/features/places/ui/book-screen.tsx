@@ -4,11 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { staggerStyle } from '@/shared/ui/stagger';
 import { Chip } from '@/shared/ui/chip';
+import { useDebouncedValue } from '@/shared/ui/use-debounced-value';
 import { BOOK_FILTERS, CATEGORY_LABELS, placeKeyOf } from '../constants';
-import { filterBook, type BookRow, type BookVerdict } from '../services/book-service';
+import { bookCities, filterBook, pickBookCity, type BookRow, type BookVerdict } from '../services/book-service';
 import { bookQuery } from './book-queries';
 import { VerdictBadge } from './verdict-badge';
 
@@ -59,25 +60,43 @@ function VirtualRows({ rows }: { rows: BookRow[] }) {
   );
 }
 
-export function BookScreen({ groupId, initialRows }: { groupId: string; initialRows: BookRow[] }) {
+/** `preferredCityKey`: thành phố của chuyến sắp đi (đã chuẩn hóa), mở sẵn mục đó. */
+export function BookScreen({ groupId, initialRows, preferredCityKey }: { groupId: string; initialRows: BookRow[]; preferredCityKey: string | null }) {
   const { data } = useQuery({ ...bookQuery(groupId), initialData: initialRows });
+  const cities = useMemo(() => bookCities(data), [data]);
+  const [chosenCity, setChosenCity] = useState<string | null>(null);
+  // Thành phố đã chọn biến mất (xóa hết chỗ ở đó) thì quay về mặc định.
+  const cityKey = cities.some((c) => c.key === chosenCity) ? chosenCity : pickBookCity(cities, preferredCityKey);
+  const current = cities.find((c) => c.key === cityKey);
   const [input, setInput] = useState('');
-  const [q, setQ] = useState('');
   const [verdict, setVerdict] = useState<BookVerdict | 'all'>('all');
 
-  useEffect(() => {
-    const t = setTimeout(() => setQ(input), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [input]);
+  const q = useDebouncedValue(input, SEARCH_DEBOUNCE_MS);
 
-  const rows = useMemo(() => filterBook(data, { q, verdict: verdict === 'all' ? undefined : verdict }), [data, q, verdict]);
+  const rows = useMemo(
+    () => filterBook(data, { q, cityKey: cityKey ?? undefined, verdict: verdict === 'all' ? undefined : verdict }),
+    [data, q, cityKey, verdict],
+  );
 
   return (
     <main className="animate-enter flex flex-col gap-4 px-2 py-4">
       <header className="flex items-baseline justify-between gap-2">
         <h1 className="text-xl font-extrabold">Sổ quán</h1>
-        <p className="text-sm text-muted">{data.length} chỗ</p>
+        <p className="text-sm text-muted">
+          {current ? `${current.count} chỗ ở ${current.label}` : `${data.length} chỗ`}
+        </p>
       </header>
+
+      {cities.length > 0 && (
+        <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none]" role="group" aria-label="Thành phố">
+          {cities.map((c) => (
+            <Chip key={c.key} selected={c.key === cityKey} onClick={() => setChosenCity(c.key)} className="shrink-0">
+              {c.label}
+              <span className={c.key === cityKey ? 'text-white/80' : 'text-muted'}>{c.count}</span>
+            </Chip>
+          ))}
+        </div>
+      )}
 
       <label className="relative block">
         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden />
@@ -115,7 +134,7 @@ export function BookScreen({ groupId, initialRows }: { groupId: string; initialR
         </ul>
       )}
 
-      <p className="text-center text-xs text-muted">Sổ quán gồm mọi chỗ nhóm từng lưu, kèm đánh giá mới nhất của nhóm.</p>
+      <p className="text-center text-xs text-muted">Sổ quán gồm mọi chỗ nhóm từng lưu, gom theo thành phố, kèm đánh giá mới nhất của nhóm.</p>
     </main>
   );
 }

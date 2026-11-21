@@ -1,14 +1,15 @@
 /* Service worker viết tay (Serwist/@serwist/next dựa trên webpack, không hợp build Turbopack của Next 16).
  * - Precache: icon + manifest (vỏ app).
- * - /_next/static và font: StaleWhileRevalidate (tên file có hash nên coi như precache sau lần tải đầu).
+ * - /_next/static, font và ảnh động /gifs/: StaleWhileRevalidate (mở lại app là có ngay, bản mới tải ngầm).
  * - Trang (navigate): NetworkFirst, timeout 3s rồi dùng bản cache.
  * - /api/* và mọi request không phải GET: không bao giờ cache. */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `ft-shell-${VERSION}`;
 const STATIC = `ft-static-${VERSION}`;
 const PAGES = `ft-pages-${VERSION}`;
 const NETWORK_TIMEOUT_MS = 3000;
-const PRECACHE = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
+// loading.gif: màn chờ cần có ngay ở mọi lần mở app, kể cả khi mạng chậm.
+const PRECACHE = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/gifs/loading.gif'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
@@ -57,7 +58,12 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin && !/fonts\.(gstatic|googleapis)\.com$/.test(url.hostname)) return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
 
-  if (url.pathname.startsWith('/_next/static/') || request.destination === 'font' || /fonts\.(gstatic|googleapis)\.com$/.test(url.hostname)) {
+  if (
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/gifs/') ||
+    request.destination === 'font' ||
+    /fonts\.(gstatic|googleapis)\.com$/.test(url.hostname)
+  ) {
     event.respondWith(staleWhileRevalidate(request));
   } else if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request));

@@ -1,4 +1,5 @@
 import type { PlaceCandidate, PlacesClient } from '@/integrations/google-places/types';
+import { hasRealAddress } from '@/features/places/constants';
 import { createPlacesRepo, type StoredPlaceCategory } from '@/features/places/repositories/places-repo';
 import type { ReviewVerdict } from '@/features/places/repositories/reviews-repo';
 import { createTripsRepo, type TripPlaceStatus } from '@/features/trips/repositories/trips-repo';
@@ -52,9 +53,6 @@ export interface SeedDeps {
   hasReview(placeId: string, userId: string, verdict: ReviewVerdict): Promise<boolean>;
   addReview(i: { placeId: string; userId: string; verdict: ReviewVerdict; note: string }): Promise<void>;
 }
-
-/** Chỗ chưa có địa chỉ thật (ví dụ "Sủi dìn") thì không có gì để đối chiếu Google. */
-const hasRealAddress = (address: string) => !address.startsWith('(');
 
 export async function seedTrip(
   deps: SeedDeps,
@@ -118,19 +116,8 @@ export function createSeedDeps(db: Db, places: PlacesClient | null): SeedDeps {
       const place = await placesRepo.upsertPlaceFromGoogle(groupId, c, category, city, userId);
       return { id: place.id, isNew: !old };
     },
-    async findLocalPlace(groupId, cityNorm, nameNorm) {
-      const rows = mustData(await db.from('places').select('id, name').eq('group_id', groupId).eq('city_norm', cityNorm).is('google_place_id', null));
-      return rows.find((r) => normalizeText(r.name) === nameNorm) ?? null;
-    },
-    async createLocalPlace({ groupId, userId, name, address, city, category }) {
-      return mustData(
-        await db
-          .from('places')
-          .insert({ group_id: groupId, name, address, city, city_norm: normalizeText(city), category, verified: false, created_by: userId })
-          .select('id')
-          .single(),
-      );
-    },
+    findLocalPlace: (groupId, cityNorm, nameNorm) => placesRepo.findLocalPlace(groupId, cityNorm, nameNorm),
+    createLocalPlace: (i) => placesRepo.createLocalPlace(i),
     addPlaceToTrip: (tripId, placeId, userId, note) => tripsRepo.addPlaceToTrip(tripId, placeId, userId, note || undefined),
     setTripPlaceStatus: (id, status) => tripsRepo.setTripPlaceStatus(id, status),
     async hasReview(placeId, userId, verdict) {

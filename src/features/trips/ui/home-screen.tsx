@@ -10,11 +10,6 @@ import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SignOutButton } from '@/features/auth/ui/sign-out-button';
-import { InviteButton } from '@/features/groups/ui/invite-button';
-import { placeKeyOf } from '@/features/places/constants';
-import type { BookRow } from '@/features/places/services/book-service';
-import { praisedQuery } from '@/features/places/ui/book-queries';
-import { VerdictBadge } from '@/features/places/ui/verdict-badge';
 import type { TripSummary } from '../repositories/trips-repo';
 import { splitTrips } from '../services/trips-service';
 import { NewTripForm } from './new-trip-form';
@@ -62,10 +57,9 @@ function UpcomingCard({ trip, today, index }: { trip: TripSummary; today: string
   );
 }
 
-export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPraised }: { userId: string; groupId: string; groupName: string; initialTrips: TripSummary[]; initialPraised: BookRow[] }) {
+export function HomeScreen({ userId, groupId, groupName, initialTrips }: { userId: string; groupId: string; groupName: string; initialTrips: TripSummary[] }) {
   const [creating, setCreating] = useState(false);
   const { data: trips } = useQuery({ ...tripsQuery(groupId), initialData: initialTrips });
-  const { data: praised } = useQuery({ ...praisedQuery(groupId), initialData: initialPraised });
   const { upcoming, past } = splitTrips(trips, todayInVietnam());
 
   return (
@@ -77,7 +71,6 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPr
         </div>
         <SignOutButton userId={userId} />
       </header>
-      <InviteButton groupId={groupId} />
 
       {upcoming.map((t, i) => (
         <UpcomingCard key={t.id} index={i} trip={t} today={todayInVietnam()} />
@@ -91,28 +84,6 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips, initialPr
           <Plus size={18} aria-hidden />
           Tạo chuyến mới
         </Button>
-      )}
-
-      {praised.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-base font-bold">Nhóm từng khen</h2>
-            <Link href="/book" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent">
-              Sổ quán
-            </Link>
-          </div>
-          {praised.map((p, i) => (
-            <Link key={p.placeId} href={`/places/${encodeURIComponent(placeKeyOf(p))}`} className="stagger pressable block" style={staggerStyle(i)}>
-              <Card className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{p.name}</p>
-                  <p className="truncate text-sm text-muted">{p.note || p.address}</p>
-                </div>
-                <VerdictBadge verdict={p.verdict} className="shrink-0" />
-              </Card>
-            </Link>
-          ))}
-        </section>
       )}
 
       {past.length > 0 && (

@@ -1,8 +1,8 @@
-import { queryOptions } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { AppError } from '@/shared/errors';
 import { queryKeys } from '@/shared/query/keys';
 import { createBrowserSupabase } from '@/shared/supabase/browser';
-import { createTripsRepo } from '../repositories/trips-repo';
+import { createTripsRepo, type StopsQuery } from '../repositories/trips-repo';
 import type { TripLocations } from '../services/trip-locations-service';
 
 /** Danh sách phẳng; việc tách sắp đi/đã đi làm lúc render để đếm ngược theo ngày hiện tại. */
@@ -12,13 +12,33 @@ export const tripsQuery = (groupId: string) =>
     queryFn: () => createTripsRepo(createBrowserSupabase()).listTrips(groupId),
   });
 
+/** Thông tin chuyến + chi phí khác (đầu màn chuyến). */
 export const tripQuery = (tripId: string) =>
   queryOptions({
     queryKey: queryKeys.trip(tripId),
     queryFn: async () => {
-      const detail = await createTripsRepo(createBrowserSupabase()).getTripDetail(tripId);
-      if (!detail) throw new AppError('NOT_FOUND', 'Không tìm thấy chuyến đi.');
-      return detail;
+      const info = await createTripsRepo(createBrowserSupabase()).getTripInfo(tripId);
+      if (!info) throw new AppError('NOT_FOUND', 'Không tìm thấy chuyến đi.');
+      return info;
+    },
+  });
+
+/** Một trang chỗ (lọc, sắp, phân trang ở database). Giữ trang cũ trong lúc tải trang mới để khỏi nháy. */
+export const tripStopsQuery = (tripId: string, query: StopsQuery) =>
+  queryOptions({
+    queryKey: queryKeys.tripStops(tripId, query),
+    queryFn: () => createTripsRepo(createBrowserSupabase()).listStops(tripId, query),
+    placeholderData: keepPreviousData,
+  });
+
+/** Số liệu thống kê cộng ở database (hàm trip_stats). */
+export const tripStatsQuery = (tripId: string) =>
+  queryOptions({
+    queryKey: queryKeys.tripStats(tripId),
+    queryFn: async () => {
+      const stats = await createTripsRepo(createBrowserSupabase()).getTripStats(tripId);
+      if (!stats) throw new AppError('NOT_FOUND', 'Không tìm thấy chuyến đi.');
+      return stats;
     },
   });
 

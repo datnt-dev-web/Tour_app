@@ -4,13 +4,11 @@ import { isApiPath, isPublicPath } from '@/shared/supabase/public-paths';
 describe('isPublicPath', () => {
   test.each([
     ['/login', true],
-    ['/auth/callback', true],
-    ['/invite/abc', true],
     ['/sw.js', true],
     ['/manifest.webmanifest', true],
     ['/', false],
     ['/explore', false],
-    ['/invitex', false],
+    ['/loginx', false],
   ])('%s -> %s', (path, expected) => expect(isPublicPath(path)).toBe(expected));
 });
 

@@ -14,6 +14,15 @@ export type BookPlaceRaw = Place & {
 
 export type PlaceRef = { id: string } | { googlePlaceId: string };
 
+export interface NewLocalPlace {
+  groupId: string;
+  userId: string;
+  name: string;
+  address: string | null;
+  city: string;
+  category: StoredPlaceCategory;
+}
+
 export interface PlacesRepo {
   findPlace(groupId: string, ref: PlaceRef): Promise<Place | null>;
   listBookPlaces(groupId: string): Promise<BookPlaceRaw[]>;
@@ -25,6 +34,9 @@ export interface PlacesRepo {
     city: string,
     userId: string,
   ): Promise<Place>;
+  /** Chỗ thêm tay (không có Google id) trùng tên đã chuẩn hóa trong cùng thành phố. */
+  findLocalPlace(groupId: string, cityNorm: string, nameNorm: string): Promise<{ id: string } | null>;
+  createLocalPlace(input: NewLocalPlace): Promise<{ id: string }>;
 }
 
 export function createPlacesRepo(db: Db): PlacesRepo {
@@ -70,6 +82,28 @@ export function createPlacesRepo(db: Db): PlacesRepo {
         .eq('google_place_id', c.googlePlaceId)
         .single();
       if (selectError) throw selectError;
+      return data;
+    },
+
+    async findLocalPlace(groupId, cityNorm, nameNorm) {
+      const { data, error } = await db
+        .from('places')
+        .select('id, name')
+        .eq('group_id', groupId)
+        .eq('city_norm', cityNorm)
+        .is('google_place_id', null);
+      if (error) throw error;
+      const hit = data.find((r) => normalizeText(r.name) === nameNorm);
+      return hit ? { id: hit.id } : null;
+    },
+
+    async createLocalPlace({ groupId, userId, name, address, city, category }) {
+      const { data, error } = await db
+        .from('places')
+        .insert({ group_id: groupId, name, address, city, city_norm: normalizeText(city), category, verified: false, created_by: userId })
+        .select('id')
+        .single();
+      if (error) throw error;
       return data;
     },
   };

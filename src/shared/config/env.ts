@@ -17,17 +17,9 @@ const schema = z.object({
   EXPLORE_MIN_REVIEWS: num(20),
   PLACES_TTL_SEC: num(86400),
   GEOCODE_TTL_SEC: num(2592000),
+  GEO_SUGGEST_TTL_SEC: num(604800),
   AI_SUMMARY_TTL_SEC: num(1209600),
   AI_HOT_TTL_SEC: num(604800),
-  BOOTSTRAP_OWNER_EMAILS: z
-    .string()
-    .default('')
-    .transform((s) =>
-      s
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean),
-    ),
 });
 
 // Giá trị giữ chỗ trong .env.example / .env.local; coi như chưa cấu hình để khỏi gọi Google vô ích.

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { BookPlaceRaw } from '@/features/places/repositories/places-repo';
-import { listBook } from '@/features/places/services/book-service';
+import { bookCities, listBook, pickBookCity } from '@/features/places/services/book-service';
 
 const raw = (id: string, name: string, over: Partial<BookPlaceRaw> = {}): BookPlaceRaw => ({
   id, group_id: 'G', google_place_id: null, name, city: 'Hải Phòng', city_norm: 'hai phong', address: 'Số 1 Lạch Tray',
@@ -35,5 +35,36 @@ describe('listBook', () => {
 
   test("verdict 'none' là chỗ chưa có đánh giá nào", async () => {
     expect((await listBook(repo, 'G', { verdict: 'none' })).map((r) => r.placeId)).toEqual(['c']);
+  });
+});
+
+describe('gom theo thành phố', () => {
+  const multi = [
+    ...data,
+    raw('d', 'Phở Thìn', { city: 'Hà Nội', city_norm: 'ha noi' }),
+    raw('e', 'Bún chả', { city: 'ha noi', city_norm: 'ha noi' }),
+    raw('f', 'Chả cá', { city: 'Hà Nội', city_norm: 'ha noi' }),
+    raw('g', 'Cơm tấm', { city: 'TP HCM', city_norm: 'tp hcm' }),
+  ];
+  const multiRepo = { listBookPlaces: async () => multi };
+
+  test('đếm theo khóa chuẩn hóa, lấy cách viết phổ biến; nhiều chỗ trước, bằng nhau thì theo chữ cái', async () => {
+    expect(bookCities(await listBook(multiRepo, 'G', {}))).toEqual([
+      { key: 'ha noi', label: 'Hà Nội', count: 3 },
+      { key: 'hai phong', label: 'Hải Phòng', count: 3 },
+      { key: 'tp hcm', label: 'TP HCM', count: 1 },
+    ]);
+  });
+
+  test('lọc theo thành phố', async () => {
+    expect((await listBook(multiRepo, 'G', { cityKey: 'ha noi' })).map((r) => r.placeId)).toEqual(['d', 'e', 'f']);
+  });
+
+  test('chọn sẵn thành phố của chuyến sắp đi nếu có, không thì nơi nhiều chỗ nhất', () => {
+    const cities = [{ key: 'hai phong', label: 'Hải Phòng', count: 3 }, { key: 'ha noi', label: 'Hà Nội', count: 1 }];
+    expect(pickBookCity(cities, 'ha noi')).toBe('ha noi');
+    expect(pickBookCity(cities, 'da nang')).toBe('hai phong');
+    expect(pickBookCity(cities, null)).toBe('hai phong');
+    expect(pickBookCity([], null)).toBeNull();
   });
 });

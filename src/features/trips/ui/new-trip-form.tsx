@@ -6,6 +6,7 @@ import { useState, type FormEvent } from 'react';
 import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
 import { Button } from '@/shared/ui/button';
+import { celebrate } from '@/shared/ui/celebrate';
 import { Card } from '@/shared/ui/card';
 import { createTripAction } from '../actions/trip-actions';
 
@@ -22,6 +23,7 @@ export function NewTripForm({ groupId, onCancel }: { groupId: string; onCancel: 
   const create = useMutation({
     mutationFn: async () => unwrap(await createTripAction({ groupId, name, city, startDate, endDate })),
     onSuccess: (trip) => {
+      celebrate();
       void qc.invalidateQueries({ queryKey: queryKeys.trips(groupId) });
       router.push(`/trips/${trip.id}`);
     },

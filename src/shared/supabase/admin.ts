@@ -4,7 +4,7 @@ import { env } from '@/shared/config/env';
 import type { Database } from './database.types';
 
 /**
- * Client service role, BỎ QUA RLS. Chỉ dùng cho seed, ai_cache và kiểm tra lời mời;
+ * Client service role, BỎ QUA RLS. Chỉ dùng cho seed, ai_cache, đăng nhập bằng username và cấp tài khoản;
  * không bao giờ import từ code chạy ở trình duyệt.
  */
 export function createAdminSupabase() {

@@ -4,10 +4,11 @@ import { z } from 'zod';
 import { STORED_CATEGORIES } from '@/features/places/constants';
 import { createPlacesRepo } from '@/features/places/repositories/places-repo';
 import { parse, runAction, type ActionResult } from '@/shared/actions';
+import { MAX_AMOUNT } from '@/shared/money';
 import { authed } from '@/shared/supabase/authed';
 import { TRIP_PLACE_STATUSES } from '../constants';
-import { createTripsRepo, type Trip, type TripPlace } from '../repositories/trips-repo';
-import { addToTrip, createTrip, removePlace, setStatus } from '../services/trips-service';
+import { createTripsRepo, type Trip, type TripExpense, type TripPlace } from '../repositories/trips-repo';
+import { addManualPlace, addToTrip, createTrip, removePlace, setStatus, updateStop } from '../services/trips-service';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const category = z.enum(STORED_CATEGORIES);
@@ -46,6 +47,30 @@ const statusSchema = z.object({
 });
 const removeSchema = z.object({ tripPlaceId: z.uuid() });
 
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+const scheduleSchema = z.object({ date: isoDate, time: hhmm, endTime: hhmm.nullable() }).nullable();
+const transportSchema = z.string().max(40).nullable();
+const amount = z.number().int().min(0).max(MAX_AMOUNT);
+const updateStopSchema = z.object({
+  tripId: z.uuid(),
+  tripPlaceId: z.uuid(),
+  patch: z.object({ schedule: scheduleSchema.optional(), transport: transportSchema.optional(), cost: amount.nullable().optional() }),
+});
+const partySizeSchema = z.object({ tripId: z.uuid(), partySize: z.number().int().min(1).max(100) });
+const addExpenseSchema = z.object({ tripId: z.uuid(), label: z.string().trim().min(1).max(120), amount });
+const removeExpenseSchema = z.object({ expenseId: z.uuid() });
+
+const manualSchema = z.object({
+  tripId: z.uuid(),
+  name: z.string().trim().min(1).max(120),
+  address: z.string().trim().max(200),
+  category,
+  note: z.string().trim().max(500),
+  schedule: scheduleSchema,
+  transport: transportSchema,
+  cost: amount.nullable(),
+});
+
 export async function createTripAction(input: z.input<typeof createTripSchema>): Promise<ActionResult<Trip>> {
   return runAction(async () => {
     const { db } = await authed();
@@ -74,6 +99,47 @@ export async function removeAction(input: z.input<typeof removeSchema>): Promise
   return runAction(async () => {
     const { db } = await authed();
     await removePlace(createTripsRepo(db), parse(removeSchema, input).tripPlaceId);
+    return null;
+  });
+}
+
+/** Sửa giờ, phương tiện, giá của một chỗ; dùng chung cho Danh sách, Timeline và Thống kê. */
+export async function updateStopAction(input: z.input<typeof updateStopSchema>): Promise<ActionResult<null>> {
+  return runAction(async () => {
+    const { db } = await authed();
+    await updateStop(createTripsRepo(db), parse(updateStopSchema, input));
+    return null;
+  });
+}
+
+export async function addManualPlaceAction(input: z.input<typeof manualSchema>): Promise<ActionResult<TripPlace>> {
+  return runAction(async () => {
+    const { db, userId } = await authed();
+    return addManualPlace({ trips: createTripsRepo(db), places: createPlacesRepo(db) }, { ...parse(manualSchema, input), userId });
+  });
+}
+
+export async function setPartySizeAction(input: z.input<typeof partySizeSchema>): Promise<ActionResult<null>> {
+  return runAction(async () => {
+    const { db } = await authed();
+    const { tripId, partySize } = parse(partySizeSchema, input);
+    await createTripsRepo(db).setPartySize(tripId, partySize);
+    return null;
+  });
+}
+
+export async function addExpenseAction(input: z.input<typeof addExpenseSchema>): Promise<ActionResult<TripExpense>> {
+  return runAction(async () => {
+    const { db } = await authed();
+    const { tripId, label, amount: value } = parse(addExpenseSchema, input);
+    return createTripsRepo(db).addExpense(tripId, label, value);
+  });
+}
+
+export async function removeExpenseAction(input: z.input<typeof removeExpenseSchema>): Promise<ActionResult<null>> {
+  return runAction(async () => {
+    const { db } = await authed();
+    await createTripsRepo(db).removeExpense(parse(removeExpenseSchema, input).expenseId);
     return null;
   });
 }

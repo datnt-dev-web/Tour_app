@@ -1,12 +1,12 @@
 'use client';
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { HotPlacesButton, UnverifiedHotPlaces } from '@/features/ai/ui/hot-places-button';
 import type { HotPlace } from '@/features/ai/services/ai-service';
-import { AddToTripSheet } from '@/features/trips/ui/add-to-trip-sheet';
 import { addedKey, useAddToTrip } from '@/features/trips/ui/use-trip-mutations';
 import { queryKeys } from '@/shared/query/keys';
 import { Badge } from '@/shared/ui/badge';
@@ -15,6 +15,9 @@ import type { RankedPlace } from '../services/ranking';
 import { buildExploreQuery, readParams, syncCityFromUrl, type ExploreParams } from './explore-params';
 import { Filters } from './filters';
 import { ResultCard } from './result-card';
+
+// Hộp chọn chuyến chỉ mở khi bấm "Thêm": tách chunk riêng cho trang Khám phá nhẹ hơn.
+const AddToTripSheet = dynamic(() => import('@/features/trips/ui/add-to-trip-sheet').then((m) => m.AddToTripSheet), { ssr: false });
 
 const CITY_DEBOUNCE_MS = 300;
 const SKELETON_COUNT = 4;

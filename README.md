@@ -1,51 +1,41 @@
 # Food Tour nhóm
 
-App mobile cho nhóm bạn chọn quán ăn theo chuyến đi. Chỉ vào được khi có lời mời.
+App mobile cho nhóm bạn chọn quán ăn theo chuyến đi. Không có đăng ký: admin cấp tài khoản, người dùng chỉ nhập username để vào (không mật khẩu).
 
-## Đăng nhập theo lời mời
+## Đăng nhập bằng username
 
-Luồng: `/invite/[token]` lưu cookie `ft-invite` rồi sang `/login`; đăng nhập Google hoặc magic link; `/auth/callback` kiểm tra quyền (`canAccess`) rồi nhận lời mời. Email trong `BOOTSTRAP_OWNER_EMAILS` được tự tạo nhóm "Con lợn nhựa" ở lần đăng nhập đầu.
+Tài khoản cố định: `wibu` (admin, owner nhóm) và `sucvat` (thành viên), khai báo trong `scripts/seed-accounts.ts`. Các script đọc Supabase trong `.env.local` (local hoặc cloud), cần `SUPABASE_SERVICE_ROLE_KEY`:
 
-Supabase vẫn để `enable_signup = true` vì OAuth và OTP cần tạo user mới. Người lạ có thể tạo tài khoản trong `auth.users`, nhưng bị `canAccess` đẩy ra (signOut, `/login?error=not-invited`) và không có dòng nào trong `group_members` nên RLS không cho đọc dữ liệu.
+```bash
+npm run account:seed        # tạo/cập nhật wibu + sucvat, chạy lại an toàn (cần chạy lại sau `supabase db reset`)
+npm run account:create -- --username an.vu --name "An Vũ" [--group <groupId>] [--role owner|member]
+```
 
-### Cấu hình Supabase Cloud
+Username 3–32 ký tự `a-z 0-9 . _`, lưu ở `profiles.username` (người dùng không tự sửa được). User mới dùng email giả `<username>@food-tour.local`. `account:seed` đưa cả hai vào nhóm wibu đang ở, nếu chưa thì nhóm "Con lợn nhựa" (tạo mới nếu chưa có). `account:create` không có `--group` thì vào nhóm duy nhất, hoặc tạo "Con lợn nhựa" nếu chưa có nhóm nào; có nhiều nhóm thì phải truyền `--group`.
 
-1. Authentication, Providers, Email: bật OTP/magic link, giữ "Confirm email" bật, và tắt đăng ký email + mật khẩu (chỉ dùng OTP hoặc Google) để người lạ không tự lập tài khoản bằng mật khẩu.
-2. Authentication, Providers, Google: bật, dán Client ID và Client Secret từ Google Cloud Console (OAuth client loại Web). Thêm `https://<project-ref>.supabase.co/auth/v1/callback` vào "Authorized redirect URIs" của Google.
-3. Authentication, URL Configuration:
-   - Site URL: domain production, ví dụ `https://food-tour.example.com`.
-   - Redirect URLs: thêm `https://food-tour.example.com/auth/callback` (và bản preview nếu cần).
-4. Biến môi trường production: xem `.env.example`, nhớ `BOOTSTRAP_OWNER_EMAILS`.
+Khi đăng nhập, server action tìm user theo username (phải thuộc ít nhất một nhóm), tạo magic link bằng service role rồi xác thực ngay ở server để ghi phiên vào cookie, không gửi email.
 
-### Chạy local
+**Lưu ý bảo mật:** ai biết username là vào được; đừng dùng username dễ đoán.
 
-Đặt `SUPABASE_AUTH_GOOGLE_CLIENT_ID` và `SUPABASE_AUTH_GOOGLE_SECRET` trong môi trường trước `supabase start` (provider Google đã bật trong `supabase/config.toml`). Magic link local xem ở Inbucket, `http://127.0.0.1:54324`.
+### Cấu hình Supabase
+
+- Local: `supabase/config.toml` đặt `enable_signup = false` (cần `npx supabase stop && npx supabase start` để áp dụng).
+- Cloud: Authentication, Sign In / Providers: tắt "Allow new users to sign up". Tài khoản do admin tạo qua service role không bị ảnh hưởng.
 
 ## Chạy app
 
-Biến môi trường: xem `.env.example` (Supabase URL/anon/service role, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY`, Upstash tùy chọn ở dev, `BOOTSTRAP_OWNER_EMAILS`, giới hạn AI và TTL cache). Sao chép thành `.env.local`; với Supabase local lấy khóa từ `npx supabase status`.
+Biến môi trường: xem `.env.example` (Supabase URL/anon/service role, `GOOGLE_PLACES_API_KEY`, `GEMINI_API_KEY`, Upstash tùy chọn ở dev, giới hạn AI và TTL cache). Sao chép thành `.env.local`; với Supabase local lấy khóa từ `npx supabase status`.
 
 ```bash
 npm install
 npx supabase start          # Postgres + Auth local (cần Docker)
 npx supabase db reset       # áp migration từ đầu
+npm run account:seed        # tạo wibu + sucvat
 npm run dev                 # http://localhost:3000
 npm run build && npm start  # bản production (service worker chỉ đăng ký ở bản này)
 ```
 
 Seed chuyến Hải Phòng: `npm run seed:haiphong -- --group <groupId> --user <userId>` (thiếu khóa Places thì mọi chỗ ở dạng chưa xác minh).
-
-### Đăng nhập nhanh khi dev (chỉ Supabase local)
-
-```bash
-npm run dev:login-link -- --email dev@example.com [--origin http://localhost:3000]
-```
-
-Script tạo user nếu chưa có, cho vào nhóm "Con lợn nhựa", seed Hải Phòng nếu nhóm chưa có chuyến, rồi in URL `/auth/callback?token_hash=...` dùng một lần; mở URL đó là đăng nhập. Script từ chối chạy nếu Supabase URL không phải localhost/127.0.0.1.
-
-### Bật Google OAuth
-
-Tạo OAuth client loại Web trong Google Cloud Console, thêm `<supabase-url>/auth/v1/callback` vào Authorized redirect URIs. Local: đặt `SUPABASE_AUTH_GOOGLE_CLIENT_ID`, `SUPABASE_AUTH_GOOGLE_SECRET` trước `supabase start`. Cloud: bật provider Google trong Dashboard (xem mục cấu hình ở trên).
 
 ## Bản đồ chuyến
 

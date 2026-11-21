@@ -1,61 +1,54 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { clearPageCache } from '@/shared/pwa/clear-page-cache';
-import { createBrowserSupabase } from '@/shared/supabase/browser';
 import { Button } from '@/shared/ui/button';
+import { signInWithUsernameAction } from '../actions/login-actions';
 
-const ERRORS: Record<string, string> = { 'not-invited': 'Bạn cần link mời từ nhóm để vào.' };
-
-export function LoginForm({ error }: { error?: string }) {
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
-  const [failure, setFailure] = useState<string | null>(error ? (ERRORS[error] ?? null) : null);
+/** Chỉ đăng nhập bằng username do admin cấp; không có đăng ký. */
+export function LoginForm() {
+  const router = useRouter();
+  const [username, setUsername] = useState('');
+  const [failure, setFailure] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   // Phiên hết hạn cũng đổ về /login: dọn cache trang của người dùng trước.
   useEffect(() => {
     void clearPageCache();
   }, []);
-  const redirectTo = () => `${window.location.origin}/auth/callback`;
 
-  async function google() {
-    setFailure(null);
-    const { error } = await createBrowserSupabase().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectTo() } });
-    if (error) setFailure('Không đăng nhập được, thử lại sau.');
-  }
-
-  async function magicLink(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     setPending(true);
     setFailure(null);
-    const { error } = await createBrowserSupabase().auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo() } });
+    const result = await signInWithUsernameAction({ username });
+    if (result.ok) {
+      router.replace('/');
+      router.refresh();
+      return;
+    }
     setPending(false);
-    if (error) setFailure('Không gửi được email, thử lại sau.');
-    else setSent(true);
+    setFailure(result.error.message);
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <form onSubmit={submit} className="flex flex-col gap-2">
       {failure && <p role="alert" className="rounded bg-bad-bg p-3 text-sm text-bad">{failure}</p>}
-      <Button onClick={google}>Đăng nhập với Google</Button>
-      <p className="text-center text-xs text-muted">hoặc</p>
-      {sent ? (
-        <p role="status" className="rounded bg-good-bg p-3 text-sm text-good">Kiểm tra email để đăng nhập.</p>
-      ) : (
-        <form onSubmit={magicLink} className="flex flex-col gap-2">
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="Email của bạn"
-            aria-label="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="min-h-11 rounded border border-line px-3 text-base"
-          />
-          <Button type="submit" variant="secondary" disabled={pending}>Gửi link đăng nhập</Button>
-        </form>
-      )}
-    </div>
+      <input
+        required
+        autoComplete="username"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        placeholder="Tên đăng nhập"
+        aria-label="Tên đăng nhập"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        className="min-h-11 rounded border border-line bg-white px-3 text-base"
+      />
+      <Button type="submit" disabled={pending || !username.trim()}>
+        Đăng nhập
+      </Button>
+    </form>
   );
 }

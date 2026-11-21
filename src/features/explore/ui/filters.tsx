@@ -1,6 +1,7 @@
 'use client';
 
 import { MapPin } from 'lucide-react';
+import { SuggestInput } from '@/features/geo/ui/suggest-input';
 import type { PlaceCategory, PriceTier } from '@/integrations/google-places/types';
 import { CATEGORY_LABELS, EXPLORE_CATEGORIES } from '@/features/places/constants';
 import { Chip } from '@/shared/ui/chip';
@@ -29,12 +30,16 @@ interface FiltersProps {
 export function Filters({ city, category, priceTier, onCityChange, onCategoryChange, onPriceChange }: FiltersProps) {
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex min-h-11 items-center gap-2 rounded border border-line bg-white px-3">
+      {/* label là khung định vị danh sách gợi ý, để danh sách rộng bằng cả ô (kể cả icon). */}
+      <label className="relative flex min-h-11 items-center gap-2 rounded border border-line bg-white px-3 focus-within:border-accent">
         <MapPin size={18} className="shrink-0 text-muted" aria-hidden />
-        <input
+        <SuggestInput
+          kind="city"
           type="search"
           value={city}
-          onChange={(e) => onCityChange(e.target.value)}
+          onChange={onCityChange}
+          onPick={(s) => onCityChange(s.name)}
+          wrapperClassName="w-full"
           placeholder="Thành phố, ví dụ Hải Phòng"
           aria-label="Thành phố"
           className="min-h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted"

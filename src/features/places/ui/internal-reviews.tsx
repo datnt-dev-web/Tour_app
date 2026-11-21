@@ -35,6 +35,7 @@ function ReviewForm({ groupId, placeKey, placeId, tripId }: { groupId: string; p
       </div>
       <textarea
         aria-label="Ghi chú"
+        required
         value={note}
         maxLength={NOTE_MAX}
         onChange={(e) => setNote(e.target.value)}
@@ -47,7 +48,7 @@ function ReviewForm({ groupId, placeKey, placeId, tripId }: { groupId: string; p
           {add.error.message}
         </p>
       )}
-      <Button type="submit" disabled={add.isPending}>
+      <Button type="submit" disabled={add.isPending || !note.trim()}>
         Gửi đánh giá
       </Button>
     </form>

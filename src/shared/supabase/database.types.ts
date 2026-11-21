@@ -83,38 +83,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"invites": {
-                  Row: {
-                    "created_by": string,"expires_at": string,"group_id": string,"id": string,"token": string,"used_at": string | null,"used_by": string | null
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "created_by": string,"expires_at": string,"group_id": string,"id"?: string,"token": string,"used_at"?: string | null,"used_by"?: string | null
-                  }
-                  Update: {
-                    "created_by"?: string,"expires_at"?: string,"group_id"?: string,"id"?: string,"token"?: string,"used_at"?: string | null,"used_by"?: string | null
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "invites_created_by_fkey"
-      columns: ["created_by"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "invites_group_id_fkey"
-      columns: ["group_id"]
-isOneToOne: false
-      referencedRelation: "groups"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "invites_used_by_fkey"
-      columns: ["used_by"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    }
-                  ]
                 },"place_reviews_internal": {
                   Row: {
                     "created_at": string,"id": string,"note": string | null,"place_id": string,"trip_id": string | null,"user_id": string,"verdict": string
@@ -175,28 +143,54 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_color": string,"display_name": string,"id": string
+                    "avatar_color": string,"display_name": string,"id": string,"username": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "avatar_color"?: string,"display_name": string,"id": string
+                    "avatar_color"?: string,"display_name": string,"id": string,"username"?: string | null
                   }
                   Update: {
-                    "avatar_color"?: string,"display_name"?: string,"id"?: string
+                    "avatar_color"?: string,"display_name"?: string,"id"?: string,"username"?: string | null
                   }
                   Relationships: [
                     
                   ]
-                },"trip_places": {
+                },"trip_expenses": {
                   Row: {
-                    "added_by": string | null,"id": string,"note": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"trip_id": string
+                    "amount": number,"created_at": string,"created_by": string | null,"id": string,"label": string,"trip_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "added_by"?: string | null,"id"?: string,"note"?: string | null,"place_id": string,"status"?: Database["public"]['Enums']["trip_place_status"],"trip_id": string
+                    "amount": number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"label": string,"trip_id": string
                   }
                   Update: {
-                    "added_by"?: string | null,"id"?: string,"note"?: string | null,"place_id"?: string,"status"?: Database["public"]['Enums']["trip_place_status"],"trip_id"?: string
+                    "amount"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"label"?: string,"trip_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "trip_expenses_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trip_expenses_trip_id_fkey"
+      columns: ["trip_id"]
+isOneToOne: false
+      referencedRelation: "trips"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"trip_places": {
+                  Row: {
+                    "added_by": string | null,"cost": number | null,"id": string,"note": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"transport": string | null,"trip_id": string,"visit_date": string | null,"visit_end_time": string | null,"visit_time": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "added_by"?: string | null,"cost"?: number | null,"id"?: string,"note"?: string | null,"place_id": string,"status"?: Database["public"]['Enums']["trip_place_status"],"transport"?: string | null,"trip_id": string,"visit_date"?: string | null,"visit_end_time"?: string | null,"visit_time"?: string | null
+                  }
+                  Update: {
+                    "added_by"?: string | null,"cost"?: number | null,"id"?: string,"note"?: string | null,"place_id"?: string,"status"?: Database["public"]['Enums']["trip_place_status"],"transport"?: string | null,"trip_id"?: string,"visit_date"?: string | null,"visit_end_time"?: string | null,"visit_time"?: string | null
                   }
                   Relationships: [
                     {
@@ -221,14 +215,14 @@ isOneToOne: false
                   ]
                 },"trips": {
                   Row: {
-                    "city": string,"created_by": string | null,"end_date": string | null,"group_id": string,"id": string,"name": string,"start_date": string | null
+                    "city": string,"created_by": string | null,"end_date": string | null,"group_id": string,"id": string,"name": string,"party_size": number,"start_date": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "city": string,"created_by"?: string | null,"end_date"?: string | null,"group_id": string,"id"?: string,"name": string,"start_date"?: string | null
+                    "city": string,"created_by"?: string | null,"end_date"?: string | null,"group_id": string,"id"?: string,"name": string,"party_size"?: number,"start_date"?: string | null
                   }
                   Update: {
-                    "city"?: string,"created_by"?: string | null,"end_date"?: string | null,"group_id"?: string,"id"?: string,"name"?: string,"start_date"?: string | null
+                    "city"?: string,"created_by"?: string | null,"end_date"?: string | null,"group_id"?: string,"id"?: string,"name"?: string,"party_size"?: number,"start_date"?: string | null
                   }
                   Relationships: [
                     {
@@ -248,11 +242,33 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "trip_stops": {
+                  Row: {
+                    "added_by": string | null,"category": Database["public"]['Enums']["place_category"],"clash": boolean,"cost": number | null,"id": string,"note": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"transport": string | null,"trip_id": string,"visit_date": string | null,"visit_end_time": string | null,"visit_time": string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "trip_places_place_id_fkey"
+      columns: ["place_id"]
+isOneToOne: false
+      referencedRelation: "places"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trip_places_trip_id_fkey"
+      columns: ["trip_id"]
+isOneToOne: false
+      referencedRelation: "trips"
+      referencedColumns: ["id"]
+    }
+                  ]
+                }
           }
           Functions: {
             "is_group_member":
 { Args: { "gid": string }; Returns: boolean
+                           },
+            "trip_stats":
+{ Args: { "p_trip_id": string }; Returns: Json
                            }
           }
           Enums: {

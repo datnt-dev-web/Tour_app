@@ -1,21 +1,22 @@
 import { Suspense } from 'react';
 import { QueryProvider } from '@/shared/query/provider';
-import { createServerSupabase } from '@/shared/supabase/server';
+import { getSessionUser } from '@/shared/supabase/session';
 import { AppFrame } from '@/shared/ui/app-frame';
 import { BottomNav } from '@/shared/ui/bottom-nav';
+import { CelebrateGif } from '@/shared/ui/celebrate';
 
 export default async function AppLayout({ children }: LayoutProps<'/'>) {
-  const supabase = await createServerSupabase();
-  const { data } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   return (
-    <QueryProvider key={data.user?.id ?? 'anon'} userId={data.user?.id ?? null}>
+    <QueryProvider key={user?.id ?? 'anon'} userId={user?.id ?? null}>
       <AppFrame withNav>
         {children}
         {/* BottomNav đọc ?view= nên cần Suspense */}
         <Suspense>
           <BottomNav />
         </Suspense>
+        <CelebrateGif />
       </AppFrame>
     </QueryProvider>
   );
