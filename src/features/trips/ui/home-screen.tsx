@@ -13,6 +13,7 @@ import { Card } from '@/shared/ui/card';
 import { ChangePinButton } from '@/features/auth/ui/change-pin-button';
 import { SignOutButton } from '@/features/auth/ui/sign-out-button';
 import type { TripSummary } from '../repositories/trips-repo';
+import { isTripOngoing } from '../services/today';
 import { splitTrips } from '../services/trips-service';
 import { NewTripForm } from './new-trip-form';
 import { tripsQuery } from './trip-queries';
@@ -52,9 +53,11 @@ function countdown(t: TripSummary, today: string) {
 
 function UpcomingCard({ trip, today, index, onImport }: { trip: TripSummary; today: string; index: number; onImport: (t: ImportTarget) => void }) {
   const label = countdown(trip, today);
+  // Đang trong chuyến: mở thẳng lịch hôm nay (chỗ kế tiếp, chỉ đường).
+  const ongoing = isTripOngoing(trip, today);
   return (
     <div className="stagger relative" style={staggerStyle(index)}>
-      <Link href={`/trips/${trip.id}`} className="pressable block rounded bg-deep p-4 text-white">
+      <Link href={ongoing ? `/trips/${trip.id}?view=today` : `/trips/${trip.id}`} className="pressable block rounded bg-deep p-4 text-white">
         <div className="flex items-start justify-between gap-3 pr-10">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Sắp đi</p>
@@ -76,6 +79,7 @@ function UpcomingCard({ trip, today, index, onImport }: { trip: TripSummary; tod
             <dt className="text-xs text-white/70">chưa chốt</dt>
           </div>
         </dl>
+        {ongoing && <p className="mt-3 text-sm font-semibold text-white/90">Xem lịch hôm nay →</p>}
       </Link>
       <ImportButton trip={trip} onImport={onImport} className="absolute right-2 top-2 text-white/80 hover:bg-white/10" />
     </div>

@@ -21,3 +21,8 @@ export function formatDayMonth(date: string): string {
 export function weekdayIndexInVietnam(now: Date = new Date()): number {
   return (new Date(`${todayInVietnam(now)}T00:00:00Z`).getUTCDay() + 6) % 7;
 }
+
+/** Giờ hiện tại "HH:MM" theo giờ Việt Nam. */
+export function nowHHMMInVietnam(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: VN_TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now);
+}

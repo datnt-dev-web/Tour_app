@@ -13,7 +13,8 @@ export default async function TripPage({ params, searchParams }: PageProps<'/tri
   const repo = createTripsRepo(await createServerSupabase());
 
   // Tải sẵn trang đầu của đúng tab đang mở (bộ lọc mặc định), để lần đầu vào không phải chờ client tải.
-  const query = view === 'map' ? null : { ...stopsFilter(view, 'all'), page: 1 };
+  // Bản đồ và Hôm nay tự tải dữ liệu riêng ở client.
+  const query = view === 'map' || view === 'today' ? null : { ...stopsFilter(view, 'all'), page: 1 };
   const [info, stops, stats] = await Promise.all([
     repo.getTripInfo(tripId),
     query ? repo.listStops(tripId, query) : null,

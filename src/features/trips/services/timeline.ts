@@ -14,7 +14,7 @@ const DAY_END_MIN = 23 * 60 + 59;
 /** Postgres trả `time` dạng "09:30:00"; giao diện và input[type=time] dùng "09:30". */
 export const toHHMM = (time: string) => time.slice(0, 5);
 
-const toMinutes = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
+export const toMinutes = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 const fromMinutes = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
 /** "09:30" + 45 phút → "10:15", không vượt 23:59 (khung giờ trong một ngày). */

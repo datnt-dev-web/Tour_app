@@ -6,16 +6,18 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { formatDayMonth } from '@/shared/date';
+import { formatDayMonth, todayInVietnam } from '@/shared/date';
 import { Dropdown } from '@/shared/ui/dropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { TRIP_TABS, type TripTab } from '../constants';
 import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
 import { tripDays } from '../services/timeline';
+import { isTripOngoing } from '../services/today';
 import { dateRange } from './home-screen';
 import { tripQuery } from './trip-queries';
 import { TripList } from './trip-list';
-import { parseTripView, TRIP_VIEWS, tripViewHref, type TripView } from './trip-view';
+import { TodayPanel } from './today-panel';
+import { parseTripView, tripViewHref, visibleTripViews, type TripView } from './trip-view';
 import { cachedStops, type InitialStops } from './use-paged-stops';
 
 // Tab ngoài Danh sách và hộp thêm chỗ tách thành chunk riêng: trang chuyến tải nhẹ hơn, tab nào mở mới tải.
@@ -102,7 +104,7 @@ export function TripScreen({
       </header>
 
       <div className="flex rounded border border-line bg-white p-1" role="group" aria-label="Kiểu hiển thị">
-        {TRIP_VIEWS.map((v) => (
+        {visibleTripViews(isTripOngoing(trip, todayInVietnam())).map((v) => (
           <button
             key={v.value}
             type="button"
@@ -110,7 +112,7 @@ export function TripScreen({
             onClick={() => router.push(tripViewHref(pathname, v.value), { scroll: false })}
             onPointerEnter={() => void VIEW_LOADERS[v.value]?.()}
             onFocus={() => void VIEW_LOADERS[v.value]?.()}
-            className={`min-h-11 flex-1 rounded-sm text-sm font-semibold pressable ${view === v.value ? 'bg-accent text-white' : 'text-ink hover:bg-surface'}`}
+            className={`min-h-11 flex-1 rounded-sm text-[13px] font-semibold pressable ${view === v.value ? 'bg-accent text-white' : 'text-ink hover:bg-surface'}`}
           >
             {v.label}
           </button>
@@ -118,14 +120,16 @@ export function TripScreen({
       </div>
 
       {/* Thống kê luôn tính trên cả chuyến nên không có bộ lọc. */}
-      {view !== 'stats' && (
+      {view !== 'stats' && view !== 'today' && (
         <div className="flex flex-wrap gap-2">
           <Dropdown size="sm" label="Lọc theo trạng thái" prefix="Trạng thái:" value={tab} options={TRIP_TABS} onChange={setTab} />
           {view === 'timeline' && <Dropdown size="sm" label="Lọc theo ngày" prefix="Ngày:" value={day} options={dayOptions} onChange={setDay} />}
         </div>
       )}
 
-      {view === 'map' ? (
+      {view === 'today' ? (
+        <TodayPanel tripId={tripId} />
+      ) : view === 'map' ? (
         <TripMap tripId={tripId} tab={tab} />
       ) : view === 'stats' ? (
         <TripStatsPanel tripId={tripId} info={info} initialStats={initialStats} initialStops={initialStops} />

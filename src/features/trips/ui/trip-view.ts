@@ -5,14 +5,19 @@ import type { Place } from '@/features/places/repositories/places-repo';
 import { normalizeText } from '@/shared/text';
 import type { TripMapPoint } from '../services/trip-locations-service';
 
-export type TripView = 'list' | 'timeline' | 'map' | 'stats';
+export type TripView = 'today' | 'list' | 'timeline' | 'map' | 'stats';
 
+/** 'today' chỉ hiện khi chuyến đang diễn ra (xem visibleTripViews). */
 export const TRIP_VIEWS: { value: TripView; label: string }[] = [
+  { value: 'today', label: 'Hôm nay' },
   { value: 'list', label: 'Danh sách' },
   { value: 'timeline', label: 'Timeline' },
   { value: 'map', label: 'Bản đồ' },
   { value: 'stats', label: 'Thống kê' },
 ];
+
+/** Các tab hiện ra: bỏ "Hôm nay" khi chuyến chưa bắt đầu hoặc đã xong. */
+export const visibleTripViews = (ongoing: boolean) => TRIP_VIEWS.filter((v) => ongoing || v.value !== 'today');
 
 /** Giá trị lạ hoặc thiếu coi là danh sách. */
 export function parseTripView(raw: string | null | undefined): TripView {
@@ -48,7 +53,7 @@ export const placeDetailHref = (p: Pick<TripMapPoint, 'placeKey'>, tripId: strin
   `/places/${encodeURIComponent(p.placeKey)}?trip=${tripId}`;
 
 /** Bộ lọc danh sách chỗ của từng tab: Danh sách gom theo loại; Timeline và giá từng chỗ theo lịch. */
-export function stopsFilter(view: Exclude<TripView, 'map'>, tab: TripTab, day = 'all'): StopsFilter {
+export function stopsFilter(view: Exclude<TripView, 'map' | 'today'>, tab: TripTab, day = 'all'): StopsFilter {
   return {
     order: view === 'list' ? 'category' : 'schedule',
     statuses: TAB_STATUSES[view === 'stats' ? 'all' : tab],
