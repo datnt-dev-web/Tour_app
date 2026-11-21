@@ -19,17 +19,27 @@ create table public.trip_infos (
   -- Mỗi loại có đúng các cột của nó.
   constraint trip_infos_note check (kind <> 'note' or (body is not null and url is null and file_public_id is null)),
   constraint trip_infos_link check (kind <> 'link' or (url is not null and file_public_id is null)),
-  constraint trip_infos_file check (kind <> 'file' or (file_public_id is not null and file_resource_type is not null and url is null))
+  constraint trip_infos_file check (kind <> 'file' or (file_public_id is not null and file_resource_type is not null and url is null)),
+  -- Bảng ghi được trực tiếp qua API (RLS theo nhóm): chặn trỏ tới tệp ngoài thư mục chuyến và link không phải http(s).
+  constraint trip_infos_file_folder check (file_public_id is null or file_public_id like 'food-tour/' || trip_id::text || '/%'),
+  constraint trip_infos_url_scheme check (url is null or url ~* '^https?://')
 );
 
 create index trip_infos_trip_created_idx on public.trip_infos (trip_id, created_at desc);
 create index trip_infos_created_by_idx on public.trip_infos (created_by);
 
 alter table public.trip_infos enable row level security;
--- Như trip_expenses: thành viên nhóm của chuyến được đọc/ghi.
-create policy trip_infos_all on public.trip_infos for all to authenticated
-  using (trip_id in (select t.id from public.trips t where t.group_id in (select private.my_group_ids())))
-  with check (trip_id in (select t.id from public.trips t where t.group_id in (select private.my_group_ids())));
+-- Thành viên nhóm của chuyến được đọc, thêm, xóa. Không có policy update: app không sửa mục (xóa rồi thêm lại),
+-- nên không ai đổi được tệp/chuyến của một mục đã có. Người thêm phải là chính người gọi.
+create policy trip_infos_select on public.trip_infos for select to authenticated
+  using (trip_id in (select t.id from public.trips t where t.group_id in (select private.my_group_ids())));
+create policy trip_infos_insert on public.trip_infos for insert to authenticated
+  with check (
+    created_by = (select auth.uid())
+    and trip_id in (select t.id from public.trips t where t.group_id in (select private.my_group_ids()))
+  );
+create policy trip_infos_delete on public.trip_infos for delete to authenticated
+  using (trip_id in (select t.id from public.trips t where t.group_id in (select private.my_group_ids())));
 
 -- down (Supabase CLI không chạy down; chạy tay nếu cần hoàn tác):
 -- drop table public.trip_infos;

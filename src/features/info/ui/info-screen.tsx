@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Skeleton } from '@/shared/ui/skeleton';
 import type { InfoKind } from '../constants';
-import type { InfoItem } from '../services/info-service';
+import type { TripInfo } from '../repositories/infos-repo';
 import { AddInfoForm } from './add-info-form';
 import { tripInfosQuery, useRemoveInfo } from './info-queries';
 
@@ -93,11 +93,13 @@ function TripInfoBoard({ tripId, uploadEnabled }: { tripId: string; uploadEnable
 
 const ACTION = 'inline-flex size-11 shrink-0 items-center justify-center rounded pressable hover:bg-surface';
 
-function InfoRow({ item, onRemove }: { item: InfoItem; onRemove: () => void }) {
+function InfoRow({ item, onRemove }: { item: TripInfo; onRemove: () => void }) {
   // Xóa hai bước ngay trên dòng (không dùng hộp thoại của trình duyệt).
   const [confirming, setConfirming] = useState(false);
   const Icon = ICONS[item.kind];
-  const openHref = item.kind === 'link' ? item.url : item.viewUrl;
+  // Tệp: link ký và hết hạn được tạo lúc bấm (server chuyển hướng), không lưu sẵn trong danh sách.
+  const fileHref = item.kind === 'file' ? `/api/infos/${item.id}/file` : null;
+  const openHref = item.kind === 'link' ? item.url : fileHref;
   const sub = item.kind === 'link' ? hostOf(item.url) : item.kind === 'file' ? [item.file_name, formatBytes(item.file_bytes)].filter(Boolean).join(' · ') : null;
 
   return (
@@ -113,8 +115,8 @@ function InfoRow({ item, onRemove }: { item: InfoItem; onRemove: () => void }) {
           <ExternalLink size={18} aria-hidden />
         </a>
       )}
-      {item.downloadUrl && (
-        <a href={item.downloadUrl} aria-label={`Tải ${item.title}`} className={`${ACTION} text-accent`}>
+      {fileHref && (
+        <a href={`${fileHref}?download=1`} aria-label={`Tải ${item.title}`} className={`${ACTION} text-accent`}>
           <Download size={18} aria-hidden />
         </a>
       )}

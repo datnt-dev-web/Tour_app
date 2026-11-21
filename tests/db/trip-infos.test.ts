@@ -64,3 +64,19 @@ describe('trip_infos', () => {
     await expect(createInfosRepo(member.db).insert({ trip_id: T, kind: 'file', title: 'Thiếu' })).rejects.toMatchObject({ code: '23514' });
   });
 });
+
+describe('trip_infos: chặn ghi tay qua API', () => {
+  test('tệp ngoài thư mục chuyến và link không phải http(s) bị DB từ chối', async () => {
+    const repo = createInfosRepo(member.db);
+    await expect(
+      repo.insert({ trip_id: T, kind: 'file', title: 'Lạ', file_public_id: 'food-tour/00000000-0000-4000-8000-0000000000ff/x.pdf', file_resource_type: 'raw' }),
+    ).rejects.toMatchObject({ code: '23514' });
+    await expect(repo.insert({ trip_id: T, kind: 'link', title: 'XSS', url: 'javascript:alert(1)' })).rejects.toMatchObject({ code: '23514' });
+  });
+
+  test('không sửa được mục đã có (không có policy update)', async () => {
+    const row = await createInfosRepo(member.db).insert({ trip_id: T, kind: 'note', title: 'Gốc', body: 'x' });
+    const { data } = await member.db.from('trip_infos').update({ title: 'Sửa' }).eq('id', row.id).select('id');
+    expect(data).toEqual([]);
+  });
+});

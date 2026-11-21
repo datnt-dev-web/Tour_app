@@ -7,6 +7,7 @@ export type NewTripInfo = Omit<Database['public']['Tables']['trip_infos']['Inser
 export interface InfosRepo {
   /** Mới nhất trước. */
   list(tripId: string): Promise<TripInfo[]>;
+  get(id: string): Promise<TripInfo | null>;
   count(tripId: string): Promise<number>;
   insert(row: NewTripInfo): Promise<TripInfo>;
   /** Xóa và trả dòng đã xóa (để dọn tệp); null nếu không có hoặc không có quyền. */
@@ -17,6 +18,12 @@ export function createInfosRepo(db: Db): InfosRepo {
   return {
     async list(tripId) {
       const { data, error } = await db.from('trip_infos').select('*').eq('trip_id', tripId).order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+
+    async get(id) {
+      const { data, error } = await db.from('trip_infos').select('*').eq('id', id).maybeSingle();
       if (error) throw error;
       return data;
     },

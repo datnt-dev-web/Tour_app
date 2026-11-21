@@ -4,15 +4,15 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
 import { addLinkAction, addNoteAction, removeInfoAction, uploadInfoFileAction } from '../actions/info-actions';
-import type { InfoItem } from '../services/info-service';
+import type { TripInfo } from '../repositories/infos-repo';
 
-/** Danh sách lấy qua API route vì link tệp phải ký ở server. */
+/** Danh sách lấy qua API route (cùng chỗ kiểm quyền với link mở tệp). */
 export const tripInfosQuery = (tripId: string) =>
   queryOptions({
     queryKey: queryKeys.tripInfos(tripId),
-    queryFn: async (): Promise<InfoItem[]> => {
+    queryFn: async (): Promise<TripInfo[]> => {
       const res = await fetch(`/api/trips/${tripId}/infos`);
-      const body = (await res.json().catch(() => null)) as { items?: InfoItem[]; error?: { message?: string } } | null;
+      const body = (await res.json().catch(() => null)) as { items?: TripInfo[]; error?: { message?: string } } | null;
       if (res.ok && body?.items) return body.items;
       throw new Error(body?.error?.message ?? 'Không tải được thông tin, thử lại sau.');
     },
@@ -47,8 +47,8 @@ export function useRemoveInfo(tripId: string) {
     // Ẩn ngay cho nhanh; lỗi thì trả lại danh sách cũ.
     onMutate: async (id) => {
       await qc.cancelQueries({ queryKey: key });
-      const prev = qc.getQueryData<InfoItem[]>(key);
-      qc.setQueryData<InfoItem[]>(key, (items) => items?.filter((i) => i.id !== id));
+      const prev = qc.getQueryData<TripInfo[]>(key);
+      qc.setQueryData<TripInfo[]>(key, (items) => items?.filter((i) => i.id !== id));
       return { prev };
     },
     onError: (_e, _id, ctx) => qc.setQueryData(key, ctx?.prev),

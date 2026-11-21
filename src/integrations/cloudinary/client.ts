@@ -9,20 +9,6 @@ export interface CloudinaryConfig {
   apiSecret: string;
 }
 
-/** Tên tải về đặt trong cờ fl_attachment: chỉ nhận chữ không dấu, số, `_` và `-`, không có đuôi (Cloudinary tự thêm). */
-export function attachmentName(fileName: string): string {
-  // Bỏ dấu nhưng giữ hoa/thường (normalizeText chuyển chữ thường) để tên tải về dễ nhận ra.
-  const out = fileName
-    .replace(/\.[a-z0-9]+$/i, '')
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .replace(/[^a-zA-Z0-9-]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return out || 'tep';
-}
-
 const unavailable = () => new AppError('UPLOAD_UNAVAILABLE', 'Không tải được tệp lên, thử lại sau.');
 
 /**
@@ -32,10 +18,11 @@ const unavailable = () => new AppError('UPLOAD_UNAVAILABLE', 'Không tải đư�
 export function createCloudinaryStorage(cfg: CloudinaryConfig): FileStorage {
   const auth = { cloud_name: cfg.cloudName, api_key: cfg.apiKey, api_secret: cfg.apiSecret };
   return {
-    upload(data, { folder }) {
+    upload(data, { folder, publicId, resourceType }) {
       return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { ...auth, folder, resource_type: 'auto', type: 'authenticated', unique_filename: true, use_filename: false, overwrite: false },
+          // Loại tài nguyên do app quyết định (không 'auto'): PDF/Office lên raw để giữ đuôi và tránh hạn chế giao PDF dạng ảnh.
+          { ...auth, folder, public_id: publicId, resource_type: resourceType, type: 'authenticated', overwrite: false },
           (error, result?: UploadApiResponse) => {
             if (error || !result) {
               // Không đưa lỗi gốc ra người dùng: có thể chứa thông tin cấu hình.
@@ -58,16 +45,14 @@ export function createCloudinaryStorage(cfg: CloudinaryConfig): FileStorage {
       await cloudinary.uploader.destroy(publicId, { ...auth, resource_type: resourceType, type: 'authenticated', invalidate: true });
     },
 
-    signedUrl({ publicId, resourceType, format }, opts) {
-      return cloudinary.url(publicId, {
+    fileUrl({ publicId, resourceType, format }, { download, ttlSec, now = Date.now() }) {
+      // API download của Cloudinary: link ký kèm hạn dùng, hết hạn thì phải bấm lại trong app để lấy link mới.
+      return cloudinary.utils.private_download_url(publicId, resourceType === 'raw' ? '' : (format ?? ''), {
         ...auth,
         resource_type: resourceType,
         type: 'authenticated',
-        sign_url: true,
-        secure: true,
-        // raw: public id đã gồm đuôi; image/video: đuôi nằm ở format.
-        ...(resourceType !== 'raw' && format ? { format } : {}),
-        ...(opts?.downloadName ? { flags: `attachment:${attachmentName(opts.downloadName)}` } : {}),
+        attachment: download,
+        expires_at: Math.floor(now / 1000) + ttlSec,
       });
     },
   };

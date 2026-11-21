@@ -1,4 +1,4 @@
-/** Kiểu tài nguyên Cloudinary; ảnh và PDF là 'image', tài liệu Office/txt là 'raw'. */
+/** Kiểu tài nguyên Cloudinary; app chỉ dùng 'image' (ảnh) và 'raw' (PDF, Office, txt, csv). */
 export type StoredResourceType = 'image' | 'raw' | 'video';
 
 export interface StoredFile {
@@ -10,8 +10,12 @@ export interface StoredFile {
 
 /** Kho tệp (Cloudinary ở production, giả lập trong test). */
 export interface FileStorage {
-  upload(data: Uint8Array, opts: { folder: string }): Promise<StoredFile>;
+  /** `publicId` không gồm thư mục; với raw nên kèm đuôi (Cloudinary không tự thêm). */
+  upload(data: Uint8Array, opts: { folder: string; publicId: string; resourceType: 'image' | 'raw' }): Promise<StoredFile>;
   destroy(publicId: string, resourceType: StoredResourceType): Promise<void>;
-  /** Link xem/tải có chữ ký; `downloadName` thì trình duyệt tải về với tên đó. */
-  signedUrl(file: Pick<StoredFile, 'publicId' | 'resourceType' | 'format'>, opts?: { downloadName?: string }): string;
+  /** Link xem/tải có chữ ký, hết hạn sau `ttlSec` giây; `download` thì trình duyệt tải về. */
+  fileUrl(
+    file: Pick<StoredFile, 'publicId' | 'resourceType' | 'format'>,
+    opts: { download: boolean; ttlSec: number; now?: number },
+  ): string;
 }

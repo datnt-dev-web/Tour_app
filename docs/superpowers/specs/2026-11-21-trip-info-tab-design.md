@@ -12,7 +12,8 @@ Một chỗ chung cho nhóm cất thông tin của từng chuyến: vé tàu/xe,
 ## Quyết định (builder tự quyết, người dùng có thể sửa)
 - **Vị trí:** tab dưới thứ 5 `/info` (icon FolderOpen). Mặc định mở chuyến sắp đi gần nhất (không có thì chuyến gần nhất đã đi), như tab Bản đồ; đổi chuyến bằng `?trip=`.
 - **Lưu trữ:** bảng `trip_infos` (Postgres, RLS theo nhóm như `trip_expenses`). Tệp lên Cloudinary qua server (server action nhận FormData, SDK `cloudinary` upload). Không lộ API secret ra client.
-- **Riêng tư:** tệp upload kiểu `authenticated` vào thư mục `food-tour/<tripId>`; link xem/tải do server ký (`sign_url`) khi liệt kê, nên không đoán/duyệt được tệp của nhóm khác.
+- **Riêng tư:** tệp upload kiểu `authenticated` vào thư mục `food-tour/<tripId>`. Danh sách không chứa link; bấm Mở/Tải thì route `/api/infos/[id]/file` kiểm quyền rồi chuyển hướng tới link ký hết hạn sau `INFO_FILE_URL_TTL_SEC` (mặc định 300 giây). Chỉ ký/xóa tệp có public id nằm trong thư mục của chính chuyến; DB cũng chặn bằng check constraint, không có policy update.
+- **Loại tài nguyên:** ảnh lên `image` (kiểm định dạng thật sau upload, sai thì xóa và từ chối); PDF/Office/txt/csv lên `raw` với đuôi trong public id (tải về mở được, không bị hạn chế giao PDF dạng ảnh của Cloudinary).
 - **Giới hạn:** tệp ≤ 10 MB; định dạng: ảnh (jpg, jpeg, png, webp, heic, gif), pdf, doc(x), xls(x), ppt(x), txt, csv. Tiêu đề ≤ 120, ghi chú ≤ 2000, URL http(s) ≤ 1000. Mỗi chuyến tối đa 200 mục.
 - **Cấu hình:** `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` là tùy chọn trong env: thiếu thì ghi chú/link vẫn dùng được, nút tải tệp báo "Chưa cấu hình lưu tệp".
 - **Nhất quán:** upload xong mà ghi DB lỗi thì xóa asset vừa up; xóa mục thì xóa DB trước, xóa asset sau (lỗi xóa asset chỉ ghi log, không chặn người dùng).

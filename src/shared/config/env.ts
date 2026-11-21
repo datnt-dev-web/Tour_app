@@ -24,6 +24,8 @@ const schema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
   CLOUDINARY_API_KEY: z.string().min(1).optional(),
   CLOUDINARY_API_SECRET: z.string().min(1).optional(),
+  // Link xem/tải tệp hết hạn sau ngần này giây (lộ link cũng không mở được lâu).
+  INFO_FILE_URL_TTL_SEC: num(300),
 });
 
 // Giá trị giữ chỗ trong .env.example / .env.local; coi như chưa cấu hình để khỏi gọi Google vô ích.
