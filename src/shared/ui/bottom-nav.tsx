@@ -1,6 +1,6 @@
 'use client';
 
-import { Compass, Luggage, Map, NotebookText, type LucideIcon } from 'lucide-react';
+import { Compass, FolderOpen, Luggage, Map, NotebookText, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
@@ -12,11 +12,12 @@ export const isTabActive = (href: string, pathname: string, view: string | null 
   return pathname.startsWith(href);
 };
 
-const TABS: { href: string; label: string; Icon: LucideIcon }[] = [
+export const NAV_TABS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: '/', label: 'Chuyến đi', Icon: Luggage },
   { href: '/map', label: 'Bản đồ', Icon: Map },
   { href: '/explore', label: 'Khám phá', Icon: Compass },
   { href: '/book', label: 'Sổ quán', Icon: NotebookText },
+  { href: '/info', label: 'Thông tin', Icon: FolderOpen },
 ];
 
 export function BottomNav() {
@@ -28,7 +29,7 @@ export function BottomNav() {
       aria-label="Điều hướng chính"
       className="fixed inset-x-0 bottom-0 z-40 mx-auto flex h-[calc(var(--spacing-nav)+env(safe-area-inset-bottom))] max-w-[480px] pb-[env(safe-area-inset-bottom)] border-t border-line bg-white"
     >
-      {TABS.map(({ href, label, Icon }) => {
+      {NAV_TABS.map(({ href, label, Icon }) => {
         const active = isTabActive(href, pathname, view);
         return (
           <Link

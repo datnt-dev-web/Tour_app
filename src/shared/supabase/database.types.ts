@@ -181,6 +181,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"trip_infos": {
+                  Row: {
+                    "body": string | null,"created_at": string,"created_by": string | null,"file_bytes": number | null,"file_format": string | null,"file_name": string | null,"file_public_id": string | null,"file_resource_type": string | null,"id": string,"kind": Database["public"]['Enums']["trip_info_kind"],"title": string,"trip_id": string,"url": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body"?: string | null,"created_at"?: string,"created_by"?: string | null,"file_bytes"?: number | null,"file_format"?: string | null,"file_name"?: string | null,"file_public_id"?: string | null,"file_resource_type"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["trip_info_kind"],"title": string,"trip_id": string,"url"?: string | null
+                  }
+                  Update: {
+                    "body"?: string | null,"created_at"?: string,"created_by"?: string | null,"file_bytes"?: number | null,"file_format"?: string | null,"file_name"?: string | null,"file_public_id"?: string | null,"file_resource_type"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["trip_info_kind"],"title"?: string,"trip_id"?: string,"url"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "trip_infos_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trip_infos_trip_id_fkey"
+      columns: ["trip_id"]
+isOneToOne: false
+      referencedRelation: "trips"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"trip_places": {
                   Row: {
                     "added_by": string | null,"cost": number | null,"id": string,"note": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"transport": string | null,"trip_id": string,"visit_date": string | null,"visit_end_time": string | null,"visit_time": string | null
@@ -275,7 +301,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "place_category": "food"|"snack"|"cafe"|"play"|"stay"|"gift","trip_place_status": "wanted"|"confirmed"|"visited"|"dropped"
+            "place_category": "food"|"snack"|"cafe"|"play"|"stay"|"gift","trip_info_kind": "note"|"link"|"file","trip_place_status": "wanted"|"confirmed"|"visited"|"dropped"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -395,7 +421,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "place_category": ["food", "snack", "cafe", "play", "stay", "gift"],"trip_place_status": ["wanted", "confirmed", "visited", "dropped"]
+            "place_category": ["food", "snack", "cafe", "play", "stay", "gift"],"trip_info_kind": ["note", "link", "file"],"trip_place_status": ["wanted", "confirmed", "visited", "dropped"]
           }
         }
 } as const

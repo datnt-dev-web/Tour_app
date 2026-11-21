@@ -20,6 +20,10 @@ const schema = z.object({
   GEO_SUGGEST_TTL_SEC: num(604800),
   AI_SUMMARY_TTL_SEC: num(1209600),
   AI_HOT_TTL_SEC: num(604800),
+  // Cloudinary (tab Thông tin): tùy chọn, thiếu thì chỉ tắt tải tệp lên.
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
 });
 
 // Giá trị giữ chỗ trong .env.example / .env.local; coi như chưa cấu hình để khỏi gọi Google vô ích.
@@ -31,6 +35,13 @@ export function isGooglePlacesConfigured(key: string | undefined): boolean {
 }
 
 export type Env = z.infer<typeof schema>;
+
+/** Cấu hình Cloudinary nếu đủ ba khóa thật (không phải giá trị giữ chỗ); null thì tắt tải tệp. */
+export function cloudinaryConfig(e: Env): { cloudName: string; apiKey: string; apiSecret: string } | null {
+  const { CLOUDINARY_CLOUD_NAME: cloudName, CLOUDINARY_API_KEY: apiKey, CLOUDINARY_API_SECRET: apiSecret } = e;
+  if (!cloudName || !apiKey || !apiSecret || [cloudName, apiKey, apiSecret].some((v) => PLACEHOLDER_KEY.test(v))) return null;
+  return { cloudName, apiKey, apiSecret };
+}
 
 /** Validate env thô; throw lỗi nêu rõ khóa thiếu/sai. Thuần, không đọc process.env. */
 export function parseEnv(raw: Record<string, string | undefined>): Env {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { isGooglePlacesConfigured, parseEnv } from '@/shared/config/env';
+import { cloudinaryConfig, isGooglePlacesConfigured, parseEnv } from '@/shared/config/env';
 
 const validEnv: Record<string, string | undefined> = {
   NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
@@ -44,5 +44,16 @@ describe('isGooglePlacesConfigured', () => {
     expect(isGooglePlacesConfigured('')).toBe(false);
     expect(isGooglePlacesConfigured('your-google-places-key')).toBe(false);
     expect(isGooglePlacesConfigured('dummy-local')).toBe(false);
+  });
+});
+
+describe('cloudinaryConfig', () => {
+  test('thiếu bất kỳ khóa nào (hoặc giá trị giữ chỗ) thì null: app vẫn chạy, chỉ tắt tải tệp', () => {
+    expect(cloudinaryConfig(parseEnv(validEnv))).toBeNull();
+    expect(cloudinaryConfig(parseEnv({ ...validEnv, CLOUDINARY_CLOUD_NAME: 'c', CLOUDINARY_API_KEY: 'k' }))).toBeNull();
+    expect(cloudinaryConfig(parseEnv({ ...validEnv, CLOUDINARY_CLOUD_NAME: 'your-cloud-name', CLOUDINARY_API_KEY: 'k', CLOUDINARY_API_SECRET: 's' }))).toBeNull();
+  });
+  test('đủ ba khóa thì trả cấu hình', () => {
+    expect(cloudinaryConfig(parseEnv({ ...validEnv, CLOUDINARY_CLOUD_NAME: 'c', CLOUDINARY_API_KEY: 'k', CLOUDINARY_API_SECRET: 's' }))).toEqual({ cloudName: 'c', apiKey: 'k', apiSecret: 's' });
   });
 });
