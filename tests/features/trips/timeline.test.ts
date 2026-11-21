@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { addMinutes, buildTimeline, defaultDay, formatSlot, lastTransport, suggestTime, toHHMM, tripDays } from '@/features/trips/services/timeline';
+import { addMinutes, buildTimeline, defaultDay, formatSlot, lastTransport, suggestTime, toHHMM, tripDays, reflowDay } from '@/features/trips/services/timeline';
 
 const at = (id: string, visit_date: string | null, visit_time: string | null, visit_end_time: string | null = null, transport: string | null = null, clash = false) => ({
   id,
@@ -84,4 +84,24 @@ describe('defaultDay / toHHMM', () => {
     expect(defaultDay([], '2026-11-21')).toBeNull();
   });
   test('cắt giây', () => expect(toHHMM('09:30:00')).toBe('09:30'));
+});
+
+describe('reflowDay', () => {
+  const s = (id: string, time: string, end: string | null) => ({ id, visit_date: '2026-11-23', visit_time: `${time}:00`, visit_end_time: end ? `${end}:00` : null });
+
+  test('giữ giờ bắt đầu của ngày, thời lượng từng chỗ, chèn 15 phút di chuyển; chỉ trả chỗ đổi giờ', () => {
+    // Thứ tự mới: cafe (45') rồi banh (60' mặc định) rồi nha (60')
+    const ordered = [s('cafe', '09:45', '10:30'), s('banh', '08:45', null), s('nha', '11:00', '12:00')];
+    expect(reflowDay(ordered)).toEqual([
+      { id: 'cafe', schedule: { date: '2026-11-23', time: '08:45', endTime: '09:30' } },
+      { id: 'banh', schedule: { date: '2026-11-23', time: '09:45', endTime: null } },
+      { id: 'nha', schedule: { date: '2026-11-23', time: '11:00', endTime: '12:00' } },
+    ].filter((c) => c.id !== 'nha'));
+  });
+
+  test('không vượt quá 23:59', () => {
+    const late = [s('a', '22:00', '23:30'), s('b', '23:00', '23:45')];
+    const out = reflowDay(late);
+    expect(out.find((c) => c.id === 'b')?.schedule.time).toBe('23:45');
+  });
 });

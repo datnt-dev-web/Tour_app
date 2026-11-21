@@ -1,8 +1,7 @@
 import type { Trip, TripPlaceStatus } from '../repositories/trips-repo';
-import { toMinutes } from './timeline';
+import { DEFAULT_STAY_MIN, toMinutes } from './timeline';
 
-/** Chỗ không có giờ kết thúc coi như ở ngần này phút (đủ một bữa). */
-export const DEFAULT_STAY_MIN = 60;
+export { DEFAULT_STAY_MIN };
 
 type TodayStop = { id: string; status: TripPlaceStatus; visit_time: string | null; visit_end_time: string | null };
 

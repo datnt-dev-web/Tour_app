@@ -99,3 +99,32 @@ export function dateRange(t: Pick<Trip, 'start_date' | 'end_date'>): string {
   if (!t.start_date) return '';
   return t.end_date && t.end_date !== t.start_date ? `${formatDayMonth(t.start_date)} - ${formatDayMonth(t.end_date)}` : formatDayMonth(t.start_date);
 }
+
+/** Chỗ không có giờ kết thúc coi như ở ngần này phút (đủ một bữa). */
+export const DEFAULT_STAY_MIN = 60;
+
+type ReflowStop = { id: string; visit_date: string | null; visit_time: string | null; visit_end_time: string | null };
+
+/**
+ * Sau khi kéo thả trong một ngày: xếp lại giờ theo thứ tự mới, bắt đầu từ giờ sớm nhất của ngày, mỗi chỗ giữ thời lượng,
+ * giữa hai chỗ chừa TRAVEL_GAP_MIN phút đi lại. Chỉ trả những chỗ đổi giờ (đỡ ghi thừa).
+ */
+export function reflowDay(ordered: ReflowStop[]): { id: string; schedule: { date: string; time: string; endTime: string | null } }[] {
+  const timed = ordered.filter((s) => s.visit_date && s.visit_time);
+  if (timed.length === 0) return [];
+  const date = timed[0].visit_date!;
+  let cursor = Math.min(...timed.map((s) => toMinutes(s.visit_time!)));
+  const changes: { id: string; schedule: { date: string; time: string; endTime: string | null } }[] = [];
+  for (const s of timed) {
+    const duration = s.visit_end_time ? toMinutes(s.visit_end_time) - toMinutes(s.visit_time!) : DEFAULT_STAY_MIN;
+    const start = Math.min(cursor, DAY_END_MIN);
+    const time = fromMinutes(start);
+    const endTime = s.visit_end_time ? addMinutes(time, duration) : null;
+    const effectiveEnd = endTime && endTime > time ? endTime : null;
+    if (time !== toHHMM(s.visit_time!) || (effectiveEnd ?? null) !== (s.visit_end_time ? toHHMM(s.visit_end_time) : null)) {
+      changes.push({ id: s.id, schedule: { date, time, endTime: s.visit_end_time ? effectiveEnd : null } });
+    }
+    cursor = start + duration + TRAVEL_GAP_MIN;
+  }
+  return changes;
+}

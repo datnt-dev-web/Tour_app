@@ -2,10 +2,11 @@
 
 import { AlertTriangle, Check, Clock, MapPin, Navigation } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, type CSSProperties } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { placeKeyOf } from '@/features/places/constants';
 import { formatDayMonth } from '@/shared/date';
 import { WeatherChip } from './weather-chip';
+import { DayReorder } from './day-reorder';
 import { formatVnd, perPerson } from '@/shared/money';
 import { Badge } from '@/shared/ui/badge';
 import { Pagination } from '@/shared/ui/pagination';
@@ -173,6 +174,8 @@ export function TripTimeline({
     setStatus.mutate({ tripPlaceId: item.id, status: item.status === 'visited' ? 'confirmed' : 'visited' });
   const error = setStatus.error ?? editing.error;
   const { days: timelineDays, unscheduled } = buildTimeline(items, days);
+  // Ngày đang ở chế độ kéo thả sắp xếp (mỗi lúc một ngày).
+  const [reordering, setReordering] = useState<string | null>(null);
 
   function goTo(page: number) {
     paged.setPage(page);
@@ -208,8 +211,18 @@ export function TripTimeline({
                   {d.dayNumber ? `Ngày ${d.dayNumber} · ` : ''}
                   {formatDayMonth(d.date)}
                 </span>
-                <WeatherChip tripId={tripId} date={d.date} className="text-ink" />
+                <span className="flex items-center gap-2">
+                  <WeatherChip tripId={tripId} date={d.date} className="text-ink" />
+                  {d.stops.length > 1 && reordering !== d.date && (
+                    <button type="button" onClick={() => setReordering(d.date)} className="min-h-11 px-1 text-xs font-semibold normal-case tracking-normal text-accent">
+                      Sắp xếp
+                    </button>
+                  )}
+                </span>
               </h2>
+              {reordering === d.date ? (
+                <DayReorder tripId={tripId} stops={d.stops.map((x) => x.item)} onDone={() => setReordering(null)} />
+              ) : (
               <ol className="flex flex-col">
                 {d.stops.map(({ item, clash }, index) => {
                   const visited = item.status === 'visited';
@@ -240,6 +253,7 @@ export function TripTimeline({
                   );
                 })}
               </ol>
+              )}
             </section>
           ))}
           {unscheduled.length > 0 && (
