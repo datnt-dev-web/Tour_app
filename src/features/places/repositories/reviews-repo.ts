@@ -12,6 +12,8 @@ export interface InternalReview {
   tripId: string | null;
   verdict: ReviewVerdict;
   note: string | null;
+  /** Số sao 1–5, null nếu không chấm. */
+  rating: number | null;
   createdAt: string;
 }
 
@@ -19,6 +21,7 @@ export interface NewReviewInput {
   placeId: string;
   verdict: ReviewVerdict;
   note: string | null;
+  rating?: number | null;
   tripId?: string;
 }
 
@@ -45,6 +48,7 @@ function toReview(r: ReviewRow): InternalReview {
     tripId: r.trip_id,
     verdict: r.verdict as ReviewVerdict,
     note: r.note,
+    rating: r.rating,
     createdAt: r.created_at,
   };
 }
@@ -61,10 +65,10 @@ export function createReviewsRepo(db: Db): ReviewsRepo {
       return data.map(toReview);
     },
 
-    async addReview({ placeId, verdict, note, tripId }) {
+    async addReview({ placeId, verdict, note, rating, tripId }) {
       const { data, error } = await db
         .from('place_reviews_internal')
-        .insert({ place_id: placeId, verdict, note, trip_id: tripId ?? null })
+        .insert({ place_id: placeId, verdict, note, rating: rating ?? null, trip_id: tripId ?? null })
         .select(SELECT)
         .single();
       if (error) throw error;

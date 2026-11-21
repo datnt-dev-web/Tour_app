@@ -10,6 +10,7 @@ const reviewSchema = z.object({
   verdict: z.enum(['up', 'down']),
   // Bắt buộc có nội dung (sau khi bỏ khoảng trắng), khớp với nút gửi bị khóa ở client.
   note: z.string().trim().min(1).max(500),
+  rating: z.number().int().min(1).max(5).nullable().optional(),
   tripId: z.uuid().optional(),
 });
 

@@ -15,6 +15,7 @@ import { CATEGORY_LABELS, STORED_CATEGORIES } from '../constants';
 import type { PlaceView } from '../services/place-service';
 import { CheckLinks } from './check-links';
 import { InternalReviews } from './internal-reviews';
+import { PlacePhotos } from './place-photos';
 
 async function fetchPlaceView(placeKey: string): Promise<PlaceView> {
   const res = await fetch(`/api/places/${encodeURIComponent(placeKey)}`);
@@ -114,6 +115,8 @@ export function PlaceScreen({ groupId, placeKey, initialData, aiSlot }: { groupI
       <CheckLinks name={name} city={cityForCheck} />
 
       {aiSlot}
+
+      {place && <PlacePhotos placeId={place.id} tripId={tripParam} />}
 
       <InternalReviews reviews={view.reviews} groupId={groupId} placeKey={placeKey} placeId={place?.id ?? null} tripId={tripParam} />
 

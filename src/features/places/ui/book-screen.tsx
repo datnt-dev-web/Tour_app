@@ -11,6 +11,7 @@ import { useDebouncedValue } from '@/shared/ui/use-debounced-value';
 import { BOOK_FILTERS, CATEGORY_LABELS, placeKeyOf } from '../constants';
 import { bookCities, filterBook, pickBookCity, type BookRow, type BookVerdict } from '../services/book-service';
 import { bookQuery } from './book-queries';
+import { photoCoversQuery } from './place-photos';
 import { VerdictBadge } from './verdict-badge';
 
 const SEARCH_DEBOUNCE_MS = 200;
@@ -19,8 +20,13 @@ const VIRTUAL_THRESHOLD = 50;
 const ROW_ESTIMATE_PX = 96;
 
 function BookRowItem({ row }: { row: BookRow }) {
+  // Ảnh mới nhất của quán (cả nhóm dùng chung một truy vấn).
+  const cover = useQuery(photoCoversQuery).data?.[row.placeId];
   return (
-    <Link href={`/places/${encodeURIComponent(placeKeyOf(row))}`} className="pressable flex min-h-11 flex-col gap-1 rounded border border-line bg-white p-3 shadow-card">
+    <Link href={`/places/${encodeURIComponent(placeKeyOf(row))}`} className="pressable flex min-h-11 gap-3 rounded border border-line bg-white p-3 shadow-card">
+      {/* eslint-disable-next-line @next/next/no-img-element -- ảnh Cloudinary đã thu nhỏ sẵn */}
+      {cover && <img src={cover} alt="" loading="lazy" className="size-16 shrink-0 rounded-sm object-cover" />}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 font-semibold leading-snug">{row.name}</p>
         <VerdictBadge verdict={row.verdict} className="shrink-0" />
@@ -30,6 +36,7 @@ function BookRowItem({ row }: { row: BookRow }) {
         {row.address && ` · ${row.address}`}
       </p>
       {row.note && <p className="text-sm">{row.note}</p>}
+      </div>
     </Link>
   );
 }

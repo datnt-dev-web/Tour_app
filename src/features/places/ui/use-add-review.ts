@@ -31,6 +31,7 @@ export function useAddReview(groupId: string, placeKey: string) {
         tripId: v.tripId ?? null,
         verdict: v.verdict,
         note: v.note.trim() || null,
+        rating: v.rating ?? null,
         createdAt: new Date().toISOString(),
       };
       if (previous.place) qc.setQueryData<PlaceView>(placeKeyQ, { ...previous.place, reviews: [optimistic, ...previous.place.reviews] });

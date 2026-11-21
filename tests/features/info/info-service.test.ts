@@ -32,6 +32,7 @@ function fakeStorage() {
     ),
     destroy: vi.fn(async () => {}),
     fileUrl: vi.fn((f: { publicId: string }, o: { download: boolean; ttlSec: number }) => `https://signed/${f.publicId}?dl=${o.download}&ttl=${o.ttlSec}`),
+    imageUrl: vi.fn(() => 'https://img'),
   } satisfies FileStorage;
 }
 

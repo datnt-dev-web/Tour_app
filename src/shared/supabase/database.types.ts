@@ -83,16 +83,30 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"place_reviews_internal": {
+                },"place_photos": {
                   Row: {
-                    "created_at": string,"id": string,"note": string | null,"place_id": string,"trip_id": string | null,"user_id": string,"verdict": string
+                    "created_at": string,"file_format": string | null,"file_public_id": string,"id": string,"place_id": string,"trip_id": string | null,"user_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"note"?: string | null,"place_id": string,"trip_id"?: string | null,"user_id"?: string,"verdict": string
+                    "created_at"?: string,"file_format"?: string | null,"file_public_id": string,"id"?: string,"place_id": string,"trip_id"?: string | null,"user_id"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"note"?: string | null,"place_id"?: string,"trip_id"?: string | null,"user_id"?: string,"verdict"?: string
+                    "created_at"?: string,"file_format"?: string | null,"file_public_id"?: string,"id"?: string,"place_id"?: string,"trip_id"?: string | null,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"place_reviews_internal": {
+                  Row: {
+                    "rating": number | null,"created_at": string,"id": string,"note": string | null,"place_id": string,"trip_id": string | null,"user_id": string,"verdict": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "rating"?: number | null,"created_at"?: string,"id"?: string,"note"?: string | null,"place_id": string,"trip_id"?: string | null,"user_id"?: string,"verdict": string
+                  }
+                  Update: {
+                    "rating"?: number | null,"created_at"?: string,"id"?: string,"note"?: string | null,"place_id"?: string,"trip_id"?: string | null,"user_id"?: string,"verdict"?: string
                   }
                   Relationships: [
                     {

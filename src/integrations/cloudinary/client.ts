@@ -45,6 +45,18 @@ export function createCloudinaryStorage(cfg: CloudinaryConfig): FileStorage {
       await cloudinary.uploader.destroy(publicId, { ...auth, resource_type: resourceType, type: 'authenticated', invalidate: true });
     },
 
+    imageUrl({ publicId }, { width }) {
+      return cloudinary.url(publicId, {
+        ...auth,
+        resource_type: 'image',
+        type: 'authenticated',
+        sign_url: true,
+        secure: true,
+        // Tự chọn định dạng/chất lượng nhẹ nhất trình duyệt đọc được; không phóng to ảnh nhỏ.
+        transformation: [{ width, crop: 'limit', fetch_format: 'auto', quality: 'auto' }],
+      });
+    },
+
     fileUrl({ publicId, resourceType, format }, { download, ttlSec, now = Date.now() }) {
       // API download của Cloudinary: link ký kèm hạn dùng, hết hạn thì phải bấm lại trong app để lấy link mới.
       return cloudinary.utils.private_download_url(publicId, resourceType === 'raw' ? '' : (format ?? ''), {

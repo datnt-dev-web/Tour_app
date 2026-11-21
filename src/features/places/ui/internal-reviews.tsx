@@ -1,6 +1,6 @@
 'use client';
 
-import { ThumbsDown, ThumbsUp } from 'lucide-react';
+import { Star, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/shared/ui/button';
 import { staggerStyle } from '@/shared/ui/stagger';
@@ -11,10 +11,42 @@ import { useAddReview } from './use-add-review';
 import { VerdictBadge } from './verdict-badge';
 
 const NOTE_MAX = 500;
+const STARS = [1, 2, 3, 4, 5];
+
+/** Hàng 5 sao: có onChange là chọn được (bấm lại sao đang chọn để bỏ chấm), không có là chỉ hiển thị. */
+function Stars({ value, onChange }: { value: number | null; onChange?: (v: number | null) => void }) {
+  if (!onChange) {
+    return (
+      <span className="inline-flex gap-0.5" aria-label={`${value} sao`}>
+        {STARS.map((n) => (
+          <Star key={n} size={14} aria-hidden className={n <= (value ?? 0) ? 'fill-warn text-warn' : 'text-line'} />
+        ))}
+      </span>
+    );
+  }
+  return (
+    <div className="flex" role="radiogroup" aria-label="Chấm sao (không bắt buộc)">
+      {STARS.map((n) => (
+        <button
+          key={n}
+          type="button"
+          role="radio"
+          aria-checked={value === n}
+          aria-label={`${n} sao`}
+          onClick={() => onChange(value === n ? null : n)}
+          className="inline-flex size-11 items-center justify-center pressable"
+        >
+          <Star size={24} aria-hidden className={n <= (value ?? 0) ? 'fill-warn text-warn' : 'text-line'} />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function ReviewForm({ groupId, placeKey, placeId, tripId }: { groupId: string; placeKey: string; placeId: string; tripId?: string }) {
   const [verdict, setVerdict] = useState<ReviewVerdict>('up');
   const [note, setNote] = useState('');
+  const [rating, setRating] = useState<number | null>(null);
   const add = useAddReview(groupId, placeKey);
 
   return (
@@ -22,7 +54,15 @@ function ReviewForm({ groupId, placeKey, placeId, tripId }: { groupId: string; p
       className="flex flex-col gap-2 rounded border border-line bg-white p-3"
       onSubmit={(e) => {
         e.preventDefault();
-        add.mutate({ placeId, verdict, note, tripId }, { onSuccess: () => setNote('') });
+        add.mutate(
+          { placeId, verdict, note, rating, tripId },
+          {
+            onSuccess: () => {
+              setNote('');
+              setRating(null);
+            },
+          },
+        );
       }}
     >
       <div className="flex gap-2" role="group" aria-label="Nhóm thấy chỗ này thế nào">
@@ -33,6 +73,7 @@ function ReviewForm({ groupId, placeKey, placeId, tripId }: { groupId: string; p
           </Chip>
         ))}
       </div>
+      <Stars value={rating} onChange={setRating} />
       <textarea
         aria-label="Ghi chú"
         required
@@ -90,6 +131,7 @@ export function InternalReviews({
                   {r.authorName}
                   <VerdictBadge verdict={r.verdict} />
                 </p>
+                {r.rating && <Stars value={r.rating} />}
                 {r.note && <p className="mt-1 text-sm text-muted">{r.note}</p>}
               </div>
             </li>

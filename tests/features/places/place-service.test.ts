@@ -18,7 +18,7 @@ const place = (over: Partial<Place>): Place => ({
   category: 'food', maps_url: null, verified: false, created_by: null, ...over,
 });
 const review: InternalReview = {
-  id: 'r1', placeId: LOCAL_ID, userId: 'u1', authorName: 'Lan', avatarColor: '#f97316', tripId: null, verdict: 'up', note: 'Ngon', createdAt: '2026-11-01T00:00:00Z',
+  id: 'r1', placeId: LOCAL_ID, userId: 'u1', authorName: 'Lan', avatarColor: '#f97316', tripId: null, verdict: 'up', note: 'Ngon', rating: null, createdAt: '2026-11-01T00:00:00Z',
 };
 
 function setup(saved: Place | null, getDetails: () => Promise<PlaceDetails> = async () => details) {

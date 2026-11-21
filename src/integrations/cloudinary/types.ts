@@ -18,4 +18,6 @@ export interface FileStorage {
     file: Pick<StoredFile, 'publicId' | 'resourceType' | 'format'>,
     opts: { download: boolean; ttlSec: number; now?: number },
   ): string;
+  /** Link ảnh đã ký kèm thu nhỏ theo bề rộng (ảnh nhóm chụp, không nhạy cảm như vé: không hết hạn). */
+  imageUrl(file: Pick<StoredFile, 'publicId' | 'format'>, opts: { width: number }): string;
 }

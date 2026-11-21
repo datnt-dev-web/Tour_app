@@ -70,6 +70,9 @@ describe('reviews repo + sổ quán', () => {
   test('RLS: đánh giá với trip của nhóm khác bị chặn (FORBIDDEN qua runAction)', async () => {
     const p = await createPlacesRepo(user.db).upsertPlaceFromGoogle(G, candidate('gp-rls'), 'food', 'x', user.id);
     const r = await runAction(() => createReviewsRepo(user.db).addReview({ placeId: p.id, verdict: 'up', note: null, tripId: tripX }));
+    const starred = await createReviewsRepo(user.db).addReview({ placeId: p.id, verdict: 'up', note: 'ngon', rating: 4 });
+    expect(starred.rating).toBe(4);
+    await expect(createReviewsRepo(user.db).addReview({ placeId: p.id, verdict: 'up', note: 'x', rating: 6 })).rejects.toBeTruthy();
     expect(r).toMatchObject({ ok: false, error: { code: 'FORBIDDEN' } });
   });
 });
