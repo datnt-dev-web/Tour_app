@@ -17,6 +17,7 @@ import { dateRange } from '../services/timeline';
 import { tripQuery } from './trip-queries';
 import { TripList } from './trip-list';
 import { ShareButton } from './share-button';
+import { ReminderActions } from './reminders';
 import { TodayPanel } from './today-panel';
 import { parseTripView, tripViewHref, visibleTripViews, type TripView } from './trip-view';
 import { cachedStops, type InitialStops } from './use-paged-stops';
@@ -60,6 +61,9 @@ export function TripScreen({
   const [adding, setAdding] = useState(false);
   const { trip } = info;
   const days = tripDays(trip);
+  const today = todayInVietnam();
+  // Chưa kết thúc (sắp đi hoặc đang đi): lịch trình còn dùng để nhắc, nên mới hiện nút thêm lịch/bật nhắc.
+  const notEnded = (trip.end_date ?? trip.start_date ?? '') >= today;
   const exploreHref = `/explore?${new URLSearchParams({ city: trip.city, trip: trip.id })}`;
   const dayOptions = [
     { value: 'all', label: 'Tất cả ngày' },
@@ -106,7 +110,7 @@ export function TripScreen({
       </header>
 
       <div className="flex rounded border border-line bg-card p-1" role="group" aria-label="Kiểu hiển thị">
-        {visibleTripViews(isTripOngoing(trip, todayInVietnam())).map((v) => (
+        {visibleTripViews(isTripOngoing(trip, today)).map((v) => (
           <button
             key={v.value}
             type="button"
@@ -136,7 +140,11 @@ export function TripScreen({
       ) : view === 'stats' ? (
         <TripStatsPanel tripId={tripId} info={info} initialStats={initialStats} initialStops={initialStops} />
       ) : view === 'timeline' ? (
-        <TripTimeline tripId={tripId} tab={tab} day={day} days={days} people={trip.party_size} initial={initialStops} />
+        <>
+          {/* Tab Hôm nay chỉ có khi chuyến đang diễn ra; trước ngày đi vẫn cần thêm lịch và bật nhắc từ đây. */}
+          {notEnded && <ReminderActions tripId={tripId} />}
+          <TripTimeline tripId={tripId} tab={tab} day={day} days={days} people={trip.party_size} initial={initialStops} />
+        </>
       ) : (
         <TripList tripId={tripId} tab={tab} days={days} initial={initialStops} />
       )}

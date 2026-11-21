@@ -89,7 +89,7 @@ describe('defaultDay / toHHMM', () => {
 describe('reflowDay', () => {
   const s = (id: string, time: string, end: string | null) => ({ id, visit_date: '2026-11-23', visit_time: `${time}:00`, visit_end_time: end ? `${end}:00` : null });
 
-  test('giữ giờ bắt đầu của ngày, thời lượng từng chỗ, chèn 15 phút di chuyển; chỉ trả chỗ đổi giờ', () => {
+  test('chia lại khung giờ theo thứ tự mới, giữ thời lượng từng chỗ; chỉ trả chỗ đổi giờ', () => {
     // Thứ tự mới: cafe (45') rồi banh (60' mặc định) rồi nha (60')
     const ordered = [s('cafe', '09:45', '10:30'), s('banh', '08:45', null), s('nha', '11:00', '12:00')];
     expect(reflowDay(ordered)).toEqual([
@@ -99,9 +99,26 @@ describe('reflowDay', () => {
     ].filter((c) => c.id !== 'nha'));
   });
 
-  test('không vượt quá 23:59', () => {
-    const late = [s('a', '22:00', '23:30'), s('b', '23:00', '23:45')];
-    const out = reflowDay(late);
-    expect(out.find((c) => c.id === 'b')?.schedule.time).toBe('23:45');
+  test('không đổi thứ tự thì không ghi gì, kể cả khi các chỗ sát nhau hoặc trùng giờ', () => {
+    // Đúng ca đã làm hỏng lịch Hải Phòng: Cafe kết thúc 10:30 đúng lúc Nhà hát bắt đầu, hai chỗ chung khung 15:30.
+    const plan = [s('cafe', '09:45', '10:30'), s('nha', '10:30', '11:30'), s('banhduc', '15:30', '17:00'), s('che', '15:30', '17:00'), s('chethai', '19:45', '20:15')];
+    expect(reflowDay(plan)).toEqual([]);
+  });
+
+  test('đổi thứ tự chỉ hoán khung giờ sẵn có: chỗ thứ i nhận giờ bắt đầu thứ i, giữ thời lượng, không dồn về cuối ngày', () => {
+    const ordered = [s('nha', '10:30', '11:30'), s('cafe', '09:45', '10:30'), s('chethai', '19:45', '20:15')];
+    expect(reflowDay(ordered)).toEqual([
+      { id: 'nha', schedule: { date: '2026-11-23', time: '09:45', endTime: '10:45' } },
+      { id: 'cafe', schedule: { date: '2026-11-23', time: '10:30', endTime: '11:15' } },
+    ]);
+  });
+
+  test('hai chỗ chung khung giờ đổi chỗ cho nhau vẫn giữ nguyên giờ', () => {
+    expect(reflowDay([s('che', '15:30', '17:00'), s('banhduc', '15:30', '17:00')])).toEqual([]);
+  });
+
+  test('giờ kết thúc không vượt quá 23:59', () => {
+    const out = reflowDay([s('b', '23:00', '23:45'), s('a', '22:00', '23:30')]);
+    expect(out.find((c) => c.id === 'a')?.schedule).toEqual({ date: '2026-11-23', time: '23:00', endTime: '23:59' });
   });
 });

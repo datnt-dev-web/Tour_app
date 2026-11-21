@@ -106,25 +106,25 @@ export const DEFAULT_STAY_MIN = 60;
 type ReflowStop = { id: string; visit_date: string | null; visit_time: string | null; visit_end_time: string | null };
 
 /**
- * Sau khi kéo thả trong một ngày: xếp lại giờ theo thứ tự mới, bắt đầu từ giờ sớm nhất của ngày, mỗi chỗ giữ thời lượng,
- * giữa hai chỗ chừa TRAVEL_GAP_MIN phút đi lại. Chỉ trả những chỗ đổi giờ (đỡ ghi thừa).
+ * Sau khi kéo thả trong một ngày: hoán các khung giờ sẵn có theo thứ tự mới. Chỗ thứ i nhận giờ bắt đầu thứ i
+ * (giờ cũ sắp tăng dần) và giữ thời lượng của nó. Không tính lại giờ từ đầu ngày, vì kế hoạch của nhóm có chỗ cố ý
+ * sát nhau hoặc chung khung giờ; tính lại kiểu nối tiếp + thời gian đi lại từng dồn cả ngày về 23:59.
+ * Không đổi thứ tự thì không có gì đổi. Chỉ trả những chỗ đổi giờ (đỡ ghi thừa).
  */
 export function reflowDay(ordered: ReflowStop[]): { id: string; schedule: { date: string; time: string; endTime: string | null } }[] {
   const timed = ordered.filter((s) => s.visit_date && s.visit_time);
   if (timed.length === 0) return [];
   const date = timed[0].visit_date!;
-  let cursor = Math.min(...timed.map((s) => toMinutes(s.visit_time!)));
+  const slots = timed.map((s) => toHHMM(s.visit_time!)).sort();
   const changes: { id: string; schedule: { date: string; time: string; endTime: string | null } }[] = [];
-  for (const s of timed) {
-    const duration = s.visit_end_time ? toMinutes(s.visit_end_time) - toMinutes(s.visit_time!) : DEFAULT_STAY_MIN;
-    const start = Math.min(cursor, DAY_END_MIN);
-    const time = fromMinutes(start);
-    const endTime = s.visit_end_time ? addMinutes(time, duration) : null;
-    const effectiveEnd = endTime && endTime > time ? endTime : null;
-    if (time !== toHHMM(s.visit_time!) || (effectiveEnd ?? null) !== (s.visit_end_time ? toHHMM(s.visit_end_time) : null)) {
-      changes.push({ id: s.id, schedule: { date, time, endTime: s.visit_end_time ? effectiveEnd : null } });
-    }
-    cursor = start + duration + TRAVEL_GAP_MIN;
-  }
+  timed.forEach((s, i) => {
+    const time = slots[i];
+    const oldTime = toHHMM(s.visit_time!);
+    const oldEnd = s.visit_end_time ? toHHMM(s.visit_end_time) : null;
+    const endTime = oldEnd ? addMinutes(time, toMinutes(oldEnd) - toMinutes(oldTime)) : null;
+    // Giờ kết thúc bị chặn ở 23:59 có thể không còn sau giờ bắt đầu: bỏ giờ kết thúc (ràng buộc DB end > start).
+    const validEnd = endTime && endTime > time ? endTime : null;
+    if (time !== oldTime || validEnd !== oldEnd) changes.push({ id: s.id, schedule: { date, time, endTime: validEnd } });
+  });
   return changes;
 }
