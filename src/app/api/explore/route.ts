@@ -7,8 +7,8 @@ import { createOverpassClient } from '@/integrations/overpass/client';
 import { getCacheStore } from '@/shared/cache/get-cache-store';
 import { getEnv } from '@/shared/config/env';
 
-// Overpass có thể chậm vài giây khi máy chủ bận.
-export const maxDuration = 30;
+// Overpass công cộng lúc bận mất 30–40 giây; client tự dừng ở 50 giây để còn trả lỗi rõ ràng.
+export const maxDuration = 60;
 
 const querySchema = z
   .object({

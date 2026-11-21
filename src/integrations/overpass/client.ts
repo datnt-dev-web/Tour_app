@@ -6,7 +6,9 @@ import { AppError } from '@/shared/errors';
 const USER_AGENT = 'FoodTourNhom/1.0 (self-hosted group app)';
 /** Tối đa ngần này kết quả mỗi lần, đủ một màn cuộn. */
 export const OVERPASS_LIMIT = 60;
-const TIMEOUT_SEC = 20;
+/** Máy chủ Overpass công cộng lúc bận mất 30–40 giây; cho nó đủ thời gian, nhưng dừng trước khi Vercel cắt hàm (maxDuration 60 giây). */
+const TIMEOUT_SEC = 45;
+export const OVERPASS_FETCH_TIMEOUT_MS = 50_000;
 
 /** Loại chỗ của app → điều kiện thẻ OSM (key, value). */
 const CATEGORY_TAGS: Record<StoredPlaceCategory, [string, string][]> = {
@@ -61,8 +63,9 @@ export interface OverpassClient {
 
 const unavailable = () => new AppError('EXPLORE_UNAVAILABLE', 'Không tải được dữ liệu bản đồ, thử lại sau.');
 
-export function createOverpassClient(opts: { url: string; fetchFn?: typeof fetch }): OverpassClient {
+export function createOverpassClient(opts: { url: string; fetchFn?: typeof fetch; timeoutMs?: number }): OverpassClient {
   const fetchFn = opts.fetchFn ?? fetch;
+  const timeoutMs = opts.timeoutMs ?? OVERPASS_FETCH_TIMEOUT_MS;
   return {
     async around(category, at, radiusM) {
       let res: Response;
@@ -71,6 +74,7 @@ export function createOverpassClient(opts: { url: string; fetchFn?: typeof fetch
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': USER_AGENT },
           body: new URLSearchParams({ data: buildOverpassQuery(category, at, radiusM) }),
+          signal: AbortSignal.timeout(timeoutMs),
         });
       } catch {
         throw unavailable();

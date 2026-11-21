@@ -38,6 +38,15 @@ describe('createOverpassClient', () => {
     await expect(client.around('cafe', { lat: 1, lng: 2 }, 500)).rejects.toMatchObject({ code: 'EXPLORE_UNAVAILABLE' });
   });
 
+  test('máy chủ chậm quá hạn thì bỏ chờ và báo EXPLORE_UNAVAILABLE (không để Vercel cắt ngang)', async () => {
+    const fetchFn = vi.fn(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal!.reason))),
+    );
+    const client = createOverpassClient({ url: 'https://overpass.test/api', fetchFn, timeoutMs: 20 });
+    await expect(client.around('cafe', { lat: 1, lng: 2 }, 500)).rejects.toMatchObject({ code: 'EXPLORE_UNAVAILABLE' });
+  });
+
   test('gửi truy vấn bằng POST và trả danh sách đã lọc', async () => {
     const fetchFn = vi.fn(async () =>
       Response.json({ elements: [{ type: 'node', id: 9, lat: 1, lon: 2, tags: { name: 'Cafe A' } }, { type: 'node', id: 10, tags: {} }] }),
