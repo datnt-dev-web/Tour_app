@@ -3,6 +3,7 @@
 import { SwitchCamera, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { MEMORY_BATCH_MAX } from '../constants';
+import { IconButton } from '@/shared/ui/icon-button';
 
 type Facing = 'environment' | 'user';
 type Shot = { file: File; url: string };
@@ -100,9 +101,9 @@ export function CameraCapture({ onDone, onClose }: { onDone: (files: File[]) => 
   return (
     <div role="dialog" aria-modal="true" aria-label="Chụp ảnh kỉ niệm" className="fixed inset-0 z-50 flex flex-col bg-black text-white">
       <div className="flex items-center justify-between gap-2 p-2 pt-[max(8px,env(safe-area-inset-top))]">
-        <button type="button" autoFocus onClick={onClose} aria-label="Đóng camera" className="inline-flex size-11 items-center justify-center rounded-full bg-white/10 pressable hover:bg-white/20">
+        <IconButton label="Đóng camera" tone="overlay" round autoFocus onClick={onClose}>
           <X size={22} aria-hidden />
-        </button>
+        </IconButton>
         <span className="text-sm text-white/80" aria-live="polite">
           {shots.length > 0 ? `Đã chụp ${shots.length}${full ? ' (tối đa)' : ''}` : 'Chạm nút tròn để chụp'}
         </span>

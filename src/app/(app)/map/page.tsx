@@ -5,6 +5,7 @@ import { createTripsRepo } from '@/features/trips/repositories/trips-repo';
 import { listTrips } from '@/features/trips/services/trips-service';
 import { createServerSupabase } from '@/shared/supabase/server';
 import { todayInVietnam } from '@/shared/date';
+import { buttonClass } from '@/shared/ui/button';
 
 // Tab "Bản đồ" mở thẳng bản đồ của chuyến sắp đi gần nhất (không có thì chuyến gần đây nhất).
 export default async function MapTab() {
@@ -18,7 +19,7 @@ export default async function MapTab() {
     <main className="animate-enter px-2 py-4">
       <h1 className="text-xl font-extrabold">Bản đồ</h1>
       <p className="py-8 text-center text-sm text-muted">Chưa có chuyến nào để xem trên bản đồ.</p>
-      <Link href="/" className="pressable mx-auto flex min-h-11 max-w-xs items-center justify-center rounded bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong">
+      <Link href="/" className={buttonClass('primary', 'mx-auto flex max-w-xs')}>
         Tạo chuyến mới
       </Link>
     </main>

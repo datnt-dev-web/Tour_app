@@ -1,6 +1,10 @@
 'use client';
 
+import { Dropdown } from '@/shared/ui/dropdown';
 import type { TripParticipant } from '../repositories/settle-repo';
+
+/** Giá trị rỗng = "Chưa ghi ai trả" (Dropdown cần mọi lựa chọn là chuỗi). */
+const NOBODY = '';
 
 /** Chọn người đã trả một khoản; "Chưa ghi ai trả" thì khoản đó chưa vào chia tiền. */
 export function PayerSelect({
@@ -16,20 +20,16 @@ export function PayerSelect({
   onChange: (paidBy: string | null) => void;
   disabled?: boolean;
 }) {
+  const options = [{ value: NOBODY, label: 'Chưa ghi ai trả' }, ...participants.map((p) => ({ value: p.id, label: `${p.name} trả` }))];
   return (
-    <select
-      aria-label={label}
-      value={value ?? ''}
+    <Dropdown
+      label={label}
+      value={value ?? NOBODY}
+      options={options}
+      onChange={(v) => onChange(v || null)}
+      size="sm"
       disabled={disabled}
-      onChange={(e) => onChange(e.target.value || null)}
-      className={`min-h-9 max-w-full rounded border bg-card px-2 text-xs disabled:opacity-50 ${value ? 'border-line text-ink' : 'border-dashed border-line text-muted'}`}
-    >
-      <option value="">Chưa ghi ai trả</option>
-      {participants.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name} trả
-        </option>
-      ))}
-    </select>
+      className="mt-1 w-fit max-w-full"
+    />
   );
 }

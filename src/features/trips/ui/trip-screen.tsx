@@ -9,11 +9,12 @@ import { useState } from 'react';
 import { formatDayMonth, todayInVietnam } from '@/shared/date';
 import { Dropdown } from '@/shared/ui/dropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { iconButtonClass } from '@/shared/ui/icon-button';
+import { buttonClass } from '@/shared/ui/button';
 import { TRIP_TABS, type TripTab } from '../constants';
 import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
-import { tripDays } from '../services/timeline';
+import { dateRange, tripDays } from '../services/timeline';
 import { isTripOngoing } from '../services/today';
-import { dateRange } from '../services/timeline';
 import { tripQuery } from './trip-queries';
 import { TripList } from './trip-list';
 import { ShareButton } from './share-button';
@@ -74,7 +75,7 @@ export function TripScreen({
   return (
     <main className="animate-enter flex flex-col gap-4 px-2 py-4">
       <header className="flex flex-col gap-1">
-        <Link href="/" aria-label="Quay lại" className="-ml-2 inline-flex size-11 items-center justify-center pressable rounded text-ink hover:bg-surface">
+        <Link href="/" aria-label="Quay lại" className={iconButtonClass('plain', false, '-ml-2')}>
           <ArrowLeft size={20} aria-hidden />
         </Link>
         <div className="flex items-start justify-between gap-3">
@@ -92,7 +93,7 @@ export function TripScreen({
               onClick={() => setAdding(true)}
               onPointerEnter={() => void loadManualSheet()}
               onFocus={() => void loadManualSheet()}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded border border-line bg-card px-3 text-sm font-semibold text-ink pressable hover:bg-surface"
+              className={buttonClass('secondary', 'gap-1.5 px-3')}
             >
               <Plus size={18} aria-hidden />
               Thêm
@@ -101,7 +102,7 @@ export function TripScreen({
               href={exploreHref}
               aria-label="Tìm thêm"
               title="Tìm thêm"
-              className="inline-flex size-11 items-center justify-center rounded bg-accent text-white pressable hover:bg-accent-strong"
+              className={iconButtonClass('solid')}
             >
               <Search size={18} aria-hidden />
             </Link>

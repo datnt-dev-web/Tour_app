@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { WifiOff } from 'lucide-react';
 import { AppFrame } from '@/shared/ui/app-frame';
+import { buttonClass } from '@/shared/ui/button';
 
 export const dynamic = 'force-static';
 
@@ -12,7 +13,7 @@ export default function OfflinePage() {
         <WifiOff size={40} className="text-muted" aria-hidden />
         <h1 className="text-xl font-extrabold">Đang offline</h1>
         <p className="text-sm text-muted">Trang này chưa được lưu trên máy. Các chuyến, lịch trình và thông tin bạn đã mở trước đó vẫn xem được.</p>
-        <Link href="/" className="pressable mt-2 inline-flex min-h-11 items-center rounded bg-accent px-4 text-sm font-semibold text-white">
+        <Link href="/" className={buttonClass('primary', 'mt-2')}>
           Về trang Chuyến đi
         </Link>
       </main>

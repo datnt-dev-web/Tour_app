@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { MemoriesBoard } from '@/features/memories/ui/memories-board';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
+import { Button } from '@/shared/ui/button';
 import type { InfoKind } from '../constants';
 import type { TripInfo } from '../repositories/infos-repo';
 import { AddInfoForm } from './add-info-form';
@@ -128,8 +130,6 @@ function TripInfoBoard({ tripId, initialItems, uploadEnabled }: { tripId: string
   );
 }
 
-const ACTION = 'inline-flex size-11 shrink-0 items-center justify-center rounded pressable hover:bg-surface';
-
 function InfoRow({ item, onRemove }: { item: TripInfo; onRemove: () => void }) {
   // Xóa hai bước ngay trên dòng (không dùng hộp thoại của trình duyệt).
   const [confirming, setConfirming] = useState(false);
@@ -148,23 +148,23 @@ function InfoRow({ item, onRemove }: { item: TripInfo; onRemove: () => void }) {
         {item.body && <p className="mt-1 whitespace-pre-wrap break-words text-sm">{item.body}</p>}
       </div>
       {openHref && (
-        <a href={openHref} target="_blank" rel="noopener noreferrer" aria-label={`Mở ${item.title}`} className={`${ACTION} text-accent`}>
+        <a href={openHref} target="_blank" rel="noopener noreferrer" aria-label={`Mở ${item.title}`} className={iconButtonClass('accent')}>
           <ExternalLink size={18} aria-hidden />
         </a>
       )}
       {fileHref && (
-        <a href={`${fileHref}?download=1`} aria-label={`Tải ${item.title}`} className={`${ACTION} text-accent`}>
+        <a href={`${fileHref}?download=1`} aria-label={`Tải ${item.title}`} className={iconButtonClass('accent')}>
           <Download size={18} aria-hidden />
         </a>
       )}
       {confirming ? (
-        <button type="button" onClick={onRemove} onBlur={() => setConfirming(false)} autoFocus className="min-h-11 shrink-0 rounded bg-bad px-3 text-sm font-semibold text-white pressable">
+        <Button variant="danger" onClick={onRemove} onBlur={() => setConfirming(false)} autoFocus className="shrink-0 px-3">
           Xóa?
-        </button>
+        </Button>
       ) : (
-        <button type="button" aria-label={`Xóa ${item.title}`} onClick={() => setConfirming(true)} className={`${ACTION} text-bad`}>
+        <IconButton label={`Xóa ${item.title}`} tone="danger" onClick={() => setConfirming(true)}>
           <Trash2 size={18} aria-hidden />
-        </button>
+        </IconButton>
       )}
     </li>
   );

@@ -8,8 +8,9 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Circle, CircleMarker, MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { Badge } from '@/shared/ui/badge';
-import { Button } from '@/shared/ui/button';
+import { Button, buttonClass } from '@/shared/ui/button';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
 import { STATUS_LABELS, STATUS_TONES, TAB_STATUSES, type TripTab } from '../constants';
 import type { TripMapPoint } from '../services/trip-locations-service';
 import { tripLocationsQuery } from './trip-queries';
@@ -93,7 +94,7 @@ function PointCard({ point, tripId, distance, onClose }: { point: TripMapPoint; 
           type="button"
           aria-label="Đóng"
           onClick={onClose}
-          className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded pressable text-muted hover:bg-surface"
+          className={iconButtonClass('muted', false, '-mr-2 -mt-2')}
         >
           <X size={18} aria-hidden />
         </button>
@@ -107,7 +108,7 @@ function PointCard({ point, tripId, distance, onClose }: { point: TripMapPoint; 
           href={directionsUrl(point)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded bg-accent px-4 text-sm font-semibold text-white pressable hover:bg-accent-strong"
+          className={buttonClass('primary', 'flex-1')}
         >
           <Navigation size={18} aria-hidden />
           Chỉ đường
@@ -192,17 +193,15 @@ export default function TripMap({ tripId, tab }: { tripId: string; tab: TripTab 
             })}
             {location.status === 'ok' && <MyLocationLayer coords={location.coords} accuracy={location.accuracy} />}
           </MapContainer>
-          <button
-            type="button"
-            onClick={toggleLocation}
-            aria-label={locationOn ? 'Tắt vị trí của tôi' : 'Hiện vị trí của tôi'}
+          <IconButton
+            label={locationOn ? 'Tắt vị trí của tôi' : 'Hiện vị trí của tôi'}
+            tone="outline"
             aria-pressed={locationOn}
-            className={`absolute right-3 top-3 z-[1000] inline-flex size-11 items-center justify-center rounded border border-line bg-card shadow-card pressable hover:bg-surface disabled:opacity-60 ${
-              location.status === 'ok' ? 'text-ai' : 'text-ink'
-            }`}
+            onClick={toggleLocation}
+            className={`absolute right-3 top-3 z-[1000] shadow-card ${location.status === 'ok' ? 'text-ai' : ''}`}
           >
             <LocateFixed size={20} aria-hidden className={location.status === 'locating' ? 'animate-pulse' : undefined} />
-          </button>
+          </IconButton>
           {selected && (
             <PointCard
               key={selected.tripPlaceId}

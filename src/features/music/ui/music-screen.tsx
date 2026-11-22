@@ -5,6 +5,10 @@ import { CirclePlay, FolderPlus, Music, Pause, Pencil, Play, Plus, Repeat, Repea
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
+import { Button, buttonClass } from '@/shared/ui/button';
+import { Chip } from '@/shared/ui/chip';
+import { Dropdown } from '@/shared/ui/dropdown';
+import { IconButton } from '@/shared/ui/icon-button';
 import { runLimited, uploadWithTicket } from '@/shared/upload/direct-upload';
 import {
   addFileTrackAction,
@@ -28,11 +32,8 @@ const formatDuration = (sec: number | null) => (sec === null ? '' : `${Math.floo
 /** Tên bài mặc định = tên file bỏ đuôi, gạch dưới thành khoảng trắng. */
 const titleFromFile = (name: string) => name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim() || 'Bài không tên';
 
-const CHIP = 'inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold pressable';
-const chipClass = (on: boolean) => `${CHIP} ${on ? 'border-accent bg-accent text-white' : 'border-line bg-card text-ink hover:bg-surface'}`;
-
-const BTN = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded border border-line bg-card px-3 text-sm font-semibold text-ink pressable hover:bg-surface';
-const ROUND = 'inline-flex size-11 items-center justify-center rounded-full pressable';
+/** Thư mục của bài; giá trị rỗng = "Chưa phân loại" (Dropdown cần mọi lựa chọn là chuỗi). */
+const UNSORTED = '';
 
 /** Tab Nhạc: danh sách chung của nhóm (file tải lên + link YouTube) và trình phát. */
 export function MusicScreen({ initial }: { initial: MusicData }) {
@@ -158,6 +159,7 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
 
   const current = player.current;
   const RepeatIcon = player.repeat === 'one' ? Repeat1 : Repeat;
+  const folderOptions = [{ value: UNSORTED, label: 'Chưa phân loại' }, ...folders.map((f) => ({ value: f.id, label: f.name }))];
 
   return (
     <main className="animate-enter flex flex-col gap-4 px-2 py-4">
@@ -167,25 +169,25 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
       </header>
 
       <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none]" role="group" aria-label="Thư mục">
-        <button type="button" onClick={() => setScope('all')} aria-pressed={activeScope === 'all'} className={chipClass(activeScope === 'all')}>
+        <Chip selected={activeScope === 'all'} onClick={() => setScope('all')} className="shrink-0">
           Tất cả
-        </button>
+        </Chip>
         {folders.map((f) => (
-          <button key={f.id} type="button" onClick={() => setScope(f.id)} aria-pressed={activeScope === f.id} className={chipClass(activeScope === f.id)}>
+          <Chip key={f.id} selected={activeScope === f.id} onClick={() => setScope(f.id)} className="shrink-0 gap-1.5">
             {f.name}
             <span className="text-xs opacity-75">{tracks.filter((t) => t.folderId === f.id).length}</span>
-          </button>
+          </Chip>
         ))}
         {folders.length > 0 && unsorted > 0 && (
-          <button type="button" onClick={() => setScope('none')} aria-pressed={activeScope === 'none'} className={chipClass(activeScope === 'none')}>
+          <Chip selected={activeScope === 'none'} onClick={() => setScope('none')} className="shrink-0 gap-1.5">
             Chưa phân loại
             <span className="text-xs opacity-75">{unsorted}</span>
-          </button>
+          </Chip>
         )}
-        <button type="button" onClick={() => setFolderForm({ mode: 'create', name: '' })} className={`${CHIP} border-dashed border-line text-muted hover:bg-surface`}>
+        <Chip onClick={() => setFolderForm({ mode: 'create', name: '' })} className="shrink-0 gap-1.5 border-dashed text-muted">
           <FolderPlus size={16} aria-hidden />
           Thư mục
-        </button>
+        </Chip>
       </div>
 
       {folderForm && (
@@ -202,31 +204,31 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
             placeholder="Ví dụ Remix, Ballad, Nhạc đi đường"
             className="min-h-11 min-w-0 flex-1 rounded border border-line bg-card px-3 text-base"
           />
-          <button type="submit" disabled={!folderForm.name.trim()} className="inline-flex min-h-11 items-center rounded bg-accent px-4 text-sm font-semibold text-white pressable disabled:opacity-50">
+          <Button type="submit" disabled={!folderForm.name.trim()}>
             {folderForm.mode === 'create' ? 'Tạo' : 'Lưu'}
-          </button>
-          <button type="button" onClick={() => setFolderForm(null)} className={BTN}>
+          </Button>
+          <Button variant="secondary" onClick={() => setFolderForm(null)} className="px-3">
             Hủy
-          </button>
+          </Button>
         </form>
       )}
 
       {activeFolder && !folderForm && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted">Thêm bài lúc này sẽ vào thư mục “{activeFolder.name}”.</span>
-          <button type="button" onClick={() => setFolderForm({ mode: 'rename', name: activeFolder.name })} className={`${BTN} min-h-9 px-2`}>
+          <Button variant="secondary" onClick={() => setFolderForm({ mode: 'rename', name: activeFolder.name })} className="min-h-9 gap-1.5 px-2">
             <Pencil size={14} aria-hidden />
             Đổi tên
-          </button>
+          </Button>
           {confirmFolder ? (
-            <button type="button" onClick={() => void deleteFolder()} className="inline-flex min-h-9 items-center rounded bg-bad px-3 font-semibold text-white pressable">
+            <Button variant="danger" onClick={() => void deleteFolder()} className="min-h-9 px-3">
               Xóa thư mục? (bài giữ lại)
-            </button>
+            </Button>
           ) : (
-            <button type="button" onClick={() => setConfirmFolder(true)} className={`${BTN} min-h-9 px-2 text-bad`}>
+            <Button variant="secondary" onClick={() => setConfirmFolder(true)} className="min-h-9 gap-1.5 px-2 text-bad">
               <Trash2 size={14} aria-hidden />
               Xóa thư mục
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -234,7 +236,7 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
       <div className="flex flex-wrap gap-2">
         {data.uploadEnabled && (
           <>
-            <label htmlFor={fileInputId} className={`${BTN} cursor-pointer ${progress ? 'pointer-events-none opacity-60' : ''}`}>
+            <label htmlFor={fileInputId} className={buttonClass('secondary', `cursor-pointer gap-1.5 px-3 ${progress ? 'pointer-events-none opacity-60' : ''}`)}>
               <Upload size={16} aria-hidden />
               {progress ? `Đang tải ${progress.done}/${progress.total}` : 'Tải file nhạc'}
             </label>
@@ -252,10 +254,10 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
             />
           </>
         )}
-        <button type="button" onClick={() => setLinkOpen((v) => !v)} aria-expanded={linkOpen} className={BTN}>
+        <Button variant="secondary" onClick={() => setLinkOpen((v) => !v)} aria-expanded={linkOpen} className="gap-1.5 px-3">
           <CirclePlay size={16} aria-hidden />
           Thêm link YouTube
-        </button>
+        </Button>
       </div>
 
       {linkOpen && (
@@ -273,10 +275,10 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
             placeholder="Dán link YouTube"
             className="min-h-11 min-w-0 flex-1 rounded border border-line bg-card px-3 text-base"
           />
-          <button type="submit" disabled={adding || !link.trim()} className="inline-flex min-h-11 items-center gap-1 rounded bg-accent px-4 text-sm font-semibold text-white pressable disabled:opacity-50">
+          <Button type="submit" disabled={adding || !link.trim()} className="gap-1">
             <Plus size={16} aria-hidden />
             {adding ? 'Đang thêm…' : 'Thêm'}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -294,26 +296,26 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
             <p className="truncate text-sm text-muted">{current.artist ?? (current.kind === 'youtube' ? 'YouTube' : 'Nhạc chung')}</p>
           </div>
           <div className="flex items-center justify-between">
-            <button type="button" onClick={player.toggleShuffle} aria-pressed={player.shuffle} aria-label="Phát ngẫu nhiên" className={`${ROUND} ${player.shuffle ? 'text-accent' : 'text-muted'}`}>
+            <IconButton label="Phát ngẫu nhiên" round tone={player.shuffle ? 'accent' : 'muted'} aria-pressed={player.shuffle} onClick={player.toggleShuffle}>
               <Shuffle size={20} aria-hidden />
-            </button>
-            <button type="button" onClick={player.prev} aria-label="Bài trước" className={`${ROUND} text-ink`}>
+            </IconButton>
+            <IconButton label="Bài trước" round onClick={player.prev}>
               <SkipBack size={22} aria-hidden />
-            </button>
-            <button type="button" onClick={player.toggle} aria-label={player.playing ? 'Tạm dừng' : 'Phát'} className={`${ROUND} size-14 bg-accent text-white`}>
+            </IconButton>
+            <IconButton label={player.playing ? 'Tạm dừng' : 'Phát'} round tone="solid" className="size-14" onClick={player.toggle}>
               {player.playing ? <Pause size={26} aria-hidden /> : <Play size={26} aria-hidden />}
-            </button>
-            <button type="button" onClick={player.next} aria-label="Bài sau" className={`${ROUND} text-ink`}>
+            </IconButton>
+            <IconButton label="Bài sau" round onClick={player.next}>
               <SkipForward size={22} aria-hidden />
-            </button>
-            <button
-              type="button"
+            </IconButton>
+            <IconButton
+              label={player.repeat === 'one' ? 'Lặp một bài' : player.repeat === 'all' ? 'Lặp cả danh sách' : 'Không lặp'}
+              round
+              tone={player.repeat === 'off' ? 'muted' : 'accent'}
               onClick={player.cycleRepeat}
-              aria-label={player.repeat === 'one' ? 'Lặp một bài' : player.repeat === 'all' ? 'Lặp cả danh sách' : 'Không lặp'}
-              className={`${ROUND} ${player.repeat === 'off' ? 'text-muted' : 'text-accent'}`}
             >
               <RepeatIcon size={20} aria-hidden />
-            </button>
+            </IconButton>
           </div>
         </section>
       )}
@@ -357,28 +359,24 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
                   {active && <span className="shrink-0 text-xs font-semibold text-accent">{player.playing ? 'Đang phát' : 'Tạm dừng'}</span>}
                 </button>
                 {folders.length > 0 && (
-                  <select
-                    aria-label={`Chuyển “${t.title}” sang thư mục`}
-                    value={t.folderId ?? ''}
-                    onChange={(e) => void move(t.id, e.target.value || null)}
-                    className="min-h-11 max-w-24 shrink-0 rounded border border-line bg-card px-1 text-xs text-ink"
-                  >
-                    <option value="">Chưa phân loại</option>
-                    {folders.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Dropdown
+                    label={`Chuyển “${t.title}” sang thư mục`}
+                    value={t.folderId ?? UNSORTED}
+                    options={folderOptions}
+                    onChange={(v) => void move(t.id, v || null)}
+                    size="sm"
+                    align="end"
+                    className="max-w-28 shrink-0"
+                  />
                 )}
                 {confirmId === t.id ? (
-                  <button type="button" onClick={() => void remove(t.id)} className="inline-flex min-h-11 items-center rounded bg-bad px-3 text-sm font-semibold text-white pressable">
+                  <Button variant="danger" onClick={() => void remove(t.id)} className="px-3">
                     Xóa?
-                  </button>
+                  </Button>
                 ) : (
-                  <button type="button" onClick={() => setConfirmId(t.id)} aria-label={`Xóa ${t.title}`} className="inline-flex size-11 shrink-0 items-center justify-center rounded text-muted pressable hover:bg-surface">
+                  <IconButton label={`Xóa ${t.title}`} tone="muted" onClick={() => setConfirmId(t.id)}>
                     <Trash2 size={18} aria-hidden />
-                  </button>
+                  </IconButton>
                 )}
               </li>
             );

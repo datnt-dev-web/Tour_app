@@ -7,6 +7,8 @@ import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { runLimited, uploadWithTicket } from '@/shared/upload/direct-upload';
+import { Button, buttonClass } from '@/shared/ui/button';
+import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
 import { addMemoryAction, prepareMemoryUploadsAction, removeMemoryAction } from '../actions/memories-actions';
 import { MEMORY_BATCH_MAX, MEMORY_MAX_BYTES } from '../constants';
 import type { TripPhotoView } from '../services/memories-service';
@@ -92,14 +94,14 @@ export function MemoriesBoard({ tripId }: { tripId: string }) {
             type="button"
             disabled={!!progress}
             onClick={() => setCamera(true)}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded border border-line bg-card px-3 text-sm font-semibold text-ink pressable hover:bg-surface disabled:opacity-60"
+            className={buttonClass('secondary', 'gap-1.5 px-3')}
           >
             <Camera size={18} aria-hidden />
             Chụp ảnh
           </button>
           <label
             htmlFor={inputId}
-            className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded bg-accent px-4 text-sm font-semibold text-white pressable hover:bg-accent-strong ${progress ? 'pointer-events-none opacity-60' : ''}`}
+            className={buttonClass('primary', `cursor-pointer gap-1.5 ${progress ? 'pointer-events-none opacity-60' : ''}`)}
           >
             <ImagePlus size={18} aria-hidden />
             {progress ? `Đang tải ${progress.done}/${progress.total}` : 'Thêm ảnh'}
@@ -171,8 +173,6 @@ export function MemoriesBoard({ tripId }: { tripId: string }) {
   );
 }
 
-const ICON_BTN = 'inline-flex size-11 items-center justify-center rounded-full bg-white/10 text-white pressable hover:bg-white/20';
-
 function Lightbox({ photo, index, total, onClose, onMove, onRemove }: { photo: TripPhotoView; index: number; total: number; onClose: () => void; onMove: (delta: number) => void; onRemove: () => void }) {
   // Xóa hai bước ngay trên thanh công cụ (không dùng hộp thoại của trình duyệt).
   const [confirming, setConfirming] = useState(false);
@@ -189,24 +189,24 @@ function Lightbox({ photo, index, total, onClose, onMove, onRemove }: { photo: T
       }}
     >
       <div className="flex items-center justify-between gap-2 p-2 pt-[max(8px,env(safe-area-inset-top))]">
-        <button type="button" autoFocus onClick={onClose} aria-label="Đóng" className={ICON_BTN}>
+        <IconButton label="Đóng" tone="overlay" round autoFocus onClick={onClose}>
           <X size={20} aria-hidden />
-        </button>
+        </IconButton>
         <span className="text-sm text-white/70">
           {index + 1}/{total}
         </span>
         <div className="flex gap-2">
-          <a href={photo.downloadUrl} aria-label="Tải ảnh gốc" className={ICON_BTN}>
+          <a href={photo.downloadUrl} aria-label="Tải ảnh gốc" className={iconButtonClass('overlay', true)}>
             <Download size={20} aria-hidden />
           </a>
           {confirming ? (
-            <button type="button" onClick={onRemove} className="inline-flex min-h-11 items-center rounded-full bg-bad px-4 text-sm font-semibold text-white pressable">
+            <Button variant="danger" onClick={onRemove} className="rounded-full">
               Xóa ảnh này?
-            </button>
+            </Button>
           ) : (
-            <button type="button" onClick={() => setConfirming(true)} aria-label="Xóa ảnh" className={ICON_BTN}>
+            <IconButton label="Xóa ảnh" tone="overlay" round onClick={() => setConfirming(true)}>
               <Trash2 size={20} aria-hidden />
-            </button>
+            </IconButton>
           )}
         </div>
       </div>
@@ -215,12 +215,12 @@ function Lightbox({ photo, index, total, onClose, onMove, onRemove }: { photo: T
         <img src={photo.fullUrl} alt="" className="max-h-full max-w-full object-contain" />
         {total > 1 && (
           <>
-            <button type="button" onClick={() => onMove(-1)} aria-label="Ảnh trước" className={`${ICON_BTN} absolute left-2`}>
+            <IconButton label="Ảnh trước" tone="overlay" round className="absolute left-2" onClick={() => onMove(-1)}>
               <ChevronLeft size={22} aria-hidden />
-            </button>
-            <button type="button" onClick={() => onMove(1)} aria-label="Ảnh sau" className={`${ICON_BTN} absolute right-2`}>
+            </IconButton>
+            <IconButton label="Ảnh sau" tone="overlay" round className="absolute right-2" onClick={() => onMove(1)}>
               <ChevronRight size={22} aria-hidden />
-            </button>
+            </IconButton>
           </>
         )}
       </div>

@@ -11,6 +11,8 @@ import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Pagination } from '@/shared/ui/pagination';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { FIELD } from '@/shared/ui/field';
+import { IconButton } from '@/shared/ui/icon-button';
 import type { TripParticipant } from '../repositories/settle-repo';
 import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
 import { tripDays } from '../services/timeline';
@@ -18,7 +20,6 @@ import { toTripStats } from '../services/trip-stats';
 import { SettlePanel } from './settle-panel';
 import { MoneyInput } from './money-input';
 import { PayerSelect } from './payer-select';
-import { FIELD } from './stop-editor';
 import { tripSplitQuery, tripStatsQuery } from './trip-queries';
 import { stopsFilter } from './trip-view';
 import { usePagedStops, type InitialStops } from './use-paged-stops';
@@ -297,15 +298,9 @@ export function TripStatsPanel({
                   )}
                 </div>
                 <span className="text-sm font-semibold tabular-nums">{vnd(e.amount)}</span>
-                <button
-                  type="button"
-                  aria-label={`Xóa ${e.label}`}
-                  onClick={() => removeExpense.mutate(e.id)}
-                  disabled={e.id.startsWith('optimistic-')}
-                  className="inline-flex size-11 shrink-0 items-center justify-center rounded text-bad pressable hover:bg-surface disabled:opacity-40"
-                >
+                <IconButton label={`Xóa ${e.label}`} tone="danger" onClick={() => removeExpense.mutate(e.id)} disabled={e.id.startsWith('optimistic-')}>
                   <Trash2 size={18} aria-hidden />
-                </button>
+                </IconButton>
               </li>
             ))}
           </ul>

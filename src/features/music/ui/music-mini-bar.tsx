@@ -4,6 +4,7 @@ import { Music, Pause, Play, SkipForward } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMusicPlayer } from './music-player';
+import { IconButton } from '@/shared/ui/icon-button';
 
 /** Thanh nhỏ phía trên thanh điều hướng khi đang có bài, để nghe tiếp lúc xem tab khác. Ở tab Nhạc thì không cần. */
 export function MusicMiniBar() {
@@ -25,12 +26,12 @@ export function MusicMiniBar() {
             <span className="block truncate text-xs text-muted">{current.artist ?? (current.kind === 'youtube' ? 'YouTube' : 'Nhạc chung')}</span>
           </span>
         </Link>
-        <button type="button" onClick={toggle} aria-label={playing ? 'Tạm dừng' : 'Phát'} className="inline-flex size-11 items-center justify-center rounded-full text-ink pressable hover:bg-surface">
+        <IconButton label={playing ? 'Tạm dừng' : 'Phát'} round onClick={toggle}>
           {playing ? <Pause size={22} aria-hidden /> : <Play size={22} aria-hidden />}
-        </button>
-        <button type="button" onClick={next} aria-label="Bài sau" className="inline-flex size-11 items-center justify-center rounded-full text-ink pressable hover:bg-surface">
+        </IconButton>
+        <IconButton label="Bài sau" round onClick={next}>
           <SkipForward size={20} aria-hidden />
-        </button>
+        </IconButton>
       </div>
     </>
   );

@@ -21,6 +21,7 @@ import { Card } from '@/shared/ui/card';
 import { Chip } from '@/shared/ui/chip';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { useDebouncedValue } from '@/shared/ui/use-debounced-value';
+import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
 import type { ExploreNearbyPlace, ExploreNearbyResult } from '../services/nearby-service';
 import { pickBookForExplore } from '../services/nearby-service';
 
@@ -211,20 +212,14 @@ function NearbyCard({ place, onAdd, added, pending }: { place: ExploreNearbyPlac
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`Chỉ đường tới ${place.name}`}
-        className="inline-flex size-11 shrink-0 items-center justify-center rounded text-accent pressable hover:bg-surface"
+        className={iconButtonClass('accent')}
       >
         <Navigation size={18} aria-hidden />
       </a>
       {onAdd && (
-        <button
-          type="button"
-          onClick={() => onAdd(place)}
-          disabled={added || pending}
-          aria-label={added ? `Đã thêm ${place.name}` : `Thêm ${place.name} vào chuyến`}
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded bg-accent text-white pressable hover:bg-accent-strong disabled:opacity-50"
-        >
+        <IconButton label={added ? `Đã thêm ${place.name}` : `Thêm ${place.name} vào chuyến`} tone="solid" onClick={() => onAdd(place)} disabled={added || pending}>
           {added ? <Check size={18} aria-hidden /> : <Plus size={18} aria-hidden />}
-        </button>
+        </IconButton>
       )}
     </Card>
   );

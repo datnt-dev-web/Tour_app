@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
+import { version } from "./package.json";
 
 /** Ảnh/icon trong public/ không có hash trong tên: cache 7 ngày, hết hạn vẫn dùng bản cũ trong lúc tải bản mới. */
 const PUBLIC_ASSET_CACHE = 'public, max-age=604800, stale-while-revalidate=86400';
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // Chỉ đưa số version vào bundle client (import package.json ở client sẽ đóng gói cả file: danh sách thư viện, script).
+  env: { NEXT_PUBLIC_APP_VERSION: version },
   // Chỉ còn file nhập sheet (tối đa 1 MB) đi qua server action; ảnh/nhạc/tệp tải thẳng lên Cloudinary.
   experimental: { serverActions: { bodySizeLimit: '2mb' } },
   // Mặc định Next trả max-age=0 cho file trong public/, trình duyệt phải hỏi lại mỗi lần mở trang.

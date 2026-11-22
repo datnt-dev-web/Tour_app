@@ -1,6 +1,5 @@
 'use client';
 
-import { X } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { SuggestInput } from '@/features/geo/ui/suggest-input';
 import { CATEGORY_LABELS, STORED_CATEGORIES } from '@/features/places/constants';
@@ -9,9 +8,11 @@ import { todayInVietnam } from '@/shared/date';
 import { parseMoney } from '@/shared/money';
 import { Button } from '@/shared/ui/button';
 import { Chip } from '@/shared/ui/chip';
+import { Sheet } from '@/shared/ui/sheet';
+import { FIELD } from '@/shared/ui/field';
 import type { TripPlace } from '../repositories/trips-repo';
 import { defaultDay, lastTransport, suggestTime } from '../services/timeline';
-import { endTimeInvalid, FIELD, ScheduleFields, TransportField, type ScheduleDraft } from './stop-editor';
+import { endTimeInvalid, ScheduleFields, TransportField, type ScheduleDraft } from './stop-editor';
 import { useAddManualPlace } from './use-trip-mutations';
 
 /**
@@ -84,105 +85,87 @@ export function ManualPlaceSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 animate-fade-in" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Thêm chỗ"
-        onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-up flex max-h-[90dvh] w-full max-w-[480px] flex-col gap-3 overflow-y-auto rounded-sm bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-base font-bold">Thêm chỗ</h2>
-            <p className="text-sm text-muted">Đã biết quán thì nhập luôn, không cần tìm.</p>
+    <Sheet title="Thêm chỗ" description="Đã biết quán thì nhập luôn, không cần tìm." onClose={onClose}>
+      {added.length > 0 && (
+        <p role="status" className="rounded bg-good-bg p-2 text-sm text-good">
+          Đã thêm: {added.join(', ')}
+        </p>
+      )}
+
+      <form onSubmit={submit} className="flex flex-col gap-3">
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Tên quán / địa điểm
+          <input required autoFocus maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ví dụ Bánh đa cua bà Cụ" className={FIELD} />
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Địa chỉ <span className="font-normal text-muted">(không bắt buộc, có thì hiện trên bản đồ)</span>
+          <SuggestInput
+            kind="address"
+            city={city}
+            maxLength={200}
+            value={address}
+            onChange={setAddress}
+            placeholder="Gõ tên phố, ví dụ Cầu Đất"
+            className={`${FIELD} font-normal`}
+          />
+        </label>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Loại</span>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Loại">
+            {STORED_CATEGORIES.map((c) => (
+              <Chip key={c} selected={category === c} onClick={() => setCategory(c)} className="px-3">
+                {CATEGORY_LABELS[c]}
+              </Chip>
+            ))}
           </div>
-          <button type="button" aria-label="Đóng" onClick={onClose} className="inline-flex size-11 shrink-0 items-center justify-center pressable rounded hover:bg-surface">
-            <X size={20} aria-hidden />
-          </button>
         </div>
 
-        {added.length > 0 && (
-          <p role="status" className="rounded bg-good-bg p-2 text-sm text-good">
-            Đã thêm: {added.join(', ')}
+        <div className="flex flex-col gap-2">
+          <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={withTime} onChange={(e) => setWithTime(e.target.checked)} className="size-5 accent-accent" />
+            Xếp giờ cho timeline
+          </label>
+          {withTime && <ScheduleFields days={days} value={schedule} onChange={setSchedule} />}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium">Di chuyển</span>
+          <TransportField value={transport} onChange={setTransport} />
+        </div>
+
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Tổng tiền cả nhóm <span className="font-normal text-muted">(không bắt buộc, gõ tắt được 120k, 1tr2)</span>
+          <input
+            inputMode="numeric"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            placeholder="Chưa có giá"
+            aria-invalid={parsedCost === undefined || undefined}
+            className={`${FIELD} font-normal tabular-nums ${parsedCost === undefined ? 'border-bad! text-bad' : ''}`}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Ghi chú
+          <textarea maxLength={500} rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Món nên gọi, giá, đặt bàn..." className="w-full rounded border border-line bg-card p-3 text-sm" />
+        </label>
+
+        {add.error && (
+          <p role="alert" className="text-sm text-bad">
+            {add.error.message}
           </p>
         )}
 
-        <form onSubmit={submit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Tên quán / địa điểm
-            <input required autoFocus maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="Ví dụ Bánh đa cua bà Cụ" className={FIELD} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Địa chỉ <span className="font-normal text-muted">(không bắt buộc, có thì hiện trên bản đồ)</span>
-            <SuggestInput
-              kind="address"
-              city={city}
-              maxLength={200}
-              value={address}
-              onChange={setAddress}
-              placeholder="Gõ tên phố, ví dụ Cầu Đất"
-              className={`${FIELD} font-normal`}
-            />
-          </label>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Loại</span>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Loại">
-              {STORED_CATEGORIES.map((c) => (
-                <Chip key={c} selected={category === c} onClick={() => setCategory(c)} className="px-3">
-                  {CATEGORY_LABELS[c]}
-                </Chip>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="flex min-h-11 items-center gap-2 text-sm font-medium">
-              <input type="checkbox" checked={withTime} onChange={(e) => setWithTime(e.target.checked)} className="size-5 accent-accent" />
-              Xếp giờ cho timeline
-            </label>
-            {withTime && <ScheduleFields days={days} value={schedule} onChange={setSchedule} />}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Di chuyển</span>
-            <TransportField value={transport} onChange={setTransport} />
-          </div>
-
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Tổng tiền cả nhóm <span className="font-normal text-muted">(không bắt buộc, gõ tắt được 120k, 1tr2)</span>
-            <input
-              inputMode="numeric"
-              value={cost}
-              onChange={(e) => setCost(e.target.value)}
-              placeholder="Chưa có giá"
-              aria-invalid={parsedCost === undefined || undefined}
-              className={`${FIELD} font-normal tabular-nums ${parsedCost === undefined ? 'border-bad! text-bad' : ''}`}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Ghi chú
-            <textarea maxLength={500} rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Món nên gọi, giá, đặt bàn..." className="w-full rounded border border-line bg-card p-3 text-sm" />
-          </label>
-
-          {add.error && (
-            <p role="alert" className="text-sm text-bad">
-              {add.error.message}
-            </p>
-          )}
-
-          <div className="flex gap-2">
-            <Button type="submit" variant="secondary" className="flex-1" disabled={add.isPending || !name.trim() || invalid} data-keep-open="true">
-              Thêm & nhập tiếp
-            </Button>
-            <Button type="submit" className="flex-1" disabled={add.isPending || !name.trim() || invalid}>
-              {add.isPending ? 'Đang thêm...' : 'Thêm'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex gap-2">
+          <Button type="submit" variant="secondary" className="flex-1" disabled={add.isPending || !name.trim() || invalid} data-keep-open="true">
+            Thêm & nhập tiếp
+          </Button>
+          <Button type="submit" className="flex-1" disabled={add.isPending || !name.trim() || invalid}>
+            {add.isPending ? 'Đang thêm...' : 'Thêm'}
+          </Button>
+        </div>
+      </form>
+    </Sheet>
   );
 }

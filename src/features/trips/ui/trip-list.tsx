@@ -9,6 +9,8 @@ import { Badge } from '@/shared/ui/badge';
 import { Pagination } from '@/shared/ui/pagination';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { staggerStyle } from '@/shared/ui/stagger';
+import { IconButton } from '@/shared/ui/icon-button';
+import { buttonClass } from '@/shared/ui/button';
 import { STATUS_LABELS, STATUS_TONES, type TripTab } from '../constants';
 import type { TripStop } from '../repositories/trips-repo';
 import { formatSlot } from '../services/timeline';
@@ -63,19 +65,14 @@ function PlaceRow({
           aria-label={scheduled ? `Đổi giờ ${item.place.name}` : `Xếp giờ ${item.place.name}`}
           aria-expanded={editing.editingId === item.id}
           onClick={() => (editing.editingId === item.id ? editing.close() : editing.open(item))}
-          className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded border border-line bg-card px-3 text-sm font-semibold tabular-nums text-accent pressable hover:bg-surface"
+          className={buttonClass('secondary', 'shrink-0 gap-1 px-3 tabular-nums text-accent')}
         >
           <Clock size={16} aria-hidden />
           {scheduled ? `${formatSlot(item.visit_time!, item.visit_end_time)} · ${formatDayMonth(item.visit_date!)}` : 'Giờ'}
         </button>
-        <button
-          type="button"
-          aria-label={`Xóa ${item.place.name} khỏi chuyến`}
-          onClick={onRemove}
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded border border-line bg-card pressable text-bad hover:bg-surface"
-        >
+        <IconButton label={`Xóa ${item.place.name} khỏi chuyến`} tone="outline" className="text-bad" onClick={onRemove}>
           <Trash2 size={18} aria-hidden />
-        </button>
+        </IconButton>
       </div>
       {editing.editingId === item.id && (
         <StopEditor

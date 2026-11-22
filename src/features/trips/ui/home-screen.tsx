@@ -12,6 +12,7 @@ import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { SignOutButton } from '@/features/auth/ui/sign-out-button';
 import { ThemeToggle } from '@/shared/ui/theme-toggle';
+import { iconButtonClass } from '@/shared/ui/icon-button';
 import type { TripSummary } from '../repositories/trips-repo';
 import { dateRange } from '../services/timeline';
 import { isTripOngoing } from '../services/today';
@@ -32,7 +33,7 @@ function ImportButton({ trip, onImport, className = '' }: { trip: ImportTarget; 
       aria-label={`Nhập danh sách từ file vào chuyến ${trip.name}`}
       title="Nhập danh sách từ file"
       onClick={() => onImport(trip)}
-      className={`inline-flex size-11 shrink-0 items-center justify-center rounded pressable ${className}`}
+      className={iconButtonClass('plain', false, className)}
     >
       <FileSpreadsheet size={20} aria-hidden />
     </button>

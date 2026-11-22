@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Check, ChevronDown, Landmark, QrCode, Trash2, UserPlus, X } from 'lucide-react';
-import QRCode from 'qrcode';
 import { useEffect, useState, type FormEvent } from 'react';
 import { unwrap } from '@/shared/actions';
 import { BANKS, bankName } from '@/shared/banks';
@@ -10,6 +9,10 @@ import { formatVnd } from '@/shared/money';
 import { queryKeys } from '@/shared/query/keys';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
+import { Dropdown } from '@/shared/ui/dropdown';
+import { FIELD } from '@/shared/ui/field';
+import { IconButton } from '@/shared/ui/icon-button';
+import { Sheet } from '@/shared/ui/sheet';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { buildVietQrPayload } from '@/shared/vietqr';
 import { addParticipantAction, addTransferAction, removeParticipantAction, removeTransferAction, setParticipantBankAction } from '../actions/settle-actions';
@@ -17,8 +20,7 @@ import type { TripParticipant } from '../repositories/settle-repo';
 import { computeSplit, type PairDebt } from '../services/settle';
 import { tripSplitQuery } from './trip-queries';
 
-const FIELD = 'min-h-11 w-full rounded border border-line bg-card px-3 text-sm outline-none focus:border-accent';
-const ICON_BTN = 'inline-flex size-11 shrink-0 items-center justify-center rounded pressable hover:bg-surface';
+const BANK_OPTIONS = BANKS.map((b) => ({ value: b.bin, label: b.name }));
 const vnd = (n: number) => `${formatVnd(n)}đ`;
 const hasBank = (p: TripParticipant) => !!(p.bank_bin && p.account_no && p.account_name);
 const timeFmt = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -100,18 +102,17 @@ export function SettlePanel({ tripId }: { tripId: string }) {
                 <span className={`shrink-0 text-sm font-semibold tabular-nums ${balance > 0 ? 'text-good' : balance < 0 ? 'text-bad' : 'text-muted'}`}>
                   {balance > 0 ? `+${vnd(balance)}` : balance < 0 ? `−${vnd(-balance)}` : 'Xong'}
                 </span>
-                <button
-                  type="button"
-                  aria-label={`Tài khoản nhận tiền của ${p.name}`}
+                <IconButton
+                  label={`Tài khoản nhận tiền của ${p.name}`}
+                  tone={hasBank(p) ? 'accent' : 'muted'}
                   aria-expanded={bankFor === p.id}
                   onClick={() => setBankFor((v) => (v === p.id ? null : p.id))}
-                  className={`${ICON_BTN} ${hasBank(p) ? 'text-accent' : 'text-muted'}`}
                 >
                   <Landmark size={18} aria-hidden />
-                </button>
-                <button type="button" aria-label={`Bỏ ${p.name}`} onClick={() => remove.mutate(p.id)} className={`${ICON_BTN} text-bad`}>
+                </IconButton>
+                <IconButton label={`Bỏ ${p.name}`} tone="danger" onClick={() => remove.mutate(p.id)}>
                   <Trash2 size={16} aria-hidden />
-                </button>
+                </IconButton>
               </div>
               {bankFor === p.id && <BankForm tripId={tripId} participant={p} onDone={() => setBankFor(null)} />}
             </li>
@@ -170,9 +171,9 @@ export function SettlePanel({ tripId }: { tripId: string }) {
                     Xóa lần này?
                   </button>
                 ) : (
-                  <button type="button" aria-label="Xóa lần chuyển ghi nhầm" onClick={() => setConfirmUndo(t.id)} className={`${ICON_BTN} text-muted`}>
+                  <IconButton label="Xóa lần chuyển ghi nhầm" tone="muted" onClick={() => setConfirmUndo(t.id)}>
                     <X size={16} aria-hidden />
-                  </button>
+                  </IconButton>
                 )}
               </li>
             ))}
@@ -227,23 +228,13 @@ function PairRow({
 
       {amount > 0 && (
         <div className="mt-2 flex gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onTransfer(payer.id, receiver.id, amount)}
-            className="min-h-11 flex-1 rounded bg-accent px-3 text-sm font-semibold text-white pressable hover:bg-accent-strong disabled:opacity-60"
-          >
+          <Button disabled={busy} onClick={() => onTransfer(payer.id, receiver.id, amount)} className="flex-1 px-3">
             {back ? 'Đã trả lại' : 'Đã chuyển đủ'} {vnd(amount)}
-          </button>
+          </Button>
           {hasBank(receiver) && (
-            <button
-              type="button"
-              aria-label={`Mã QR ${payer.name} chuyển ${receiver.name}`}
-              onClick={() => onQr({ from: payer, to: receiver, amount })}
-              className={`${ICON_BTN} border border-line text-accent`}
-            >
+            <IconButton label={`Mã QR ${payer.name} chuyển ${receiver.name}`} tone="outline" className="text-accent" onClick={() => onQr({ from: payer, to: receiver, amount })}>
               <QrCode size={18} aria-hidden />
-            </button>
+            </IconButton>
           )}
         </div>
       )}
@@ -299,13 +290,7 @@ function BankForm({ tripId, participant: p, onDone }: { tripId: string; particip
       className="mt-2 flex flex-col gap-2 rounded bg-surface p-3"
     >
       <p className="text-sm font-semibold">Tài khoản nhận tiền của {p.name}</p>
-      <select value={bin} onChange={(e) => setBin(e.target.value)} aria-label="Ngân hàng" className={FIELD}>
-        {BANKS.map((b) => (
-          <option key={b.bin} value={b.bin}>
-            {b.name}
-          </option>
-        ))}
-      </select>
+      <Dropdown label="Ngân hàng" value={bin} options={BANK_OPTIONS} onChange={setBin} />
       <input value={accountNo} onChange={(e) => setAccountNo(e.target.value.replace(/\s/g, ''))} inputMode="numeric" required pattern="[0-9A-Za-z]{4,19}" placeholder="Số tài khoản" aria-label="Số tài khoản" className={FIELD} />
       <input value={accountName} onChange={(e) => setAccountName(e.target.value.toUpperCase())} required maxLength={60} placeholder="Tên chủ tài khoản (không dấu)" aria-label="Tên chủ tài khoản" className={FIELD} />
       {save.error && <p className="text-sm text-bad">{save.error.message}</p>}
@@ -330,38 +315,25 @@ function QrSheet({ from, to, amount, onClose }: Qr & { onClose: () => void }) {
 
   useEffect(() => {
     let alive = true;
-    void QRCode.toDataURL(payload, { margin: 1, width: 512, errorCorrectionLevel: 'M' }).then((url) => alive && setSrc(url));
+    // Thư viện QR chỉ tải khi mở mã (không nằm trong bundle tab Thống kê).
+    void import('qrcode')
+      .then((QRCode) => QRCode.toDataURL(payload, { margin: 1, width: 512, errorCorrectionLevel: 'M' }))
+      .then((url) => alive && setSrc(url));
     return () => {
       alive = false;
     };
   }, [payload]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 animate-fade-in" onClick={onClose}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Mã QR chuyển tiền cho ${to.name}`}
-        onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-up flex w-full max-w-[480px] flex-col items-center gap-3 rounded-sm bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
-      >
-        <div className="flex w-full items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-base font-bold">
-              {from.name} chuyển {vnd(amount)}
-            </h2>
-            <p className="truncate text-sm text-muted">
-              cho {to.account_name} · {bankName(to.bank_bin)} · {to.account_no}
-            </p>
-          </div>
-          <button type="button" aria-label="Đóng" onClick={onClose} className={ICON_BTN}>
-            <X size={20} aria-hidden />
-          </button>
-        </div>
-        {/* eslint-disable-next-line @next/next/no-img-element -- ảnh data URL sinh tại chỗ, next/image không tối ưu được */}
-        {src ? <img src={src} alt={`Mã VietQR ${vnd(amount)}`} className="size-64 max-w-full" /> : <div className="size-64 animate-pulse rounded bg-surface" />}
-        <p className="text-center text-sm text-muted">Mở app ngân hàng, chọn quét QR: số tiền và nội dung đã điền sẵn. Chuyển xong nhớ bấm “Đã chuyển đủ”.</p>
-      </div>
-    </div>
+    <Sheet
+      title={`${from.name} chuyển ${vnd(amount)}`}
+      description={<p className="truncate">{`cho ${to.account_name} · ${bankName(to.bank_bin)} · ${to.account_no}`}</p>}
+      onClose={onClose}
+      className="items-center"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- ảnh data URL sinh tại chỗ, next/image không tối ưu được */}
+      {src ? <img src={src} alt={`Mã VietQR ${vnd(amount)}`} className="size-64 max-w-full" /> : <div className="size-64 animate-pulse rounded bg-surface" />}
+      <p className="text-center text-sm text-muted">Mở app ngân hàng, chọn quét QR: số tiền và nội dung đã điền sẵn. Chuyển xong nhớ bấm “Đã chuyển đủ”.</p>
+    </Sheet>
   );
 }

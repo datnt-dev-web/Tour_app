@@ -4,10 +4,9 @@ import { formatDayMonth } from '@/shared/date';
 import { parseMoney } from '@/shared/money';
 import { Button } from '@/shared/ui/button';
 import { Chip } from '@/shared/ui/chip';
+import { FIELD } from '@/shared/ui/field';
 import { DURATION_PRESETS_MIN, TRANSPORT_PRESETS } from '../constants';
 import { addMinutes } from '../services/timeline';
-
-export const FIELD = 'min-h-11 w-full rounded border border-line bg-card px-3 text-sm';
 
 /** Giá trị đang sửa của khung giờ; `endTime` rỗng là không có giờ kết thúc. */
 export interface ScheduleDraft {

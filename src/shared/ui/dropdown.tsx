@@ -17,6 +17,8 @@ const SIZES = {
 /** Mỗi dòng ~44px; không đủ chỗ phía dưới (sát thanh điều hướng) thì mở lên trên. */
 const ROW_PX = 44;
 const NAV_ROOM_PX = 96;
+/** Danh sách dài (vd. ngân hàng) hiện tối đa ngần này dòng rồi cuộn. */
+const MAX_VISIBLE = 6;
 
 const Dot = ({ className }: { className?: string }) => (className ? <span aria-hidden className={`size-2 shrink-0 rounded-full ${className}`} /> : null);
 
@@ -32,6 +34,8 @@ export function Dropdown<T extends string>({
   size = 'md',
   prefix,
   className = '',
+  disabled = false,
+  align = 'start',
 }: {
   label: string;
   value: T;
@@ -40,9 +44,13 @@ export function Dropdown<T extends string>({
   size?: keyof typeof SIZES;
   prefix?: string;
   className?: string;
+  disabled?: boolean;
+  /** end: danh sách canh mép phải của nút (nút nằm sát mép phải màn hình). */
+  align?: 'start' | 'end';
 }) {
   const listId = useId();
   const root = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
   const [up, setUp] = useState(false);
   const [active, setActive] = useState(0);
@@ -57,9 +65,14 @@ export function Dropdown<T extends string>({
     return () => document.removeEventListener('pointerdown', close);
   }, [open]);
 
+  // Danh sách cuộn được: giữ mục đang chọn / đang trỏ bằng phím trong tầm nhìn.
+  useEffect(() => {
+    if (open) list.current?.children[active]?.scrollIntoView({ block: 'nearest' });
+  }, [open, active]);
+
   function show() {
     const rect = root.current?.getBoundingClientRect();
-    setUp(!!rect && window.innerHeight - rect.bottom < options.length * ROW_PX + NAV_ROOM_PX);
+    setUp(!!rect && window.innerHeight - rect.bottom < Math.min(options.length, MAX_VISIBLE) * ROW_PX + NAV_ROOM_PX);
     setActive(Math.max(0, options.findIndex((o) => o.value === value)));
     setOpen(true);
   }
@@ -99,9 +112,10 @@ export function Dropdown<T extends string>({
         aria-expanded={open}
         aria-controls={listId}
         aria-activedescendant={open ? `${listId}-${active}` : undefined}
+        disabled={disabled}
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={onKeyDown}
-        className={`flex items-center gap-2 rounded border bg-card font-medium pressable hover:bg-surface ${SIZES[size]} ${open ? 'border-accent' : 'border-line'}`}
+        className={`flex items-center gap-2 rounded border bg-card font-medium pressable hover:bg-surface disabled:opacity-50 ${SIZES[size]} ${open ? 'border-accent' : 'border-line'}`}
       >
         <Dot className={current.dot} />
         <span className="flex-1 truncate text-left">
@@ -112,10 +126,11 @@ export function Dropdown<T extends string>({
       </button>
       {open && (
         <ul
+          ref={list}
           id={listId}
           role="listbox"
           aria-label={label}
-          className={`animate-fade-in absolute left-0 z-30 min-w-full w-max max-w-[calc(100vw-2rem)] overflow-hidden rounded border border-line bg-card p-1 shadow-card ${
+          className={`animate-fade-in absolute z-30 ${align === 'end' ? 'right-0' : 'left-0'} min-w-full w-max max-w-[calc(100vw-2rem)] max-h-[calc(6*2.75rem+0.5rem)] overflow-y-auto overscroll-contain rounded border border-line bg-card p-1 shadow-card ${
             up ? 'bottom-full mb-1' : 'top-full mt-1'
           }`}
         >

@@ -3,10 +3,10 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/shared/ui/button';
 import { Chip } from '@/shared/ui/chip';
+import { FIELD } from '@/shared/ui/field';
 import { INFO_FILE_EXTENSIONS, INFO_KIND_LABELS, INFO_LIMITS, INFO_MAX_FILE_BYTES, type InfoKind } from '../constants';
 import { useAddInfo } from './info-queries';
 
-const FIELD = 'min-h-11 w-full rounded border border-line bg-card px-3 text-sm outline-none focus:border-accent';
 const ACCEPT = INFO_FILE_EXTENSIONS.map((e) => `.${e}`).join(',');
 const KINDS: InfoKind[] = ['note', 'link', 'file'];
 

@@ -8,9 +8,8 @@ import { queryKeys } from '@/shared/query/keys';
 import { Button } from '@/shared/ui/button';
 import { celebrate } from '@/shared/ui/celebrate';
 import { Card } from '@/shared/ui/card';
+import { FIELD } from '@/shared/ui/field';
 import { createTripAction } from '../actions/trip-actions';
-
-const FIELD = 'min-h-11 w-full rounded border border-line bg-card px-3 text-sm outline-none focus:border-accent';
 
 export function NewTripForm({ groupId, onCancel }: { groupId: string; onCancel: () => void }) {
   const router = useRouter();

@@ -1,17 +1,18 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { AlertTriangle, Check, Clock, MapPin, Navigation } from 'lucide-react';
 import Link from 'next/link';
 import { useRef, useState, type CSSProperties } from 'react';
 import { placeKeyOf } from '@/features/places/constants';
 import { formatDayMonth } from '@/shared/date';
 import { WeatherChip } from './weather-chip';
-import { DayReorder } from './day-reorder';
 import { formatVnd, perPerson } from '@/shared/money';
 import { Badge } from '@/shared/ui/badge';
 import { Pagination } from '@/shared/ui/pagination';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { staggerStyle } from '@/shared/ui/stagger';
+import { iconButtonClass } from '@/shared/ui/icon-button';
 import { STATUS_LABELS, STATUS_TONES, type TripTab } from '../constants';
 import type { TripStop } from '../repositories/trips-repo';
 import { buildTimeline, toHHMM } from '../services/timeline';
@@ -21,6 +22,9 @@ import { addressDirectionsUrl, stopsFilter } from './trip-view';
 import { usePagedStops, type InitialStops } from './use-paged-stops';
 import { useStopEditing, type StopEditing } from './use-stop-editing';
 import { useSetStatus } from './use-trip-mutations';
+
+// Kéo thả (@dnd-kit) chỉ tải khi bấm sắp xếp một ngày, không nằm trong bundle Timeline.
+const DayReorder = dynamic(() => import('./day-reorder').then((m) => m.DayReorder), { ssr: false, loading: () => <Skeleton className="h-24" /> });
 
 const SKELETON_ROWS = 4;
 
@@ -133,7 +137,7 @@ function StopCard({
               rel="noopener noreferrer"
               aria-label={`Chỉ đường tới ${item.place.name} trên Google Maps`}
               title="Chỉ đường"
-              className={`-mr-1 inline-flex size-11 items-center justify-center rounded-full pressable hover:bg-surface ${visited ? 'text-muted' : 'text-accent'}`}
+              className={iconButtonClass(visited ? 'muted' : 'accent', true, '-mr-1')}
             >
               <MapPin size={18} aria-hidden />
             </a>

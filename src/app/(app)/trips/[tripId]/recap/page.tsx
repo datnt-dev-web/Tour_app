@@ -10,6 +10,7 @@ import { toTripStats } from '@/features/trips/services/trip-stats';
 import { formatDayMonth } from '@/shared/date';
 import { formatVnd } from '@/shared/money';
 import { createServerSupabase } from '@/shared/supabase/server';
+import { iconButtonClass } from '@/shared/ui/icon-button';
 
 /** Số ảnh tối đa trên trang tổng kết (lưới 3 cột). */
 const RECAP_PHOTOS = 9;
@@ -40,7 +41,7 @@ export default async function TripRecapPage({ params }: PageProps<'/trips/[tripI
 
   return (
     <main className="animate-enter flex flex-col gap-4 px-2 py-4">
-      <Link href={`/trips/${tripId}?view=stats`} aria-label="Quay lại" className="-ml-2 inline-flex size-11 items-center justify-center rounded pressable hover:bg-surface">
+      <Link href={`/trips/${tripId}?view=stats`} aria-label="Quay lại" className={iconButtonClass('plain', false, '-ml-2')}>
         <ArrowLeft size={20} aria-hidden />
       </Link>
 
