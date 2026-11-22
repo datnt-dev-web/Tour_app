@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest';
 import { INFO_MAX_FILE_BYTES, INFO_MAX_ITEMS } from '@/features/info/constants';
 import type { InfosRepo, NewTripInfo, TripInfo } from '@/features/info/repositories/infos-repo';
-import { addFile, addLink, addNote, fileLink, removeInfo, type InfoDeps } from '@/features/info/services/info-service';
-import type { FileStorage, StoredFile } from '@/integrations/cloudinary/types';
+import { addInfoFile, addLink, addNote, fileLink, prepareInfoUpload, removeInfo, type InfoDeps } from '@/features/info/services/info-service';
+import type { DirectUploadStorage, FileStorage, InspectedFile, StoredFile } from '@/integrations/cloudinary/types';
 
 const TRIP = '00000000-0000-4000-8000-000000000001';
 
@@ -33,7 +33,14 @@ function fakeStorage() {
     destroy: vi.fn(async () => {}),
     fileUrl: vi.fn((f: { publicId: string }, o: { download: boolean; ttlSec: number }) => `https://signed/${f.publicId}?dl=${o.download}&ttl=${o.ttlSec}`),
     imageUrl: vi.fn(() => 'https://img'),
-  } satisfies FileStorage;
+    signUpload: vi.fn((o: { folder: string; resourceType: 'image' | 'video' | 'raw'; extension?: string }) => ({ url: 'u', fields: {}, publicId: `${o.folder}/x${o.extension ? `.${o.extension}` : ''}` })),
+    inspect: vi.fn(async (_id: string, resourceType: 'image' | 'video' | 'raw'): Promise<InspectedFile | null> => inspected(resourceType)),
+    mediaUrl: vi.fn(() => 'm'),
+  } satisfies FileStorage & DirectUploadStorage;
+}
+
+function inspected(resourceType: 'image' | 'video' | 'raw'): InspectedFile {
+  return { publicId: 'p', resourceType, format: resourceType === 'image' ? 'png' : null, bytes: 5, width: null, height: null, durationSec: null, isAudio: false };
 }
 
 function makeDeps(repo = fakeRepo(), storage = fakeStorage(), tripExists = true) {
@@ -41,7 +48,6 @@ function makeDeps(repo = fakeRepo(), storage = fakeStorage(), tripExists = true)
   return { infos: repo, storage, trips } satisfies InfoDeps;
 }
 
-const file = (name: string, size = 5) => ({ name, data: new Uint8Array(size) });
 
 describe('addNote / addLink', () => {
   test('ghi chú cắt khoảng trắng và lưu đúng loại', async () => {
@@ -69,62 +75,66 @@ describe('addNote / addLink', () => {
   });
 });
 
-describe('addFile', () => {
-  test('tài liệu (kể cả PDF) lên dạng raw, public id giữ đuôi để tải về mở được; tiêu đề trống thì lấy tên tệp', async () => {
+describe('tải tệp (thẳng lên Cloudinary)', () => {
+  test('tài liệu ký vé raw kèm đuôi; ảnh ký vé image; kiểm đuôi, dung lượng, quyền trước khi ký', async () => {
     const d = makeDeps();
-    await addFile(d, { tripId: TRIP, title: '  ', file: file('Vé tàu.DOCX') });
-    const opts = d.storage.upload.mock.calls[0][1];
-    expect(opts).toMatchObject({ folder: `food-tour/${TRIP}`, resourceType: 'raw' });
-    expect(opts.publicId).toMatch(/^[0-9a-f-]{36}\.docx$/);
-    expect(d.infos.insert).toHaveBeenCalledWith({
-      trip_id: TRIP, kind: 'file', title: 'Vé tàu.DOCX', file_public_id: `food-tour/${TRIP}/${opts.publicId}`, file_resource_type: 'raw', file_format: 'docx', file_bytes: 5, file_name: 'Vé tàu.DOCX',
-    });
-    await addFile(d, { tripId: TRIP, title: 'x', file: file('dat-phong.pdf') });
-    expect(d.storage.upload.mock.calls[1][1]).toMatchObject({ resourceType: 'raw' });
+    await prepareInfoUpload(d, { tripId: TRIP, fileName: 'Vé tàu.DOCX', size: 5 });
+    expect(d.storage.signUpload).toHaveBeenLastCalledWith({ folder: `food-tour/${TRIP}`, resourceType: 'raw', extension: 'docx' });
+    await prepareInfoUpload(d, { tripId: TRIP, fileName: 've.png', size: 5 });
+    expect(d.storage.signUpload).toHaveBeenLastCalledWith({ folder: `food-tour/${TRIP}`, resourceType: 'image', extension: undefined });
+    for (const bad of [{ fileName: 'virus.exe', size: 5 }, { fileName: 'khongduoi', size: 5 }, { fileName: 'a.pdf', size: 0 }, { fileName: 'a.pdf', size: INFO_MAX_FILE_BYTES + 1 }]) {
+      await expect(prepareInfoUpload(d, { tripId: TRIP, ...bad })).rejects.toMatchObject({ code: 'INFO_INVALID' });
+    }
+    await expect(prepareInfoUpload(makeDeps(fakeRepo(), fakeStorage(), false), { tripId: TRIP, fileName: 'a.pdf', size: 5 })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(prepareInfoUpload({ ...makeDeps(), storage: null }, { tripId: TRIP, fileName: 'a.pdf', size: 5 })).rejects.toMatchObject({ code: 'UPLOAD_DISABLED' });
   });
 
-  test('ảnh lên dạng image; Cloudinary nhận ra không phải ảnh thật (vd. SVG đổi tên .png) thì xóa và từ chối', async () => {
+  test('ghi nhận tài liệu: tiêu đề trống thì lấy tên tệp, lưu đúng loại/đuôi/dung lượng thật', async () => {
     const d = makeDeps();
-    await addFile(d, { tripId: TRIP, title: 'x', file: file('ve.png') });
-    expect(d.storage.upload.mock.calls[0][1]).toMatchObject({ resourceType: 'image' });
-    d.storage.upload.mockResolvedValueOnce({ publicId: `food-tour/${TRIP}/evil`, resourceType: 'image', format: 'svg', bytes: 5 });
-    await expect(addFile(d, { tripId: TRIP, title: 'x', file: file('evil.png') })).rejects.toMatchObject({ code: 'INFO_INVALID' });
+    const publicId = `food-tour/${TRIP}/abc.docx`;
+    await addInfoFile(d, { tripId: TRIP, title: '  ', fileName: 'Vé tàu.DOCX', publicId });
+    expect(d.storage.inspect).toHaveBeenCalledWith(publicId, 'raw');
+    expect(d.infos.insert).toHaveBeenCalledWith({
+      trip_id: TRIP, kind: 'file', title: 'Vé tàu.DOCX', file_public_id: publicId, file_resource_type: 'raw', file_format: 'docx', file_bytes: 5, file_name: 'Vé tàu.DOCX',
+    });
+  });
+
+  test('public id ngoài thư mục chuyến, nằm trong thư mục con, hoặc sai đuôi thì từ chối mà không đụng kho', async () => {
+    const d = makeDeps();
+    for (const publicId of ['food-tour/khac/abc.pdf', `food-tour/${TRIP}/photos/abc.pdf`, `food-tour/${TRIP}/abc.exe`]) {
+      await expect(addInfoFile(d, { tripId: TRIP, title: 'x', fileName: 'a.pdf', publicId })).rejects.toMatchObject({ code: 'INFO_INVALID' });
+    }
+    expect(d.storage.inspect).not.toHaveBeenCalled();
+  });
+
+  test('chưa có trên kho thì báo lỗi; ảnh giả (vd. SVG đổi tên .png) hoặc quá nặng thì xóa và từ chối', async () => {
+    const missing = makeDeps();
+    missing.storage.inspect.mockResolvedValueOnce(null);
+    await expect(addInfoFile(missing, { tripId: TRIP, title: 'x', fileName: 'a.pdf', publicId: `food-tour/${TRIP}/a.pdf` })).rejects.toMatchObject({ code: 'INFO_INVALID' });
+
+    const d = makeDeps();
+    d.storage.inspect.mockResolvedValueOnce({ ...inspected('image'), format: 'svg' });
+    await expect(addInfoFile(d, { tripId: TRIP, title: 'x', fileName: 'evil.png', publicId: `food-tour/${TRIP}/evil` })).rejects.toMatchObject({ code: 'INFO_INVALID' });
     expect(d.storage.destroy).toHaveBeenCalledWith(`food-tour/${TRIP}/evil`, 'image');
+    d.storage.inspect.mockResolvedValueOnce({ ...inspected('raw'), bytes: INFO_MAX_FILE_BYTES + 1 });
+    await expect(addInfoFile(d, { tripId: TRIP, title: 'x', fileName: 'a.pdf', publicId: `food-tour/${TRIP}/big.pdf` })).rejects.toMatchObject({ code: 'INFO_INVALID' });
+    expect(d.storage.destroy).toHaveBeenCalledWith(`food-tour/${TRIP}/big.pdf`, 'raw');
+    expect(d.infos.insert).not.toHaveBeenCalled();
   });
 
   test('tên tệp rất dài vẫn giữ được đuôi', async () => {
     const d = makeDeps();
-    await addFile(d, { tripId: TRIP, title: 'x', file: file(`${'a'.repeat(300)}.pdf`) });
+    await addInfoFile(d, { tripId: TRIP, title: 'x', fileName: `${'a'.repeat(300)}.pdf`, publicId: `food-tour/${TRIP}/a.pdf` });
     const row = d.infos.insert.mock.calls[0][0];
     expect(row.file_name!.length).toBeLessThanOrEqual(255);
     expect(row.file_name).toMatch(/\.pdf$/);
   });
 
-  test('đuôi không cho phép, tệp rỗng hoặc quá lớn bị từ chối trước khi upload', async () => {
-    const d = makeDeps();
-    await expect(addFile(d, { tripId: TRIP, title: 'x', file: file('virus.exe') })).rejects.toMatchObject({ code: 'INFO_INVALID' });
-    await expect(addFile(d, { tripId: TRIP, title: 'x', file: file('khongduoi') })).rejects.toMatchObject({ code: 'INFO_INVALID' });
-    await expect(addFile(d, { tripId: TRIP, title: 'x', file: file('a.pdf', 0) })).rejects.toMatchObject({ code: 'INFO_INVALID' });
-    await expect(addFile(d, { tripId: TRIP, title: 'x', file: file('a.pdf', INFO_MAX_FILE_BYTES + 1) })).rejects.toMatchObject({ code: 'INFO_INVALID' });
-    expect(d.storage.upload).not.toHaveBeenCalled();
-  });
-
-  test('chưa cấu hình Cloudinary thì UPLOAD_DISABLED', async () => {
-    const d = { ...makeDeps(), storage: null };
-    await expect(addFile(d, { tripId: TRIP, title: 'x', file: file('a.pdf') })).rejects.toMatchObject({ code: 'UPLOAD_DISABLED' });
-  });
-
-  test('chuyến không có quyền: không upload gì', async () => {
-    const d = makeDeps(fakeRepo(), fakeStorage(), false);
-    await expect(addFile(d, { tripId: TRIP, title: 'x', file: file('a.pdf') })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    expect(d.storage.upload).not.toHaveBeenCalled();
-  });
-
-  test('ghi DB lỗi thì xóa tệp vừa upload rồi ném lỗi', async () => {
+  test('ghi DB lỗi thì xóa tệp vừa tải rồi ném lỗi', async () => {
     const d = makeDeps();
     d.infos.insert.mockRejectedValueOnce(new Error('db down'));
-    await expect(addFile(d, { tripId: TRIP, title: 'x', file: file('a.pdf') })).rejects.toThrow('db down');
-    expect(d.storage.destroy).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^food-tour/${TRIP}/.+\\.pdf$`)), 'raw');
+    await expect(addInfoFile(d, { tripId: TRIP, title: 'x', fileName: 'a.pdf', publicId: `food-tour/${TRIP}/a.pdf` })).rejects.toThrow('db down');
+    expect(d.storage.destroy).toHaveBeenCalledWith(`food-tour/${TRIP}/a.pdf`, 'raw');
   });
 });
 

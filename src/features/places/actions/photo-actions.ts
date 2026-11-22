@@ -1,27 +1,33 @@
 'use server';
 
 import { z } from 'zod';
+import type { UploadTicket } from '@/integrations/cloudinary/types';
 import { parse, runAction, type ActionResult } from '@/shared/actions';
 import { AppError } from '@/shared/errors';
 import { authed } from '@/shared/supabase/authed';
 import type { PlacePhoto } from '../repositories/photos-repo';
 import { createPhotoDeps } from '../server/photo-deps';
-import { addPlacePhoto, PHOTO_MAX_BYTES, removePlacePhoto } from '../services/photo-service';
+import { addPlacePhoto, preparePlacePhotoUpload, removePlacePhoto } from '../services/photo-service';
 
 const disabled = () => new AppError('UPLOAD_DISABLED', 'Chưa cấu hình lưu ảnh (Cloudinary). Liên hệ admin.');
 
-/** FormData: placeId, tripId (không bắt buộc), file. */
-export async function uploadPlacePhotoAction(form: FormData): Promise<ActionResult<PlacePhoto>> {
+const prepareSchema = z.object({ placeId: z.uuid(), fileName: z.string().min(1).max(300), size: z.number().int() });
+const addSchema = z.object({ placeId: z.uuid(), tripId: z.uuid().nullish(), publicId: z.string().min(1).max(300) });
+
+/** Vé để trình duyệt tải thẳng ảnh lên Cloudinary. */
+export async function preparePlacePhotoUploadAction(input: z.input<typeof prepareSchema>): Promise<ActionResult<UploadTicket>> {
   return runAction(async () => {
     const deps = createPhotoDeps((await authed()).db);
     if (!deps) throw disabled();
-    const placeId = parse(z.uuid(), form.get('placeId'));
-    const tripRaw = form.get('tripId');
-    const tripId = tripRaw ? parse(z.uuid(), tripRaw) : null;
-    const file = form.get('file');
-    if (!(file instanceof File)) throw new AppError('PHOTO_INVALID', 'Chưa chọn ảnh.');
-    if (file.size > PHOTO_MAX_BYTES) throw new AppError('PHOTO_INVALID', `Ảnh quá lớn (tối đa ${PHOTO_MAX_BYTES / 1_000_000} MB).`);
-    return addPlacePhoto(deps, { placeId, tripId, file: { name: file.name, data: new Uint8Array(await file.arrayBuffer()) } });
+    return preparePlacePhotoUpload(deps, parse(prepareSchema, input));
+  });
+}
+
+export async function addPlacePhotoAction(input: z.input<typeof addSchema>): Promise<ActionResult<PlacePhoto>> {
+  return runAction(async () => {
+    const deps = createPhotoDeps((await authed()).db);
+    if (!deps) throw disabled();
+    return addPlacePhoto(deps, parse(addSchema, input));
   });
 }
 

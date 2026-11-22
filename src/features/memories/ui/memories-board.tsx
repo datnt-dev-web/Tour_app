@@ -1,7 +1,7 @@
 'use client';
 
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Download, ImagePlus, Trash2, X } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, Download, ImagePlus, Trash2, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
@@ -10,6 +10,7 @@ import { runLimited, uploadWithTicket } from '@/shared/upload/direct-upload';
 import { addMemoryAction, prepareMemoryUploadsAction, removeMemoryAction } from '../actions/memories-actions';
 import { MEMORY_BATCH_MAX, MEMORY_MAX_BYTES } from '../constants';
 import type { TripPhotoView } from '../services/memories-service';
+import { CameraCapture } from './camera-capture';
 
 const PARALLEL_UPLOADS = 3;
 const SKELETON_TILES = 6;
@@ -34,6 +35,7 @@ export function MemoriesBoard({ tripId }: { tripId: string }) {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [viewing, setViewing] = useState<number | null>(null);
+  const [camera, setCamera] = useState(false);
   const photos = data?.photos ?? [];
 
   async function upload(files: File[]) {
@@ -85,26 +87,46 @@ export function MemoriesBoard({ tripId }: { tripId: string }) {
     <section className="flex flex-col gap-3" aria-live="polite">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted">{isPending ? 'Đang tải…' : `${photos.length} ảnh`}</p>
-        <label
-          htmlFor={inputId}
-          className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded bg-accent px-4 text-sm font-semibold text-white pressable hover:bg-accent-strong ${progress ? 'pointer-events-none opacity-60' : ''}`}
-        >
-          <ImagePlus size={18} aria-hidden />
-          {progress ? `Đang tải ${progress.done}/${progress.total}` : 'Thêm ảnh'}
-        </label>
-        <input
-          id={inputId}
-          type="file"
-          accept="image/*"
-          multiple
-          className="sr-only"
-          onChange={(e) => {
-            const files = [...(e.target.files ?? [])];
-            e.currentTarget.value = '';
-            if (files.length) void upload(files);
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={!!progress}
+            onClick={() => setCamera(true)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded border border-line bg-card px-3 text-sm font-semibold text-ink pressable hover:bg-surface disabled:opacity-60"
+          >
+            <Camera size={18} aria-hidden />
+            Chụp ảnh
+          </button>
+          <label
+            htmlFor={inputId}
+            className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded bg-accent px-4 text-sm font-semibold text-white pressable hover:bg-accent-strong ${progress ? 'pointer-events-none opacity-60' : ''}`}
+          >
+            <ImagePlus size={18} aria-hidden />
+            {progress ? `Đang tải ${progress.done}/${progress.total}` : 'Thêm ảnh'}
+          </label>
+          <input
+            id={inputId}
+            type="file"
+            accept="image/*"
+            multiple
+            className="sr-only"
+            onChange={(e) => {
+              const files = [...(e.target.files ?? [])];
+              e.currentTarget.value = '';
+              if (files.length) void upload(files);
+            }}
+          />
+        </div>
+      </div>
+      {camera && (
+        <CameraCapture
+          onClose={() => setCamera(false)}
+          onDone={(files) => {
+            setCamera(false);
+            void upload(files);
           }}
         />
-      </div>
+      )}
       {problem && (
         <p role="alert" className="text-sm text-bad">
           {problem}

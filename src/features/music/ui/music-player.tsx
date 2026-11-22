@@ -25,8 +25,8 @@ interface PlayerApi extends PlayerState {
   /** Trình phát YouTube (nằm ở tab Nhạc) báo hết bài / đang phát / dừng. */
   youtubeEnded(): void;
   setYoutubePlaying(playing: boolean): void;
-  /** Danh sách đổi (thêm/xóa bài) mà không ngắt bài đang phát. */
-  syncQueue(queue: TrackView[]): void;
+  /** Danh sách đổi (sửa/xóa bài) mà không ngắt bài đang phát. */
+  syncQueue(tracks: TrackView[]): void;
 }
 
 const PlayerContext = createContext<PlayerApi | null>(null);
@@ -137,12 +137,15 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       cycleRepeat: () => setState((s) => ({ ...s, repeat: s.repeat === 'all' ? 'one' : s.repeat === 'one' ? 'off' : 'all' })),
       youtubeEnded: ended,
       setYoutubePlaying: (playing) => setState((s) => (s.playing === playing ? s : { ...s, playing })),
-      syncQueue: (queue) =>
+      syncQueue: (tracks) =>
         setState((s) => {
-          const id = s.index === null ? null : s.queue[s.index]?.id;
-          const index = id ? queue.findIndex((t) => t.id === id) : -1;
-          // Bài đang phát bị xóa: giữ nguyên trạng thái, hết bài sẽ sang bài kế trong danh sách mới.
-          return index === -1 ? { ...s, queue: s.index === null ? s.queue : queue } : { ...s, queue, index };
+          // Hàng đợi là danh sách lúc bấm phát (vd. một thư mục): chỉ cập nhật/bỏ bài đã có, không thay bằng cả danh sách.
+          const byId = new Map(tracks.map((t) => [t.id, t]));
+          const currentId = s.index === null ? null : s.queue[s.index]?.id;
+          const queue = s.queue.flatMap((t) => byId.get(t.id) ?? []);
+          const index = currentId ? queue.findIndex((t) => t.id === currentId) : -1;
+          // Bài đang phát bị xóa: giữ hàng đợi cũ để phát nốt, hết bài sẽ sang bài kế.
+          return index === -1 && s.index !== null ? s : { ...s, queue, index: index === -1 ? null : index };
         }),
     }),
     [state, current, start, toggle, next, prev, ended],

@@ -1,9 +1,9 @@
-import { randomUUID } from 'node:crypto';
-import type { FileStorage } from '@/integrations/cloudinary/types';
+import type { DirectUploadStorage, FileStorage, UploadTicket } from '@/integrations/cloudinary/types';
 import { AppError } from '@/shared/errors';
 import type { PhotosRepo, PlacePhoto } from '../repositories/photos-repo';
 
-export const PHOTO_MAX_BYTES = 10_000_000;
+/** Tải thẳng lên Cloudinary nên không vướng giới hạn 4,5 MB của Vercel; ảnh điện thoại độ phân giải cao vẫn vừa. */
+export const PHOTO_MAX_BYTES = 25_000_000;
 const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif'];
 /** Định dạng Cloudinary nhận ra sau upload; khác danh sách (vd. svg đổi tên) thì từ chối. */
 const PHOTO_FORMATS = ['jpg', 'png', 'webp', 'heic', 'heif', 'gif'];
@@ -13,7 +13,7 @@ export const FULL_WIDTH = 1600;
 
 export interface PhotoDeps {
   photos: PhotosRepo;
-  storage: FileStorage;
+  storage: FileStorage & DirectUploadStorage;
 }
 
 export type PlacePhotoView = PlacePhoto & { thumbUrl: string; fullUrl: string };
@@ -21,23 +21,31 @@ export type PlacePhotoView = PlacePhoto & { thumbUrl: string; fullUrl: string };
 const folderOf = (placeId: string) => `food-tour/places/${placeId}`;
 const invalid = (m: string) => new AppError('PHOTO_INVALID', m);
 /** Dòng có thể bị ghi tay qua API: chỉ tin public id nằm trong thư mục của chính quán. */
-const owns = (r: PlacePhoto) => r.file_public_id.startsWith(`${folderOf(r.place_id)}/`);
+const owns = (r: Pick<PlacePhoto, 'place_id' | 'file_public_id'>) => r.file_public_id.startsWith(`${folderOf(r.place_id)}/`);
 
-export async function addPlacePhoto(deps: PhotoDeps, input: { placeId: string; tripId?: string | null; file: { name: string; data: Uint8Array } }): Promise<PlacePhoto> {
-  const ext = /\.([a-z0-9]+)$/i.exec(input.file.name.trim())?.[1]?.toLowerCase();
+/** Bước 1: vé để trình duyệt tải thẳng ảnh lên Cloudinary (ảnh điện thoại vượt giới hạn 4,5 MB của Vercel). */
+export async function preparePlacePhotoUpload(deps: PhotoDeps, input: { placeId: string; fileName: string; size: number }): Promise<UploadTicket> {
+  const ext = /\.([a-z0-9]+)$/i.exec(input.fileName.trim())?.[1]?.toLowerCase();
   if (!ext || !PHOTO_EXTENSIONS.includes(ext)) throw invalid('Chỉ nhận ảnh (jpg, png, webp, heic, gif).');
-  if (input.file.data.byteLength === 0) throw invalid('Ảnh rỗng.');
-  if (input.file.data.byteLength > PHOTO_MAX_BYTES) throw invalid(`Ảnh quá lớn (tối đa ${PHOTO_MAX_BYTES / 1_000_000} MB).`);
+  if (input.size <= 0) throw invalid('Ảnh rỗng.');
+  if (input.size > PHOTO_MAX_BYTES) throw invalid(`Ảnh quá lớn (tối đa ${PHOTO_MAX_BYTES / 1_000_000} MB).`);
   if (!(await deps.photos.placeExists(input.placeId))) throw new AppError('NOT_FOUND', 'Không tìm thấy quán.');
+  return deps.storage.signUpload({ folder: folderOf(input.placeId), resourceType: 'image' });
+}
 
-  const stored = await deps.storage.upload(input.file.data, { folder: folderOf(input.placeId), publicId: randomUUID(), resourceType: 'image' });
-  const discard = () => deps.storage.destroy(stored.publicId, 'image').catch((e) => console.error('[photo] không dọn được ảnh', e));
-  if (!PHOTO_FORMATS.includes(stored.format ?? '')) {
+/** Bước 2: ghi nhận ảnh vừa tải: đúng thư mục quán, có thật, đúng định dạng và dung lượng; lỗi thì dọn ảnh. */
+export async function addPlacePhoto(deps: PhotoDeps, input: { placeId: string; tripId?: string | null; publicId: string }): Promise<PlacePhoto> {
+  if (!owns({ place_id: input.placeId, file_public_id: input.publicId })) throw invalid('Ảnh không thuộc quán này.');
+  if (!(await deps.photos.placeExists(input.placeId))) throw new AppError('NOT_FOUND', 'Không tìm thấy quán.');
+  const stored = await deps.storage.inspect(input.publicId, 'image');
+  if (!stored) throw invalid('Chưa thấy ảnh trên kho lưu, thử tải lại.');
+  const discard = () => deps.storage.destroy(input.publicId, 'image').catch((e) => console.error('[photo] không dọn được ảnh', e));
+  if (!PHOTO_FORMATS.includes(stored.format ?? '') || stored.bytes > PHOTO_MAX_BYTES) {
     await discard();
-    throw invalid('Tệp không phải ảnh hợp lệ.');
+    throw invalid(stored.bytes > PHOTO_MAX_BYTES ? `Ảnh quá lớn (tối đa ${PHOTO_MAX_BYTES / 1_000_000} MB).` : 'Tệp không phải ảnh hợp lệ.');
   }
   try {
-    return await deps.photos.insert({ place_id: input.placeId, trip_id: input.tripId ?? null, file_public_id: stored.publicId, file_format: stored.format });
+    return await deps.photos.insert({ place_id: input.placeId, trip_id: input.tripId ?? null, file_public_id: input.publicId, file_format: stored.format });
   } catch (e) {
     await discard();
     throw e;

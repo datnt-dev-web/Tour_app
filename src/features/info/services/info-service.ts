@@ -1,7 +1,6 @@
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { TripsRepo } from '@/features/trips/repositories/trips-repo';
-import type { FileStorage, StoredResourceType } from '@/integrations/cloudinary/types';
+import type { DirectUploadStorage, FileStorage, StoredResourceType, UploadTicket } from '@/integrations/cloudinary/types';
 import { AppError } from '@/shared/errors';
 import {
   INFO_FILE_EXTENSIONS,
@@ -17,7 +16,7 @@ import type { InfosRepo, NewTripInfo, TripInfo } from '../repositories/infos-rep
 export interface InfoDeps {
   infos: InfosRepo;
   /** null khi chưa cấu hình Cloudinary: ghi chú/link vẫn dùng được, tệp thì không. */
-  storage: FileStorage | null;
+  storage: (FileStorage & DirectUploadStorage) | null;
   trips: Pick<TripsRepo, 'getTrip'>;
 }
 
@@ -77,37 +76,59 @@ function splitName(raw: string): { name: string; ext: string | null } {
 
 const includes = (list: readonly string[], v: string) => list.includes(v);
 
-/** Upload tệp vào thư mục của chuyến rồi lưu metadata; ghi DB lỗi thì xóa tệp để không để rác trên Cloudinary. */
-export async function addFile(deps: InfoDeps, input: { tripId: string; title: string; file: { name: string; data: Uint8Array } }): Promise<TripInfo> {
-  const storage = deps.storage;
-  if (!storage) throw new AppError('UPLOAD_DISABLED', 'Chưa cấu hình lưu tệp (Cloudinary). Liên hệ admin.');
-  const { name, ext } = splitName(input.file.name);
+function storageOf(deps: InfoDeps) {
+  if (!deps.storage) throw new AppError('UPLOAD_DISABLED', 'Chưa cấu hình lưu tệp (Cloudinary). Liên hệ admin.');
+  return deps.storage;
+}
+
+/** Đuôi hợp lệ → loại asset: ảnh lên image (Cloudinary kiểm định dạng thật), tài liệu lên raw kèm đuôi để tải về mở được. */
+function fileKind(fileName: string): { name: string; ext: string; resourceType: 'image' | 'raw' } {
+  const { name, ext } = splitName(fileName);
   if (!ext || !includes(INFO_FILE_EXTENSIONS, ext)) throw invalid(`Chỉ nhận tệp: ${INFO_FILE_EXTENSIONS.join(', ')}.`);
-  if (input.file.data.byteLength === 0) throw invalid('Tệp rỗng.');
-  if (input.file.data.byteLength > INFO_MAX_FILE_BYTES) throw invalid(`Tệp quá lớn (tối đa ${INFO_MAX_FILE_BYTES / 1_000_000} MB).`);
+  return { name, ext, resourceType: includes(INFO_IMAGE_EXTENSIONS, ext) ? 'image' : 'raw' };
+}
+
+/**
+ * Bước 1: vé để trình duyệt tải thẳng tệp lên Cloudinary (Vercel giới hạn body request 4,5 MB).
+ * Kiểm đuôi, dung lượng và quyền trước để không ký vé vô ích.
+ */
+export async function prepareInfoUpload(deps: InfoDeps, input: { tripId: string; fileName: string; size: number }): Promise<UploadTicket> {
+  const storage = storageOf(deps);
+  const { ext, resourceType } = fileKind(input.fileName);
+  if (input.size <= 0) throw invalid('Tệp rỗng.');
+  if (input.size > INFO_MAX_FILE_BYTES) throw invalid(`Tệp quá lớn (tối đa ${INFO_MAX_FILE_BYTES / 1_000_000} MB).`);
+  await assertWritable(deps, input.tripId);
+  return storage.signUpload({ folder: tripFolder(input.tripId), resourceType, extension: resourceType === 'raw' ? ext : undefined });
+}
+
+/** Bước 2: ghi nhận tệp vừa tải: đúng thư mục chuyến, có thật trên kho, đúng định dạng và dung lượng; lỗi thì dọn tệp. */
+export async function addInfoFile(deps: InfoDeps, input: { tripId: string; title: string; fileName: string; publicId: string }): Promise<TripInfo> {
+  const storage = storageOf(deps);
+  const { name, ext, resourceType } = fileKind(input.fileName);
+  const inFolder = input.publicId.startsWith(`${tripFolder(input.tripId)}/`) && !input.publicId.slice(tripFolder(input.tripId).length + 1).includes('/');
+  if (!inFolder || (resourceType === 'raw' && !input.publicId.endsWith(`.${ext}`))) throw invalid('Tệp không thuộc chuyến này.');
   const title = cleanTitle(input.title.trim() || name);
   await assertWritable(deps, input.tripId);
 
-  // Ảnh lên dạng image (Cloudinary kiểm định dạng thật); tài liệu lên raw với đuôi trong public id để tải về mở được.
-  const isImage = includes(INFO_IMAGE_EXTENSIONS, ext);
-  const stored = await storage.upload(input.file.data, {
-    folder: tripFolder(input.tripId),
-    publicId: isImage ? randomUUID() : `${randomUUID()}.${ext}`,
-    resourceType: isImage ? 'image' : 'raw',
-  });
-  const discard = () => storage.destroy(stored.publicId, stored.resourceType).catch((err) => console.error('[info] không dọn được tệp', err));
-  if (isImage && !includes(INFO_IMAGE_FORMATS, stored.format ?? '')) {
+  const stored = await storage.inspect(input.publicId, resourceType);
+  if (!stored) throw invalid('Chưa thấy tệp trên kho lưu, thử tải lại.');
+  const discard = () => storage.destroy(input.publicId, resourceType).catch((err) => console.error('[info] không dọn được tệp', err));
+  if (resourceType === 'image' && !includes(INFO_IMAGE_FORMATS, stored.format ?? '')) {
     await discard();
     throw invalid('Tệp không phải ảnh hợp lệ.');
+  }
+  if (stored.bytes > INFO_MAX_FILE_BYTES) {
+    await discard();
+    throw invalid(`Tệp quá lớn (tối đa ${INFO_MAX_FILE_BYTES / 1_000_000} MB).`);
   }
 
   const row: NewTripInfo = {
     trip_id: input.tripId,
     kind: 'file',
     title,
-    file_public_id: stored.publicId,
-    file_resource_type: stored.resourceType,
-    file_format: isImage ? stored.format : ext,
+    file_public_id: input.publicId,
+    file_resource_type: resourceType,
+    file_format: resourceType === 'image' ? stored.format : ext,
     file_bytes: stored.bytes,
     file_name: name,
   };

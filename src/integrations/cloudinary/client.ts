@@ -58,8 +58,8 @@ export function createCloudinaryStorage(cfg: CloudinaryConfig): FileStorage & Di
       });
     },
 
-    signUpload({ folder, resourceType }) {
-      const publicId = randomUUID();
+    signUpload({ folder, resourceType, extension }) {
+      const publicId = extension ? `${randomUUID()}.${extension}` : randomUUID();
       // Ký đúng các tham số trình duyệt sẽ gửi: đổi thư mục/public id/kiểu asset là chữ ký sai, Cloudinary từ chối.
       const params = { folder, public_id: publicId, timestamp: Math.floor(Date.now() / 1000), type: 'authenticated' };
       const signature = cloudinary.utils.api_sign_request(params, cfg.apiSecret);

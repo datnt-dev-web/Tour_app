@@ -1,13 +1,12 @@
 'use server';
 
 import { z } from 'zod';
+import type { UploadTicket } from '@/integrations/cloudinary/types';
 import { parse, runAction, type ActionResult } from '@/shared/actions';
-import { AppError } from '@/shared/errors';
 import { authed } from '@/shared/supabase/authed';
-import { INFO_MAX_FILE_BYTES } from '../constants';
 import type { TripInfo } from '../repositories/infos-repo';
 import { createInfoDeps } from '../server/info-deps';
-import { addFile, addLink, addNote, removeInfo } from '../services/info-service';
+import { addInfoFile, addLink, addNote, prepareInfoUpload, removeInfo } from '../services/info-service';
 
 // Độ dài/định dạng chi tiết do service kiểm (một chỗ); ở đây chỉ chặn kiểu và kích thước thô.
 const text = z.string().max(5000);
@@ -29,17 +28,21 @@ export async function addLinkAction(input: z.input<typeof linkSchema>): Promise<
   });
 }
 
-/** FormData: tripId, title, file. */
-export async function uploadInfoFileAction(form: FormData): Promise<ActionResult<TripInfo>> {
+const prepareFileSchema = z.object({ tripId: z.uuid(), fileName: z.string().min(1).max(300), size: z.number().int() });
+const addFileSchema = z.object({ tripId: z.uuid(), title: text, fileName: z.string().min(1).max(300), publicId: z.string().min(1).max(300) });
+
+/** Vé để trình duyệt tải thẳng tệp lên Cloudinary (Vercel giới hạn body request 4,5 MB). */
+export async function prepareInfoUploadAction(input: z.input<typeof prepareFileSchema>): Promise<ActionResult<UploadTicket>> {
   return runAction(async () => {
     const { db } = await authed();
-    const tripId = parse(z.uuid(), form.get('tripId'));
-    const title = parse(text, form.get('title') ?? '');
-    const file = form.get('file');
-    if (!(file instanceof File)) throw new AppError('INFO_INVALID', 'Chưa chọn tệp.');
-    // Chặn trước khi đọc cả tệp vào bộ nhớ; service kiểm lại theo số byte thật.
-    if (file.size > INFO_MAX_FILE_BYTES) throw new AppError('INFO_INVALID', `Tệp quá lớn (tối đa ${INFO_MAX_FILE_BYTES / 1_000_000} MB).`);
-    return addFile(createInfoDeps(db), { tripId, title, file: { name: file.name, data: new Uint8Array(await file.arrayBuffer()) } });
+    return prepareInfoUpload(createInfoDeps(db), parse(prepareFileSchema, input));
+  });
+}
+
+export async function addInfoFileAction(input: z.input<typeof addFileSchema>): Promise<ActionResult<TripInfo>> {
+  return runAction(async () => {
+    const { db } = await authed();
+    return addInfoFile(createInfoDeps(db), parse(addFileSchema, input));
   });
 }
 

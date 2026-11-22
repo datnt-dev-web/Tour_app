@@ -1,7 +1,8 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { InspectedFile } from '@/integrations/cloudinary/types';
 import type { GroupTrack, GroupTracksRepo } from '@/features/music/repositories/group-tracks-repo';
-import { addFileTrack, addYoutubeTrack, listTracks, prepareTrackUpload, removeTrack, type MusicDeps } from '@/features/music/services/music-service';
+import type { MusicFolder, MusicFoldersRepo } from '@/features/music/repositories/music-folders-repo';
+import { addFileTrack, addYoutubeTrack, createFolder, listMusic, listTracks, moveTrack, prepareTrackUpload, removeFolder, removeTrack, renameFolder, type MusicDeps } from '@/features/music/services/music-service';
 
 const G = '22222222-2222-2222-2222-222222222222';
 const folder = `food-tour/music/${G}`;
@@ -17,7 +18,30 @@ function fakes(opts: { inspected?: Partial<InspectedFile> | null; count?: number
       rows.push(row);
       return row;
     }),
+    move: vi.fn(async (id, folderId) => {
+      const r = rows.find((x) => x.id === id);
+      if (r) r.folder_id = folderId;
+      return r ?? null;
+    }),
     remove: vi.fn(async (id) => rows.find((r) => r.id === id) ?? null),
+  };
+  const folderRows: MusicFolder[] = [];
+  const folders: MusicFoldersRepo = {
+    list: vi.fn(async () => folderRows),
+    insert: vi.fn(async (groupId, name) => {
+      const f = { id: `f${folderRows.length + 1}`, group_id: groupId, name, created_by: 'u1', created_at: 'x' };
+      folderRows.push(f);
+      return f;
+    }),
+    rename: vi.fn(async (id, name) => {
+      const f = folderRows.find((x) => x.id === id);
+      if (f) f.name = name;
+      return f ?? null;
+    }),
+    remove: vi.fn(async (id) => {
+      const i = folderRows.findIndex((x) => x.id === id);
+      return i === -1 ? null : folderRows.splice(i, 1)[0];
+    }),
   };
   const storage = {
     upload: vi.fn(),
@@ -29,8 +53,8 @@ function fakes(opts: { inspected?: Partial<InspectedFile> | null; count?: number
     mediaUrl: vi.fn(({ publicId }: { publicId: string }) => `media:${publicId}`),
   };
   const youtube = { lookup: vi.fn(async () => (opts.meta === undefined ? { title: 'Nơi này có anh', author: 'Sơn Tùng M-TP' } : opts.meta)) };
-  const deps: MusicDeps = { tracks, storage, youtube };
-  return { deps, tracks, storage, youtube, rows };
+  const deps: MusicDeps = { tracks, folders, storage, youtube };
+  return { deps, tracks, folders, storage, youtube, rows, folderRows };
 }
 
 describe('music', () => {
@@ -81,5 +105,29 @@ describe('music', () => {
     expect((await listTracks(f.deps, G)).map((t) => t.id)).toEqual(['t1']);
     await removeTrack(f.deps, 't1');
     expect(f.storage.destroy).toHaveBeenCalledWith(`${folder}/a`, 'video');
+  });
+
+  test('thư mục: tạo (cắt khoảng trắng), chặn trùng tên không phân biệt hoa thường, đổi tên, xóa', async () => {
+    const f = fakes();
+    expect(await createFolder(f.deps, { groupId: G, name: '  Remix  ' })).toEqual({ id: 'f1', name: 'Remix' });
+    await expect(createFolder(f.deps, { groupId: G, name: 'remix' })).rejects.toMatchObject({ code: 'MUSIC_INVALID' });
+    await expect(createFolder(f.deps, { groupId: G, name: '   ' })).rejects.toMatchObject({ code: 'MUSIC_INVALID' });
+    await createFolder(f.deps, { groupId: G, name: 'Ballad' });
+    await expect(renameFolder(f.deps, { groupId: G, id: 'f2', name: 'REMIX' })).rejects.toMatchObject({ code: 'MUSIC_INVALID' });
+    expect(await renameFolder(f.deps, { groupId: G, id: 'f2', name: 'Ballad buồn' })).toEqual({ id: 'f2', name: 'Ballad buồn' });
+    await removeFolder(f.deps, 'f1');
+    await expect(removeFolder(f.deps, 'f1')).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  test('thêm bài thẳng vào thư mục, chuyển thư mục, thư mục lạ bị từ chối; danh sách trả kèm thư mục', async () => {
+    const f = fakes();
+    await createFolder(f.deps, { groupId: G, name: 'Remix' });
+    const t = await addYoutubeTrack(f.deps, { groupId: G, url: 'dQw4w9WgXcQ', folderId: 'f1' });
+    expect(t.folderId).toBe('f1');
+    await expect(addYoutubeTrack(f.deps, { groupId: G, url: 'https://youtu.be/aaaaaaaaaaa', folderId: 'khong-co' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await moveTrack(f.deps, { groupId: G, trackId: t.id, folderId: null });
+    expect(f.rows[0].folder_id).toBeNull();
+    await expect(moveTrack(f.deps, { groupId: G, trackId: t.id, folderId: 'khong-co' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(await listMusic(f.deps, G)).toMatchObject({ tracks: [{ id: t.id, folderId: null }], folders: [{ id: 'f1', name: 'Remix' }] });
   });
 });

@@ -39,9 +39,10 @@ export interface InspectedFile extends StoredFile {
 
 /** Tải thẳng từ trình duyệt: server ký trước, kiểm lại sau khi tải xong rồi mới ghi DB. */
 export interface DirectUploadStorage {
-  signUpload(opts: { folder: string; resourceType: 'image' | 'video' }): UploadTicket;
+  /** extension: tài liệu lên dạng raw phải giữ đuôi trong public id (Cloudinary không tự thêm) để tải về mở được. */
+  signUpload(opts: { folder: string; resourceType: 'image' | 'video' | 'raw'; extension?: string }): UploadTicket;
   /** null nếu chưa có asset (trình duyệt chưa tải xong hoặc gửi public id bịa). */
-  inspect(publicId: string, resourceType: 'image' | 'video'): Promise<InspectedFile | null>;
+  inspect(publicId: string, resourceType: 'image' | 'video' | 'raw'): Promise<InspectedFile | null>;
   /** Link phát âm thanh/video đã ký (asset authenticated), không hết hạn như ảnh nhóm. */
   mediaUrl(file: Pick<StoredFile, 'publicId' | 'format'>): string;
 }

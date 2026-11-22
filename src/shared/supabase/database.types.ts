@@ -217,14 +217,14 @@ isOneToOne: false
                   ]
                 },"group_tracks": {
                   Row: {
-                    "artist": string | null,"created_at": string,"created_by": string | null,"duration_sec": number | null,"file_format": string | null,"file_public_id": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["track_kind"],"title": string,"youtube_id": string | null
+                    "artist": string | null,"created_at": string,"created_by": string | null,"duration_sec": number | null,"file_format": string | null,"file_public_id": string | null,"folder_id": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["track_kind"],"title": string,"youtube_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "artist"?: string | null,"created_at"?: string,"created_by"?: string | null,"duration_sec"?: number | null,"file_format"?: string | null,"file_public_id"?: string | null,"group_id": string,"id"?: string,"kind": Database["public"]['Enums']["track_kind"],"title": string,"youtube_id"?: string | null
+                    "artist"?: string | null,"created_at"?: string,"created_by"?: string | null,"duration_sec"?: number | null,"file_format"?: string | null,"file_public_id"?: string | null,"folder_id"?: string | null,"group_id": string,"id"?: string,"kind": Database["public"]['Enums']["track_kind"],"title": string,"youtube_id"?: string | null
                   }
                   Update: {
-                    "artist"?: string | null,"created_at"?: string,"created_by"?: string | null,"duration_sec"?: number | null,"file_format"?: string | null,"file_public_id"?: string | null,"group_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["track_kind"],"title"?: string,"youtube_id"?: string | null
+                    "artist"?: string | null,"created_at"?: string,"created_by"?: string | null,"duration_sec"?: number | null,"file_format"?: string | null,"file_public_id"?: string | null,"folder_id"?: string | null,"group_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["track_kind"],"title"?: string,"youtube_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -233,6 +233,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_tracks_folder_fk"
+      columns: ["folder_id","group_id"]
+isOneToOne: false
+      referencedRelation: "music_folders"
+      referencedColumns: ["id","group_id"]
     },{
       foreignKeyName: "group_tracks_group_id_fkey"
       columns: ["group_id"]
@@ -264,6 +270,32 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"music_folders": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"group_id": string,"id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"group_id": string,"id"?: string,"name": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"group_id"?: string,"id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "music_folders_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "music_folders_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
       referencedColumns: ["id"]
     }
                   ]

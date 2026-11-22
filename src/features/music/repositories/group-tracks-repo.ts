@@ -10,6 +10,8 @@ export interface GroupTracksRepo {
   count(groupId: string): Promise<number>;
   hasYoutube(groupId: string, youtubeId: string): Promise<boolean>;
   insert(row: NewGroupTrack): Promise<GroupTrack>;
+  /** Chuyển bài sang thư mục khác (null = Chưa phân loại); null nếu không có hoặc không có quyền. */
+  move(id: string, folderId: string | null): Promise<GroupTrack | null>;
   /** Xóa và trả dòng đã xóa (để dọn Cloudinary); null nếu không có hoặc không có quyền. */
   remove(id: string): Promise<GroupTrack | null>;
 }
@@ -36,6 +38,11 @@ export function createGroupTracksRepo(db: Db): GroupTracksRepo {
       const { data, error } = await db.from('group_tracks').insert(row).select('*').single();
       if (error) throw error;
       return data;
+    },
+    async move(id, folderId) {
+      const { data, error } = await db.from('group_tracks').update({ folder_id: folderId }).eq('id', id).select('*');
+      if (error) throw error;
+      return data[0] ?? null;
     },
     async remove(id) {
       const { data, error } = await db.from('group_tracks').delete().eq('id', id).select('*');

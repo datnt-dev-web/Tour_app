@@ -46,7 +46,9 @@ Tab "Bản đồ" của chuyến dùng OpenStreetMap (Leaflet), không cần kh�
 - Ảnh kỉ niệm: tab Thông tin → Ảnh kỉ niệm, mỗi chuyến một thư mục Cloudinary `food-tour/<tripId>/photos`. Tab Nhạc: danh sách chung của nhóm (file nhạc ở `food-tour/music/<groupId>` hoặc link YouTube).
 - Ảnh và file nhạc được trình duyệt tải thẳng lên Cloudinary (Vercel giới hạn body request 4,5 MB): server ký vé khóa cứng thư mục/public id/kiểu asset, tải xong server kiểm lại (định dạng, dung lượng, file chỉ có tiếng) rồi mới ghi DB.
 - Bài YouTube phát bằng trình phát nhúng chính thức, khung video phải hiện (điều khoản YouTube), nên chỉ phát ở tab Nhạc và dừng khi khóa màn hình. File nhạc phát nền được, có nút trên màn hình khóa (Media Session).
-- Tệp tab Thông tin và ảnh quán vẫn tải qua server action: trên Vercel, tệp trên 4,5 MB sẽ lỗi.
+- Tệp tab Thông tin (tối đa 10 MB) và ảnh quán (tối đa 25 MB) cũng tải thẳng lên Cloudinary theo cùng cách; server action chỉ còn nhận file nhập sheet (giới hạn body 2 MB).
+- Nhạc chia theo thư mục thể loại (`music_folders`); xóa thư mục thì bài về "Chưa phân loại", không mất bài.
+- Ảnh kỉ niệm có nút "Chụp ảnh" mở camera ngay trong app (getUserMedia, cần HTTPS); máy/trình duyệt không cho thì dùng "Thêm ảnh".
 
 ## Thông báo nhắc giờ (Web Push)
 

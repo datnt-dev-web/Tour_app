@@ -5,7 +5,8 @@ import { Camera, Trash2, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
-import { removePlacePhotoAction, uploadPlacePhotoAction } from '../actions/photo-actions';
+import { uploadWithTicket } from '@/shared/upload/direct-upload';
+import { addPlacePhotoAction, preparePlacePhotoUploadAction, removePlacePhotoAction } from '../actions/photo-actions';
 import type { PlacePhotoView } from '../services/photo-service';
 
 const photosQuery = (placeId: string) =>
@@ -37,11 +38,10 @@ export function PlacePhotos({ placeId, tripId }: { placeId: string; tripId?: str
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.placePhotos(placeId) }), qc.invalidateQueries({ queryKey: queryKeys.photoCovers })]);
   const upload = useMutation({
     mutationFn: async (file: File) => {
-      const form = new FormData();
-      form.set('placeId', placeId);
-      if (tripId) form.set('tripId', tripId);
-      form.set('file', file);
-      return unwrap(await uploadPlacePhotoAction(form));
+      // Tải thẳng lên Cloudinary rồi server kiểm và ghi (ảnh điện thoại thường lớn hơn 4,5 MB, không qua server được).
+      const ticket = unwrap(await preparePlacePhotoUploadAction({ placeId, fileName: file.name, size: file.size }));
+      const publicId = await uploadWithTicket(ticket, file);
+      return unwrap(await addPlacePhotoAction({ placeId, tripId: tripId ?? null, publicId }));
     },
     onSuccess: refresh,
   });

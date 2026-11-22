@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
-import { addPlacePhoto, listPlacePhotos, PHOTO_MAX_BYTES, removePlacePhoto } from '@/features/places/services/photo-service';
+import { addPlacePhoto, listPlacePhotos, PHOTO_MAX_BYTES, preparePlacePhotoUpload, removePlacePhoto } from '@/features/places/services/photo-service';
+import type { InspectedFile } from '@/integrations/cloudinary/types';
 import type { PlacePhoto } from '@/features/places/repositories/photos-repo';
 
 const PLACE = '00000000-0000-4000-8000-0000000000aa';
@@ -22,33 +23,45 @@ function makeDeps(rows: PlacePhoto[] = [], placeExists = true) {
       destroy: vi.fn(async () => {}),
       fileUrl: vi.fn(() => 'x'),
       imageUrl: vi.fn((f: { publicId: string }, o: { width: number }) => `https://img/${o.width}/${f.publicId}`),
+      signUpload: vi.fn((o: { folder: string }) => ({ url: 'u', fields: {}, publicId: `${o.folder}/x` })),
+      inspect: vi.fn(async (): Promise<InspectedFile | null> => ok),
+      mediaUrl: vi.fn(() => 'm'),
     },
   };
 }
-const img = (name: string, size = 5) => ({ name, data: new Uint8Array(size) });
+const ok: InspectedFile = { publicId: 'p', resourceType: 'image', format: 'jpg', bytes: 5, width: 10, height: 10, durationSec: null, isAudio: false };
 
-describe('addPlacePhoto', () => {
-  test('ảnh vào thư mục của quán, lưu metadata kèm chuyến', async () => {
+describe('tải ảnh quán (thẳng lên Cloudinary)', () => {
+  test('ký vé ảnh vào thư mục của quán; không phải ảnh, quá lớn, hoặc quán không thuộc nhóm thì không ký', async () => {
     const d = makeDeps();
-    await addPlacePhoto(d, { placeId: PLACE, tripId: 't1', file: img('IMG_001.JPG') });
-    expect(d.storage.upload.mock.calls[0][1]).toMatchObject({ folder: `food-tour/places/${PLACE}`, resourceType: 'image' });
-    expect(d.photos.insert).toHaveBeenCalledWith(expect.objectContaining({ place_id: PLACE, trip_id: 't1', file_format: 'jpg' }));
+    await preparePlacePhotoUpload(d, { placeId: PLACE, fileName: 'IMG_001.JPG', size: 5 });
+    expect(d.storage.signUpload).toHaveBeenCalledWith({ folder: `food-tour/places/${PLACE}`, resourceType: 'image' });
+    await expect(preparePlacePhotoUpload(d, { placeId: PLACE, fileName: 'a.pdf', size: 5 })).rejects.toMatchObject({ code: 'PHOTO_INVALID' });
+    await expect(preparePlacePhotoUpload(d, { placeId: PLACE, fileName: 'a.jpg', size: PHOTO_MAX_BYTES + 1 })).rejects.toMatchObject({ code: 'PHOTO_INVALID' });
+    await expect(preparePlacePhotoUpload(makeDeps([], false), { placeId: PLACE, fileName: 'a.jpg', size: 5 })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(d.storage.signUpload).toHaveBeenCalledTimes(1);
   });
 
-  test('không phải ảnh, quá lớn, hoặc quán không thuộc nhóm → không upload', async () => {
+  test('ghi nhận ảnh vừa tải kèm chuyến', async () => {
     const d = makeDeps();
-    await expect(addPlacePhoto(d, { placeId: PLACE, file: img('a.pdf') })).rejects.toMatchObject({ code: 'PHOTO_INVALID' });
-    await expect(addPlacePhoto(d, { placeId: PLACE, file: img('a.jpg', PHOTO_MAX_BYTES + 1) })).rejects.toMatchObject({ code: 'PHOTO_INVALID' });
-    await expect(addPlacePhoto(makeDeps([], false), { placeId: PLACE, file: img('a.jpg') })).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    expect(d.storage.upload).not.toHaveBeenCalled();
+    await addPlacePhoto(d, { placeId: PLACE, tripId: 't1', publicId: `food-tour/places/${PLACE}/abc` });
+    expect(d.photos.insert).toHaveBeenCalledWith({ place_id: PLACE, trip_id: 't1', file_public_id: `food-tour/places/${PLACE}/abc`, file_format: 'jpg' });
   });
 
-  test('Cloudinary nhận ra không phải ảnh thật → xóa và từ chối', async () => {
+  test('public id ngoài thư mục quán bị từ chối mà không đụng kho', async () => {
     const d = makeDeps();
-    d.storage.upload.mockResolvedValueOnce({ publicId: `food-tour/places/${PLACE}/x`, resourceType: 'image', format: 'svg', bytes: 5 });
-    await expect(addPlacePhoto(d, { placeId: PLACE, file: img('x.png') })).rejects.toMatchObject({ code: 'PHOTO_INVALID' });
-    expect(d.storage.destroy).toHaveBeenCalled();
-    expect(d.photos.insert).not.toHaveBeenCalled();
+    await expect(addPlacePhoto(d, { placeId: PLACE, publicId: 'food-tour/places/khac/abc' })).rejects.toMatchObject({ code: 'PHOTO_INVALID' });
+    expect(d.storage.inspect).not.toHaveBeenCalled();
+  });
+
+  test('Cloudinary nhận ra không phải ảnh thật hoặc quá nặng → xóa và từ chối', async () => {
+    for (const bad of [{ format: 'svg' }, { bytes: PHOTO_MAX_BYTES + 1 }]) {
+      const d = makeDeps();
+      d.storage.inspect.mockResolvedValueOnce({ ...ok, ...bad });
+      await expect(addPlacePhoto(d, { placeId: PLACE, publicId: `food-tour/places/${PLACE}/x` })).rejects.toMatchObject({ code: 'PHOTO_INVALID' });
+      expect(d.storage.destroy).toHaveBeenCalledWith(`food-tour/places/${PLACE}/x`, 'image');
+      expect(d.photos.insert).not.toHaveBeenCalled();
+    }
   });
 });
 

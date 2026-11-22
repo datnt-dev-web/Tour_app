@@ -1,19 +1,30 @@
 'use client';
 
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Music, Pause, Play, Plus, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Trash2, Upload, CirclePlay } from 'lucide-react';
+import { CirclePlay, FolderPlus, Music, Pause, Pencil, Play, Plus, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Trash2, Upload } from 'lucide-react';
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
 import { runLimited, uploadWithTicket } from '@/shared/upload/direct-upload';
-import { addFileTrackAction, addYoutubeTrackAction, prepareTrackUploadAction, removeTrackAction } from '../actions/music-actions';
-import { MUSIC_MAX_BYTES } from '../constants';
-import type { TrackView } from '../services/music-service';
+import {
+  addFileTrackAction,
+  addYoutubeTrackAction,
+  createFolderAction,
+  moveTrackAction,
+  prepareTrackUploadAction,
+  removeFolderAction,
+  removeTrackAction,
+  renameFolderAction,
+} from '../actions/music-actions';
+import { FOLDER_NAME_MAX, MUSIC_MAX_BYTES } from '../constants';
+import type { FolderView, TrackView } from '../services/music-service';
 import { useMusicPlayer } from './music-player';
 import { YoutubePlayer } from './youtube-player';
 
 const PARALLEL_UPLOADS = 2;
-type MusicData = { tracks: TrackView[]; uploadEnabled: boolean };
+type MusicData = { tracks: TrackView[]; folders: FolderView[]; uploadEnabled: boolean };
+/** Đang xem: cả danh sách, bài chưa vào thư mục nào, hoặc một thư mục. */
+type Scope = 'all' | 'none' | string;
 
 export const musicQuery = queryOptions({
   queryKey: queryKeys.groupTracks,
@@ -30,6 +41,9 @@ const formatDuration = (sec: number | null) => (sec === null ? '' : `${Math.floo
 /** Tên bài mặc định = tên file bỏ đuôi, gạch dưới thành khoảng trắng. */
 const titleFromFile = (name: string) => name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim() || 'Bài không tên';
 
+const CHIP = 'inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold pressable';
+const chipClass = (on: boolean) => `${CHIP} ${on ? 'border-accent bg-accent text-white' : 'border-line bg-card text-ink hover:bg-surface'}`;
+
 const BTN = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded border border-line bg-card px-3 text-sm font-semibold text-ink pressable hover:bg-surface';
 const ROUND = 'inline-flex size-11 items-center justify-center rounded-full pressable';
 
@@ -38,8 +52,18 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
   const qc = useQueryClient();
   const { data } = useQuery({ ...musicQuery, initialData: initial });
   const player = useMusicPlayer();
-  const tracks = data.tracks;
+  const { tracks, folders } = data;
   const fileInputId = useId();
+  const [scope, setScope] = useState<Scope>('all');
+  // Thư mục đang chọn bị xóa (ở máy khác) thì quay về Tất cả.
+  const activeScope: Scope = scope === 'all' || scope === 'none' || folders.some((f) => f.id === scope) ? scope : 'all';
+  const activeFolder = folders.find((f) => f.id === activeScope) ?? null;
+  const visible = activeScope === 'all' ? tracks : tracks.filter((t) => (activeScope === 'none' ? t.folderId === null : t.folderId === activeScope));
+  const unsorted = tracks.filter((t) => t.folderId === null).length;
+  /** Thêm bài khi đang xem một thư mục thì vào thẳng thư mục đó. */
+  const targetFolderId = activeFolder?.id ?? null;
+  const [folderForm, setFolderForm] = useState<{ mode: 'create' | 'rename'; name: string } | null>(null);
+  const [confirmFolder, setConfirmFolder] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -66,7 +90,7 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
       try {
         const ticket = unwrap(await prepareTrackUploadAction());
         const publicId = await uploadWithTicket(ticket, file);
-        unwrap(await addFileTrackAction({ publicId, title: titleFromFile(file.name) }));
+        unwrap(await addFileTrackAction({ publicId, title: titleFromFile(file.name), folderId: targetFolderId }));
       } catch (e) {
         failed++;
         lastError = e instanceof Error ? e.message : '';
@@ -85,7 +109,7 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
     setAdding(true);
     setProblem(null);
     try {
-      unwrap(await addYoutubeTrackAction({ url: link }));
+      unwrap(await addYoutubeTrackAction({ url: link, folderId: targetFolderId }));
       setLink('');
       setLinkOpen(false);
       await refresh();
@@ -106,6 +130,45 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
     }
   }
 
+  async function saveFolder(e: FormEvent) {
+    e.preventDefault();
+    if (!folderForm?.name.trim()) return;
+    setProblem(null);
+    try {
+      if (folderForm.mode === 'create') {
+        const f = unwrap(await createFolderAction({ name: folderForm.name }));
+        setScope(f.id);
+      } else if (activeFolder) {
+        unwrap(await renameFolderAction({ id: activeFolder.id, name: folderForm.name }));
+      }
+      setFolderForm(null);
+      await refresh();
+    } catch (err) {
+      setProblem(err instanceof Error ? err.message : 'Không lưu được thư mục.');
+    }
+  }
+
+  async function deleteFolder() {
+    if (!activeFolder) return;
+    setConfirmFolder(false);
+    try {
+      unwrap(await removeFolderAction({ id: activeFolder.id }));
+      setScope('all');
+      await refresh();
+    } catch (err) {
+      setProblem(err instanceof Error ? err.message : 'Không xóa được thư mục.');
+    }
+  }
+
+  async function move(trackId: string, folderId: string | null) {
+    try {
+      unwrap(await moveTrackAction({ trackId, folderId }));
+      await refresh();
+    } catch (err) {
+      setProblem(err instanceof Error ? err.message : 'Không chuyển được bài.');
+    }
+  }
+
   const current = player.current;
   const RepeatIcon = player.repeat === 'one' ? Repeat1 : Repeat;
 
@@ -115,6 +178,71 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
         <h1 className="text-xl font-extrabold">Nhạc chung</h1>
         <p className="text-sm text-muted">{tracks.length} bài</p>
       </header>
+
+      <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none]" role="group" aria-label="Thư mục">
+        <button type="button" onClick={() => setScope('all')} aria-pressed={activeScope === 'all'} className={chipClass(activeScope === 'all')}>
+          Tất cả
+        </button>
+        {folders.map((f) => (
+          <button key={f.id} type="button" onClick={() => setScope(f.id)} aria-pressed={activeScope === f.id} className={chipClass(activeScope === f.id)}>
+            {f.name}
+            <span className="text-xs opacity-75">{tracks.filter((t) => t.folderId === f.id).length}</span>
+          </button>
+        ))}
+        {folders.length > 0 && unsorted > 0 && (
+          <button type="button" onClick={() => setScope('none')} aria-pressed={activeScope === 'none'} className={chipClass(activeScope === 'none')}>
+            Chưa phân loại
+            <span className="text-xs opacity-75">{unsorted}</span>
+          </button>
+        )}
+        <button type="button" onClick={() => setFolderForm({ mode: 'create', name: '' })} className={`${CHIP} border-dashed border-line text-muted hover:bg-surface`}>
+          <FolderPlus size={16} aria-hidden />
+          Thư mục
+        </button>
+      </div>
+
+      {folderForm && (
+        <form onSubmit={saveFolder} className="flex gap-2">
+          <label htmlFor="folder-name" className="sr-only">
+            Tên thư mục
+          </label>
+          <input
+            id="folder-name"
+            autoFocus
+            maxLength={FOLDER_NAME_MAX}
+            value={folderForm.name}
+            onChange={(e) => setFolderForm({ ...folderForm, name: e.target.value })}
+            placeholder="Ví dụ Remix, Ballad, Nhạc đi đường"
+            className="min-h-11 min-w-0 flex-1 rounded border border-line bg-card px-3 text-base"
+          />
+          <button type="submit" disabled={!folderForm.name.trim()} className="inline-flex min-h-11 items-center rounded bg-accent px-4 text-sm font-semibold text-white pressable disabled:opacity-50">
+            {folderForm.mode === 'create' ? 'Tạo' : 'Lưu'}
+          </button>
+          <button type="button" onClick={() => setFolderForm(null)} className={BTN}>
+            Hủy
+          </button>
+        </form>
+      )}
+
+      {activeFolder && !folderForm && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted">Thêm bài lúc này sẽ vào thư mục “{activeFolder.name}”.</span>
+          <button type="button" onClick={() => setFolderForm({ mode: 'rename', name: activeFolder.name })} className={`${BTN} min-h-9 px-2`}>
+            <Pencil size={14} aria-hidden />
+            Đổi tên
+          </button>
+          {confirmFolder ? (
+            <button type="button" onClick={() => void deleteFolder()} className="inline-flex min-h-9 items-center rounded bg-bad px-3 font-semibold text-white pressable">
+              Xóa thư mục? (bài giữ lại)
+            </button>
+          ) : (
+            <button type="button" onClick={() => setConfirmFolder(true)} className={`${BTN} min-h-9 px-2 text-bad`}>
+              <Trash2 size={14} aria-hidden />
+              Xóa thư mục
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {data.uploadEnabled && (
@@ -209,15 +337,19 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
         </section>
       )}
 
-      {tracks.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted">Chưa có bài nào. Tải file nhạc lên hoặc dán link YouTube để cả nhóm cùng nghe.</p>
+      {visible.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted">
+          {activeFolder
+            ? `Thư mục “${activeFolder.name}” chưa có bài. Tải file hoặc dán link YouTube để thêm vào đây.`
+            : 'Chưa có bài nào. Tải file nhạc lên hoặc dán link YouTube để cả nhóm cùng nghe.'}
+        </p>
       ) : (
         <ol className="flex flex-col gap-1">
-          {tracks.map((t, i) => {
+          {visible.map((t, i) => {
             const active = current?.id === t.id;
             return (
               <li key={t.id} className={`flex items-center gap-2 rounded border p-2 ${active ? 'border-accent bg-accent/10' : 'border-line bg-card'}`}>
-                <button type="button" onClick={() => player.playAt(tracks, i)} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left pressable" aria-current={active ? 'true' : undefined}>
+                <button type="button" onClick={() => player.playAt(visible, i)} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left pressable" aria-current={active ? 'true' : undefined}>
                   {t.thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element -- ảnh thu nhỏ của YouTube
                     <img src={t.thumbnail} alt="" loading="lazy" className="h-10 w-16 shrink-0 rounded-sm object-cover" />
@@ -236,6 +368,21 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
                   </span>
                   {active && player.playing && <span className="text-xs font-semibold text-accent">Đang phát</span>}
                 </button>
+                {folders.length > 0 && (
+                  <select
+                    aria-label={`Chuyển “${t.title}” sang thư mục`}
+                    value={t.folderId ?? ''}
+                    onChange={(e) => void move(t.id, e.target.value || null)}
+                    className="min-h-11 max-w-24 shrink-0 rounded border border-line bg-card px-1 text-xs text-ink"
+                  >
+                    <option value="">Chưa phân loại</option>
+                    {folders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 {confirmId === t.id ? (
                   <button type="button" onClick={() => void remove(t.id)} className="inline-flex min-h-11 items-center rounded bg-bad px-3 text-sm font-semibold text-white pressable">
                     Xóa?
