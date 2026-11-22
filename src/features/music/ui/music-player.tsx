@@ -1,12 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { X } from 'lucide-react';
-import { usePathname } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { TrackView } from '../services/music-service';
 import { musicQuery } from './music-queries';
 import { playerKey, readSavedPlayer, restoreQueue, type RepeatMode } from './player-storage';
+import { YoutubeDock } from './youtube-dock';
 import { YoutubePlayer, type YoutubeControls } from './youtube-player';
 
 export type { RepeatMode };
@@ -31,6 +30,8 @@ interface PlayerApi extends PlayerState {
   cycleRepeat(): void;
   /** Danh sách đổi (sửa/xóa bài) mà không ngắt bài đang phát. */
   syncQueue(tracks: TrackView[]): void;
+  /** Tab Nhạc gắn ô giữ chỗ trong thẻ "Đang phát": video YouTube hiện khít ở đó thay vì khung nổi. */
+  setYoutubeSlot(el: HTMLElement | null): void;
 }
 
 const PlayerContext = createContext<PlayerApi | null>(null);
@@ -254,6 +255,8 @@ export function MusicPlayerProvider({ userId, children }: { userId: string | nul
     setState((s) => (s.playing === playing ? s : { ...s, playing }));
   }, []);
 
+  const [youtubeSlot, setYoutubeSlot] = useState<HTMLElement | null>(null);
+
   const api = useMemo<PlayerApi>(
     () => ({
       ...state,
@@ -275,6 +278,7 @@ export function MusicPlayerProvider({ userId, children }: { userId: string | nul
           // Bài đang phát bị xóa: giữ hàng đợi cũ để phát nốt, hết bài sẽ sang bài kế.
           return index === -1 && s.index !== null ? s : { ...s, queue, index: index === -1 ? null : index };
         }),
+      setYoutubeSlot,
     }),
     [state, current, start, toggle, next, prev, stop],
   );
@@ -298,7 +302,7 @@ export function MusicPlayerProvider({ userId, children }: { userId: string | nul
         className="hidden"
       />
       {current?.kind === 'youtube' && current.youtubeId && (
-        <YoutubeDock>
+        <YoutubeDock slot={youtubeSlot} onClose={stop}>
           <YoutubePlayer
             videoId={current.youtubeId}
             autoplay={autoplay}
@@ -313,21 +317,8 @@ export function MusicPlayerProvider({ userId, children }: { userId: string | nul
   );
 }
 
-/** Khung video YouTube nổi góc phải, phía trên thanh mini và thanh điều hướng; nút tắt nằm ngoài khung để không che video. */
-function YoutubeDock({ children }: { children: ReactNode }) {
-  const { stop } = useMusicPlayer();
-  const onMusic = usePathname() === '/music';
-  return (
-    <div
-      // Bám mép phải của khung app (rộng tối đa 480px, căn giữa), không phải mép màn hình máy tính.
-      className={`fixed right-[max(8px,calc(50vw-232px))] z-40 flex flex-col items-end gap-1 ${
-        onMusic ? 'bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+8px)]' : 'bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+3.5rem+8px)]'
-      }`}
-    >
-      <button type="button" onClick={stop} aria-label="Tắt video YouTube" className="inline-flex size-8 items-center justify-center rounded-full bg-black/70 text-white pressable">
-        <X size={16} aria-hidden />
-      </button>
-      <div className="size-[200px] overflow-hidden rounded-lg shadow-card ring-1 ring-black/20">{children}</div>
-    </div>
-  );
+/** Ô giữ chỗ trong thẻ "Đang phát" của tab Nhạc: trình phát YouTube chung đặt khít lên đây (nhạc không ngắt khi đổi tab). */
+export function YoutubeSlot() {
+  const { setYoutubeSlot } = useMusicPlayer();
+  return <div ref={setYoutubeSlot} className="aspect-video w-full rounded bg-black" />;
 }

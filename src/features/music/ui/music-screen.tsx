@@ -17,7 +17,7 @@ import {
   renameFolderAction,
 } from '../actions/music-actions';
 import { FOLDER_NAME_MAX, MUSIC_MAX_BYTES } from '../constants';
-import { useMusicPlayer } from './music-player';
+import { useMusicPlayer, YoutubeSlot } from './music-player';
 import { musicQuery, type MusicData } from './music-queries';
 
 const PARALLEL_UPLOADS = 2;
@@ -288,6 +288,7 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
 
       {current && (
         <section aria-label="Đang phát" className="flex flex-col gap-3 rounded border border-line bg-card p-3">
+          {current.kind === 'youtube' && <YoutubeSlot />}
           <div className="min-w-0">
             <p className="truncate font-bold">{current.title}</p>
             <p className="truncate text-sm text-muted">{current.artist ?? (current.kind === 'youtube' ? 'YouTube' : 'Nhạc chung')}</p>
