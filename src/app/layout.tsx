@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Be_Vietnam_Pro } from 'next/font/google';
 import { RegisterSW } from '@/shared/pwa/register-sw';
+import { InlineScript } from '@/shared/ui/inline-script';
 import { Splash } from '@/shared/ui/splash';
 import { THEME_INIT_SCRIPT } from '@/shared/ui/theme';
 import './globals.css';
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html lang="vi" className={`${beVietnamPro.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Đặt theme trước khi vẽ để không nháy nền sáng khi người dùng đã chọn Tối. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <InlineScript html={THEME_INIT_SCRIPT} />
       </head>
       <body className="min-h-full">
         <Splash />
