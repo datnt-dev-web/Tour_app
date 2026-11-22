@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   return (
     <QueryProvider key={user?.id ?? 'anon'} userId={user?.id ?? null}>
       {/* Trình phát nhạc ở layout: chuyển tab vẫn nghe tiếp. */}
-      <MusicPlayerProvider>
+      <MusicPlayerProvider userId={user?.id ?? null}>
         <AppFrame withNav>
           <OfflineBanner />
           {children}

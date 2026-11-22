@@ -10,8 +10,6 @@ export function MusicMiniBar() {
   const { current, playing, toggle, next } = useMusicPlayer();
   const pathname = usePathname();
   if (!current || pathname === '/music') return null;
-  // YouTube chỉ phát được ở tab Nhạc (khung video phải hiện): ra khỏi tab là dừng.
-  const youtubeAway = current.kind === 'youtube';
 
   return (
     <>
@@ -24,14 +22,12 @@ export function MusicMiniBar() {
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold">{current.title}</span>
-            <span className="block truncate text-xs text-muted">{youtubeAway ? 'YouTube: mở tab Nhạc để nghe' : (current.artist ?? 'Nhạc chung')}</span>
+            <span className="block truncate text-xs text-muted">{current.artist ?? (current.kind === 'youtube' ? 'YouTube' : 'Nhạc chung')}</span>
           </span>
         </Link>
-        {!youtubeAway && (
-          <button type="button" onClick={toggle} aria-label={playing ? 'Tạm dừng' : 'Phát'} className="inline-flex size-11 items-center justify-center rounded-full text-ink pressable hover:bg-surface">
-            {playing ? <Pause size={22} aria-hidden /> : <Play size={22} aria-hidden />}
-          </button>
-        )}
+        <button type="button" onClick={toggle} aria-label={playing ? 'Tạm dừng' : 'Phát'} className="inline-flex size-11 items-center justify-center rounded-full text-ink pressable hover:bg-surface">
+          {playing ? <Pause size={22} aria-hidden /> : <Play size={22} aria-hidden />}
+        </button>
         <button type="button" onClick={next} aria-label="Bài sau" className="inline-flex size-11 items-center justify-center rounded-full text-ink pressable hover:bg-surface">
           <SkipForward size={20} aria-hidden />
         </button>

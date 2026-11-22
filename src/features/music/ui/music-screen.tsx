@@ -1,6 +1,6 @@
 'use client';
 
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CirclePlay, FolderPlus, Music, Pause, Pencil, Play, Plus, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Trash2, Upload } from 'lucide-react';
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { unwrap } from '@/shared/actions';
@@ -17,25 +17,12 @@ import {
   renameFolderAction,
 } from '../actions/music-actions';
 import { FOLDER_NAME_MAX, MUSIC_MAX_BYTES } from '../constants';
-import type { FolderView, TrackView } from '../services/music-service';
 import { useMusicPlayer } from './music-player';
-import { YoutubePlayer } from './youtube-player';
+import { musicQuery, type MusicData } from './music-queries';
 
 const PARALLEL_UPLOADS = 2;
-type MusicData = { tracks: TrackView[]; folders: FolderView[]; uploadEnabled: boolean };
 /** Đang xem: cả danh sách, bài chưa vào thư mục nào, hoặc một thư mục. */
 type Scope = 'all' | 'none' | string;
-
-export const musicQuery = queryOptions({
-  queryKey: queryKeys.groupTracks,
-  // Link phát file là link ký không hết hạn: không cần làm mới thường xuyên.
-  staleTime: 5 * 60 * 1000,
-  queryFn: async (): Promise<MusicData> => {
-    const res = await fetch('/api/music');
-    if (!res.ok) throw new Error('Không tải được danh sách nhạc, thử lại sau.');
-    return res.json();
-  },
-});
 
 const formatDuration = (sec: number | null) => (sec === null ? '' : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
 /** Tên bài mặc định = tên file bỏ đuôi, gạch dưới thành khoảng trắng. */
@@ -301,9 +288,6 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
 
       {current && (
         <section aria-label="Đang phát" className="flex flex-col gap-3 rounded border border-line bg-card p-3">
-          {current.kind === 'youtube' && current.youtubeId && (
-            <YoutubePlayer videoId={current.youtubeId} onEnded={player.youtubeEnded} onPlayingChange={player.setYoutubePlaying} />
-          )}
           <div className="min-w-0">
             <p className="truncate font-bold">{current.title}</p>
             <p className="truncate text-sm text-muted">{current.artist ?? (current.kind === 'youtube' ? 'YouTube' : 'Nhạc chung')}</p>
@@ -315,13 +299,9 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
             <button type="button" onClick={player.prev} aria-label="Bài trước" className={`${ROUND} text-ink`}>
               <SkipBack size={22} aria-hidden />
             </button>
-            {current.kind === 'file' ? (
-              <button type="button" onClick={player.toggle} aria-label={player.playing ? 'Tạm dừng' : 'Phát'} className={`${ROUND} size-14 bg-accent text-white`}>
-                {player.playing ? <Pause size={26} aria-hidden /> : <Play size={26} aria-hidden />}
-              </button>
-            ) : (
-              <span className="text-xs text-muted">Dùng nút trên video</span>
-            )}
+            <button type="button" onClick={player.toggle} aria-label={player.playing ? 'Tạm dừng' : 'Phát'} className={`${ROUND} size-14 bg-accent text-white`}>
+              {player.playing ? <Pause size={26} aria-hidden /> : <Play size={26} aria-hidden />}
+            </button>
             <button type="button" onClick={player.next} aria-label="Bài sau" className={`${ROUND} text-ink`}>
               <SkipForward size={22} aria-hidden />
             </button>
@@ -349,7 +329,14 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
             const active = current?.id === t.id;
             return (
               <li key={t.id} className={`flex items-center gap-2 rounded border p-2 ${active ? 'border-accent bg-accent/10' : 'border-line bg-card'}`}>
-                <button type="button" onClick={() => player.playAt(visible, i)} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left pressable" aria-current={active ? 'true' : undefined}>
+                <button
+                  type="button"
+                  // Bấm lại bài đang nghe: dừng và đóng hẳn bài đó (tắt cả khung video YouTube).
+                  onClick={() => (active ? player.stop() : player.playAt(visible, i))}
+                  aria-label={active ? `${t.title}: đang chọn, bấm để dừng và đóng` : undefined}
+                  className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left pressable"
+                  aria-current={active ? 'true' : undefined}
+                >
                   {t.thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element -- ảnh thu nhỏ của YouTube
                     <img src={t.thumbnail} alt="" loading="lazy" className="h-10 w-16 shrink-0 rounded-sm object-cover" />
@@ -366,7 +353,7 @@ export function MusicScreen({ initial }: { initial: MusicData }) {
                       {t.durationSec !== null && ` · ${formatDuration(t.durationSec)}`}
                     </span>
                   </span>
-                  {active && player.playing && <span className="text-xs font-semibold text-accent">Đang phát</span>}
+                  {active && <span className="shrink-0 text-xs font-semibold text-accent">{player.playing ? 'Đang phát' : 'Tạm dừng'}</span>}
                 </button>
                 {folders.length > 0 && (
                   <select
