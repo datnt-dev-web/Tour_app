@@ -56,26 +56,56 @@ describe('trip_participants', () => {
     expect((await repo.list(T)).map((p) => p.id)[0]).toBe(a.id);
   });
 
-  test('chỉ một thủ quỹ; đổi thủ quỹ thì người cũ thôi', async () => {
+  test('tài khoản nhận tiền theo từng người; sai định dạng bị từ chối; bỏ được', async () => {
     const repo = createSettleRepo(member.db);
-    const [a, b] = await repo.list(T);
-    await repo.setPayer(T, a.id);
-    await repo.setPayer(T, b.id);
-    const list = await repo.list(T);
-    expect(list.filter((p) => p.is_payer).map((p) => p.id)).toEqual([b.id]);
+    const [a] = await repo.list(T);
+    await repo.setBank(a.id, { bin: '970436', accountNo: '0123456789', accountName: 'NGUYEN VAN A' });
+    expect((await repo.list(T))[0]).toMatchObject({ bank_bin: '970436', account_no: '0123456789', account_name: 'NGUYEN VAN A' });
+    await expect(repo.setBank(a.id, { bin: '970436', accountNo: '12 34', accountName: 'X' })).rejects.toBeTruthy();
+    await repo.setBank(a.id, null);
+    expect((await repo.list(T))[0]).toMatchObject({ bank_bin: null, account_no: null, account_name: null });
   });
 
-  test('lưu tài khoản thủ quỹ; số tài khoản sai định dạng bị DB từ chối', async () => {
-    const repo = createSettleRepo(member.db);
-    await repo.setPayerBank(T, { bin: '970436', accountNo: '0123456789', accountName: 'NGUYEN VAN A' });
-    const { data } = await admin.from('trips').select('payer_bank_bin, payer_account_no').eq('id', T).single();
-    expect(data).toEqual({ payer_bank_bin: '970436', payer_account_no: '0123456789' });
-    await expect(repo.setPayerBank(T, { bin: '970436', accountNo: '12 34', accountName: 'X' })).rejects.toBeTruthy();
+  test('ghi người trả và lần chuyển; người của chuyến khác bị từ chối; không xóa được người còn dính tới tiền', async () => {
+    const settle = createSettleRepo(member.db);
+    const trips = createTripsRepo(member.db);
+    const [a, b] = await settle.list(T);
+    const other = await trips.createTrip({ groupId: G, name: 'DL', city: 'Đà Lạt', startDate: '2026-12-01', endDate: '2026-12-02' });
+    const stranger = await settle.add(other.id, 'Lạ');
+
+    const expense = await trips.addExpense(T, 'Khách sạn', 900_001, a.id);
+    await expect(trips.addExpense(T, 'Sai', 1_000, stranger.id)).rejects.toMatchObject({ code: 'VALIDATION' });
+    await expect(trips.setExpensePayer(expense.id, stranger.id)).rejects.toMatchObject({ code: 'VALIDATION' });
+
+    await settle.addTransfer({ tripId: T, fromId: b.id, toId: a.id, amount: 200_000 });
+    await expect(settle.addTransfer({ tripId: T, fromId: stranger.id, toId: a.id, amount: 1 })).rejects.toMatchObject({ code: 'VALIDATION' });
+    await expect(settle.addTransfer({ tripId: T, fromId: a.id, toId: a.id, amount: 1 })).rejects.toBeTruthy();
+    await expect(settle.addTransfer({ tripId: T, fromId: b.id, toId: a.id, amount: 0 })).rejects.toBeTruthy();
+
+    const data = await settle.splitData(T);
+    expect(data.items).toEqual([{ id: expense.id, label: 'Khách sạn', amount: 900_001, paidBy: a.id }]);
+    expect(data.transfers.map((t) => [t.fromId, t.toId, t.amount])).toEqual([[b.id, a.id, 200_000]]);
+
+    await expect(settle.remove(a.id)).rejects.toMatchObject({ code: 'PARTICIPANT_IN_USE' });
+    await expect(settle.remove(b.id)).rejects.toMatchObject({ code: 'PARTICIPANT_IN_USE' });
+
+    // Xóa cả chuyến thì người, khoản chi, lần chuyển cùng bị xóa (khóa ngoại không chặn).
+    await settle.add(other.id, 'Quen');
+    const [x, y] = await settle.list(other.id);
+    await trips.addExpense(other.id, 'Xe', 100_000, x.id);
+    await settle.addTransfer({ tripId: other.id, fromId: y.id, toId: x.id, amount: 50_000 });
+    const del = await member.db.from('trips').delete().eq('id', other.id).select('id');
+    expect(del.error).toBeNull();
+    expect(del.data).toHaveLength(1);
   });
 
   test('người ngoài nhóm không thấy, không thêm được', async () => {
     const repo = createSettleRepo(outsider.db);
     expect(await repo.list(T)).toEqual([]);
     await expect(repo.add(T, 'Lạ')).rejects.toBeTruthy();
+    const data = await repo.splitData(T);
+    expect([data.participants, data.items, data.transfers]).toEqual([[], [], []]);
+    const [a, b] = await createSettleRepo(member.db).list(T);
+    await expect(repo.addTransfer({ tripId: T, fromId: b.id, toId: a.id, amount: 1_000 })).rejects.toBeTruthy();
   });
 });

@@ -12,7 +12,8 @@ export const queryKeys = {
   tripInfos: (tripId: string) => ['tripInfos', tripId] as const,
   tripPhotos: (tripId: string) => ['tripPhotos', tripId] as const,
   groupTracks: ['groupTracks'] as const,
-  tripParticipants: (tripId: string) => ['tripParticipants', tripId] as const,
+  /** Người tham gia, các khoản có người trả và các lần chuyển của chuyến (phần chia tiền). */
+  tripSplit: (tripId: string) => ['tripSplit', tripId] as const,
   tripWeather: (tripId: string) => ['tripWeather', tripId] as const,
   placePhotos: (placeId: string) => ['placePhotos', placeId] as const,
   photoCovers: ['photoCovers'] as const,

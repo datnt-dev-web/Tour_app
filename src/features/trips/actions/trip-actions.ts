@@ -54,11 +54,17 @@ const amount = z.number().int().min(0).max(MAX_AMOUNT);
 const updateStopSchema = z.object({
   tripId: z.uuid(),
   tripPlaceId: z.uuid(),
-  patch: z.object({ schedule: scheduleSchema.optional(), transport: transportSchema.optional(), cost: amount.nullable().optional() }),
+  patch: z.object({
+    schedule: scheduleSchema.optional(),
+    transport: transportSchema.optional(),
+    cost: amount.nullable().optional(),
+    paidBy: z.uuid().nullable().optional(),
+  }),
 });
 const partySizeSchema = z.object({ tripId: z.uuid(), partySize: z.number().int().min(1).max(100) });
-const addExpenseSchema = z.object({ tripId: z.uuid(), label: z.string().trim().min(1).max(120), amount });
+const addExpenseSchema = z.object({ tripId: z.uuid(), label: z.string().trim().min(1).max(120), amount, paidBy: z.uuid().nullable().optional() });
 const removeExpenseSchema = z.object({ expenseId: z.uuid() });
+const expensePayerSchema = z.object({ expenseId: z.uuid(), paidBy: z.uuid().nullable() });
 
 const manualSchema = z.object({
   tripId: z.uuid(),
@@ -131,8 +137,17 @@ export async function setPartySizeAction(input: z.input<typeof partySizeSchema>)
 export async function addExpenseAction(input: z.input<typeof addExpenseSchema>): Promise<ActionResult<TripExpense>> {
   return runAction(async () => {
     const { db } = await authed();
-    const { tripId, label, amount: value } = parse(addExpenseSchema, input);
-    return createTripsRepo(db).addExpense(tripId, label, value);
+    const { tripId, label, amount: value, paidBy } = parse(addExpenseSchema, input);
+    return createTripsRepo(db).addExpense(tripId, label, value, paidBy ?? null);
+  });
+}
+
+export async function setExpensePayerAction(input: z.input<typeof expensePayerSchema>): Promise<ActionResult<null>> {
+  return runAction(async () => {
+    const { db } = await authed();
+    const { expenseId, paidBy } = parse(expensePayerSchema, input);
+    await createTripsRepo(db).setExpensePayer(expenseId, paidBy);
+    return null;
   });
 }
 

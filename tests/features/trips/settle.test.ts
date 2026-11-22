@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest';
-import { computeSettlement } from '@/features/trips/services/settle';
 import { buildVietQrPayload, crc16 } from '@/shared/vietqr';
 
 /** Đọc lại payload EMVCo (tag 2 số + độ dài 2 số + giá trị) để kiểm từng trường. */
@@ -41,37 +40,5 @@ describe('VietQR', () => {
     const content = tlv(tlv(p)['62'])['08'];
     expect(content.length).toBeLessThanOrEqual(25);
     expect(content).toMatch(/^[A-Za-z0-9 ]+$/);
-  });
-});
-
-describe('computeSettlement', () => {
-  const people = [
-    { id: 'a', name: 'Wibu', isPayer: true, paid: false },
-    { id: 'b', name: 'Sucvat', isPayer: false, paid: true },
-    { id: 'c', name: 'An', isPayer: false, paid: false },
-  ];
-
-  test('chia đều, làm tròn lên 1.000đ; thủ quỹ không phải trả', () => {
-    const s = computeSettlement(1_000_000, people);
-    expect(s.perPerson).toBe(334_000);
-    expect(s.payer?.id).toBe('a');
-    expect(s.rows.map((r) => [r.participant.id, r.owes])).toEqual([
-      ['b', 334_000],
-      ['c', 334_000],
-    ]);
-    expect(s.collected).toBe(334_000);
-    expect(s.outstanding).toBe(334_000);
-  });
-
-  test('chưa có người tham gia hoặc chưa có chi phí thì không ai nợ', () => {
-    expect(computeSettlement(500_000, []).rows).toEqual([]);
-    expect(computeSettlement(0, people).outstanding).toBe(0);
-  });
-
-  test('chưa chọn thủ quỹ: ai cũng có phần, payer null', () => {
-    const s = computeSettlement(300_000, people.map((p) => ({ ...p, isPayer: false })));
-    expect(s.payer).toBeNull();
-    expect(s.rows).toHaveLength(3);
-    expect(s.perPerson).toBe(100_000);
   });
 });

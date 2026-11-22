@@ -9,6 +9,7 @@ import {
   addToTripAction,
   removeAction,
   removeExpenseAction,
+  setExpensePayerAction,
   setPartySizeAction,
   updateStopAction,
   setStatusAction,
@@ -49,6 +50,8 @@ function useOptimisticTripEdit(tripId: string) {
         qc.invalidateQueries({ queryKey: infoKey }),
         qc.invalidateQueries({ queryKey: stopsKey }),
         qc.invalidateQueries({ queryKey: queryKeys.tripStats(tripId) }),
+        // Giá, người trả, khoản chi đổi thì số tiền chia cũng đổi.
+        qc.invalidateQueries({ queryKey: queryKeys.tripSplit(tripId) }),
         qc.invalidateQueries({ queryKey: queryKeys.tripsAll }),
         qc.invalidateQueries({ queryKey: queryKeys.tripLocations(tripId) }),
       ]),
@@ -80,6 +83,7 @@ function applyPatch(item: TripStop, patch: TripPlacePatch): TripStop {
     }),
     ...(patch.transport !== undefined && { transport: patch.transport?.trim() || null }),
     ...(patch.cost !== undefined && { cost: patch.cost }),
+    ...(patch.paidBy !== undefined && { paid_by: patch.paidBy }),
   };
 }
 
@@ -117,14 +121,22 @@ export function useSetPartySize(tripId: string) {
 export function useAddExpense(tripId: string) {
   const o = useOptimisticTripEdit(tripId);
   return useMutation({
-    mutationFn: async (v: { label: string; amount: number }) => unwrap(await addExpenseAction({ tripId, ...v })),
+    mutationFn: async (v: { label: string; amount: number; paidBy: string | null }) => unwrap(await addExpenseAction({ tripId, ...v })),
     onMutate: (v) =>
       o.apply({
         info: (i) => ({
           ...i,
           expenses: [
             ...i.expenses,
-            { id: `optimistic-${Date.now()}`, trip_id: tripId, label: v.label.trim(), amount: v.amount, created_by: null, created_at: new Date().toISOString() },
+            {
+              id: `optimistic-${Date.now()}`,
+              trip_id: tripId,
+              label: v.label.trim(),
+              amount: v.amount,
+              paid_by: v.paidBy,
+              created_by: null,
+              created_at: new Date().toISOString(),
+            },
           ],
         }),
       }),
@@ -138,6 +150,16 @@ export function useRemoveExpense(tripId: string) {
   return useMutation({
     mutationFn: async (expenseId: string) => unwrap(await removeExpenseAction({ expenseId })),
     onMutate: (expenseId) => o.apply({ info: (i) => ({ ...i, expenses: i.expenses.filter((e) => e.id !== expenseId) }) }),
+    onError: (_e, _v, ctx) => o.rollback(ctx),
+    onSettled: o.settle,
+  });
+}
+
+export function useSetExpensePayer(tripId: string) {
+  const o = useOptimisticTripEdit(tripId);
+  return useMutation({
+    mutationFn: async (v: { expenseId: string; paidBy: string | null }) => unwrap(await setExpensePayerAction(v)),
+    onMutate: (v) => o.apply({ info: (i) => ({ ...i, expenses: i.expenses.map((e) => (e.id === v.expenseId ? { ...e, paid_by: v.paidBy } : e)) }) }),
     onError: (_e, _v, ctx) => o.rollback(ctx),
     onSettled: o.settle,
   });

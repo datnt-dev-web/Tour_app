@@ -79,6 +79,8 @@ export interface TripPlacePatch {
   transport?: string | null;
   /** Tổng tiền cả nhóm (VND); null là chưa có giá. */
   cost?: number | null;
+  /** Người tham gia đã trả khoản này; null là chưa ghi (không vào chia tiền). */
+  paidBy?: string | null;
 }
 export interface NewTripInput {
   groupId: string;
@@ -101,7 +103,8 @@ export interface TripsRepo {
   setTripPlaceStatus(tripPlaceId: string, status: TripPlaceStatus): Promise<void>;
   updateTripPlace(tripPlaceId: string, patch: TripPlacePatch): Promise<void>;
   setPartySize(tripId: string, partySize: number): Promise<void>;
-  addExpense(tripId: string, label: string, amount: number): Promise<TripExpense>;
+  addExpense(tripId: string, label: string, amount: number, paidBy?: string | null): Promise<TripExpense>;
+  setExpensePayer(expenseId: string, paidBy: string | null): Promise<void>;
   removeExpense(expenseId: string): Promise<void>;
   removeFromTrip(tripPlaceId: string): Promise<void>;
   /** Thêm cả lô trong một transaction; chỗ đã có trong chuyến thì bỏ qua (kể cả đang ở trạng thái Bỏ). */
@@ -120,6 +123,9 @@ export function toSummary({ trip_places, ...trip }: TripRow): TripSummary {
 }
 
 const notFound = () => new AppError('NOT_FOUND', 'Không tìm thấy chỗ trong chuyến.');
+/** 23503: người trả không thuộc chuyến này (khóa ngoại (trip_id, paid_by)). */
+const FK_VIOLATION = '23503';
+const payerNotInTrip = () => new AppError('VALIDATION', 'Người trả không có trong danh sách người tham gia của chuyến.');
 /** PostgREST: offset vượt quá số dòng (HTTP 416). */
 const RANGE_NOT_SATISFIABLE = 'PGRST103';
 
@@ -234,7 +240,7 @@ export function createTripsRepo(db: Db): TripsRepo {
       if (data.length === 0) throw notFound();
     },
 
-    async updateTripPlace(tripPlaceId, { schedule, transport, cost }) {
+    async updateTripPlace(tripPlaceId, { schedule, transport, cost, paidBy }) {
       const changes = {
         ...(schedule !== undefined && {
           visit_date: schedule?.date ?? null,
@@ -243,6 +249,7 @@ export function createTripsRepo(db: Db): TripsRepo {
         }),
         ...(transport !== undefined && { transport }),
         ...(cost !== undefined && { cost }),
+        ...(paidBy !== undefined && { paid_by: paidBy }),
       };
       // Không có gì để ghi: PostgREST sẽ không chạm dòng nào và bị hiểu nhầm thành "không tìm thấy".
       if (Object.keys(changes).length === 0) return;
@@ -251,6 +258,7 @@ export function createTripsRepo(db: Db): TripsRepo {
         .update(changes)
         .eq('id', tripPlaceId)
         .select('id');
+      if (error?.code === FK_VIOLATION) throw payerNotInTrip();
       if (error) throw error;
       if (data.length === 0) throw notFound();
     },
@@ -261,10 +269,18 @@ export function createTripsRepo(db: Db): TripsRepo {
       if (data.length === 0) throw new AppError('NOT_FOUND', 'Không tìm thấy chuyến đi.');
     },
 
-    async addExpense(tripId, label, amount) {
-      const { data, error } = await db.from('trip_expenses').insert({ trip_id: tripId, label, amount }).select('*').single();
+    async addExpense(tripId, label, amount, paidBy = null) {
+      const { data, error } = await db.from('trip_expenses').insert({ trip_id: tripId, label, amount, paid_by: paidBy }).select('*').single();
+      if (error?.code === FK_VIOLATION) throw payerNotInTrip();
       if (error) throw error;
       return data;
+    },
+
+    async setExpensePayer(expenseId, paidBy) {
+      const { data, error } = await db.from('trip_expenses').update({ paid_by: paidBy }).eq('id', expenseId).select('id');
+      if (error?.code === FK_VIOLATION) throw payerNotInTrip();
+      if (error) throw error;
+      if (data.length === 0) throw new AppError('NOT_FOUND', 'Không tìm thấy khoản chi.');
     },
 
     async removeExpense(expenseId) {

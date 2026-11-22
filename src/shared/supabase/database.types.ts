@@ -301,14 +301,14 @@ isOneToOne: false
                   ]
                 },"trip_expenses": {
                   Row: {
-                    "amount": number,"created_at": string,"created_by": string | null,"id": string,"label": string,"trip_id": string
+                    "amount": number,"created_at": string,"created_by": string | null,"id": string,"label": string,"paid_by": string | null,"trip_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"label": string,"trip_id": string
+                    "amount": number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"label": string,"paid_by"?: string | null,"trip_id": string
                   }
                   Update: {
-                    "amount"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"label"?: string,"trip_id"?: string
+                    "amount"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"label"?: string,"paid_by"?: string | null,"trip_id"?: string
                   }
                   Relationships: [
                     {
@@ -317,6 +317,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trip_expenses_paid_by_fkey"
+      columns: ["trip_id","paid_by"]
+isOneToOne: false
+      referencedRelation: "trip_participants"
+      referencedColumns: ["trip_id","id"]
     },{
       foreignKeyName: "trip_expenses_trip_id_fkey"
       columns: ["trip_id"]
@@ -353,14 +359,14 @@ isOneToOne: false
                   ]
                 },"trip_participants": {
                   Row: {
-                    "created_at": string,"id": string,"is_payer": boolean,"name": string,"paid": boolean,"trip_id": string
+                    "account_name": string | null,"account_no": string | null,"bank_bin": string | null,"created_at": string,"id": string,"name": string,"trip_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"is_payer"?: boolean,"name": string,"paid"?: boolean,"trip_id": string
+                    "account_name"?: string | null,"account_no"?: string | null,"bank_bin"?: string | null,"created_at"?: string,"id"?: string,"name": string,"trip_id": string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"is_payer"?: boolean,"name"?: string,"paid"?: boolean,"trip_id"?: string
+                    "account_name"?: string | null,"account_no"?: string | null,"bank_bin"?: string | null,"created_at"?: string,"id"?: string,"name"?: string,"trip_id"?: string
                   }
                   Relationships: [
                     {
@@ -373,14 +379,14 @@ isOneToOne: false
                   ]
                 },"trip_places": {
                   Row: {
-                    "added_by": string | null,"cost": number | null,"id": string,"note": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"transport": string | null,"trip_id": string,"visit_date": string | null,"visit_end_time": string | null,"visit_time": string | null
+                    "added_by": string | null,"cost": number | null,"id": string,"note": string | null,"paid_by": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"transport": string | null,"trip_id": string,"visit_date": string | null,"visit_end_time": string | null,"visit_time": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "added_by"?: string | null,"cost"?: number | null,"id"?: string,"note"?: string | null,"place_id": string,"status"?: Database["public"]['Enums']["trip_place_status"],"transport"?: string | null,"trip_id": string,"visit_date"?: string | null,"visit_end_time"?: string | null,"visit_time"?: string | null
+                    "added_by"?: string | null,"cost"?: number | null,"id"?: string,"note"?: string | null,"paid_by"?: string | null,"place_id": string,"status"?: Database["public"]['Enums']["trip_place_status"],"transport"?: string | null,"trip_id": string,"visit_date"?: string | null,"visit_end_time"?: string | null,"visit_time"?: string | null
                   }
                   Update: {
-                    "added_by"?: string | null,"cost"?: number | null,"id"?: string,"note"?: string | null,"place_id"?: string,"status"?: Database["public"]['Enums']["trip_place_status"],"transport"?: string | null,"trip_id"?: string,"visit_date"?: string | null,"visit_end_time"?: string | null,"visit_time"?: string | null
+                    "added_by"?: string | null,"cost"?: number | null,"id"?: string,"note"?: string | null,"paid_by"?: string | null,"place_id"?: string,"status"?: Database["public"]['Enums']["trip_place_status"],"transport"?: string | null,"trip_id"?: string,"visit_date"?: string | null,"visit_end_time"?: string | null,"visit_time"?: string | null
                   }
                   Relationships: [
                     {
@@ -389,6 +395,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trip_places_paid_by_fkey"
+      columns: ["trip_id","paid_by"]
+isOneToOne: false
+      referencedRelation: "trip_participants"
+      referencedColumns: ["trip_id","id"]
     },{
       foreignKeyName: "trip_places_place_id_fkey"
       columns: ["place_id"]
@@ -403,16 +415,54 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"trips": {
+                },"trip_transfers": {
                   Row: {
-                    "share_expires_at": string | null,"share_token": string | null,"payer_account_name": string | null,"payer_account_no": string | null,"payer_bank_bin": string | null,"city": string,"created_by": string | null,"end_date": string | null,"group_id": string,"id": string,"name": string,"party_size": number,"start_date": string | null
+                    "amount": number,"created_at": string,"created_by": string | null,"from_id": string,"id": string,"to_id": string,"trip_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "share_expires_at"?: string | null,"share_token"?: string | null,"payer_account_name"?: string | null,"payer_account_no"?: string | null,"payer_bank_bin"?: string | null,"city": string,"created_by"?: string | null,"end_date"?: string | null,"group_id": string,"id"?: string,"name": string,"party_size"?: number,"start_date"?: string | null
+                    "amount": number,"created_at"?: string,"created_by"?: string | null,"from_id": string,"id"?: string,"to_id": string,"trip_id": string
                   }
                   Update: {
-                    "share_expires_at"?: string | null,"share_token"?: string | null,"payer_account_name"?: string | null,"payer_account_no"?: string | null,"payer_bank_bin"?: string | null,"city"?: string,"created_by"?: string | null,"end_date"?: string | null,"group_id"?: string,"id"?: string,"name"?: string,"party_size"?: number,"start_date"?: string | null
+                    "amount"?: number,"created_at"?: string,"created_by"?: string | null,"from_id"?: string,"id"?: string,"to_id"?: string,"trip_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "trip_transfers_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trip_transfers_from_fkey"
+      columns: ["trip_id","from_id"]
+isOneToOne: false
+      referencedRelation: "trip_participants"
+      referencedColumns: ["trip_id","id"]
+    },{
+      foreignKeyName: "trip_transfers_to_fkey"
+      columns: ["trip_id","to_id"]
+isOneToOne: false
+      referencedRelation: "trip_participants"
+      referencedColumns: ["trip_id","id"]
+    },{
+      foreignKeyName: "trip_transfers_trip_id_fkey"
+      columns: ["trip_id"]
+isOneToOne: false
+      referencedRelation: "trips"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"trips": {
+                  Row: {
+                    "city": string,"created_by": string | null,"end_date": string | null,"group_id": string,"id": string,"name": string,"party_size": number,"share_expires_at": string | null,"share_token": string | null,"start_date": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "city": string,"created_by"?: string | null,"end_date"?: string | null,"group_id": string,"id"?: string,"name": string,"party_size"?: number,"share_expires_at"?: string | null,"share_token"?: string | null,"start_date"?: string | null
+                  }
+                  Update: {
+                    "city"?: string,"created_by"?: string | null,"end_date"?: string | null,"group_id"?: string,"id"?: string,"name"?: string,"party_size"?: number,"share_expires_at"?: string | null,"share_token"?: string | null,"start_date"?: string | null
                   }
                   Relationships: [
                     {
@@ -434,10 +484,23 @@ isOneToOne: false
           Views: {
             "trip_stops": {
                   Row: {
-                    "added_by": string | null,"category": Database["public"]['Enums']["place_category"],"clash": boolean,"cost": number | null,"id": string,"note": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"transport": string | null,"trip_id": string,"visit_date": string | null,"visit_end_time": string | null,"visit_time": string | null
+                    "added_by": string | null,"category": Database["public"]['Enums']["place_category"],"clash": boolean,"cost": number | null,"id": string,"note": string | null,"paid_by": string | null,"place_id": string,"status": Database["public"]['Enums']["trip_place_status"],"transport": string | null,"trip_id": string,"visit_date": string | null,"visit_end_time": string | null,"visit_time": string | null
                   }
+                  ComputedFields: never
                   Relationships: [
                     {
+      foreignKeyName: "trip_places_added_by_fkey"
+      columns: ["added_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trip_places_paid_by_fkey"
+      columns: ["trip_id","paid_by"]
+isOneToOne: false
+      referencedRelation: "trip_participants"
+      referencedColumns: ["trip_id","id"]
+    },{
       foreignKeyName: "trip_places_place_id_fkey"
       columns: ["place_id"]
 isOneToOne: false

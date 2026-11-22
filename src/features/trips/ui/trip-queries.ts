@@ -2,6 +2,7 @@ import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { AppError } from '@/shared/errors';
 import { queryKeys } from '@/shared/query/keys';
 import { createBrowserSupabase } from '@/shared/supabase/browser';
+import { createSettleRepo } from '../repositories/settle-repo';
 import { createTripsRepo, type StopsQuery } from '../repositories/trips-repo';
 import type { TripLocations } from '../services/trip-locations-service';
 
@@ -56,3 +57,7 @@ export const tripLocationsQuery = (tripId: string) =>
       throw new Error(body?.error?.message ?? 'Không tải được bản đồ, thử lại sau.');
     },
   });
+
+/** Dữ liệu chia tiền: người tham gia, các khoản có tiền kèm người trả, các lần chuyển. */
+export const tripSplitQuery = (tripId: string) =>
+  queryOptions({ queryKey: queryKeys.tripSplit(tripId), queryFn: () => createSettleRepo(createBrowserSupabase()).splitData(tripId) });

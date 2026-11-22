@@ -3,20 +3,26 @@
 import { z } from 'zod';
 import { parse, runAction, type ActionResult } from '@/shared/actions';
 import { BANKS } from '@/shared/banks';
+import { MAX_AMOUNT } from '@/shared/money';
 import { authed } from '@/shared/supabase/authed';
 import { createSettleRepo, type TripParticipant } from '../repositories/settle-repo';
 
 const name = z.string().trim().min(1).max(60);
 const addSchema = z.object({ tripId: z.uuid(), name });
 const idSchema = z.object({ id: z.uuid() });
-const payerSchema = z.object({ tripId: z.uuid(), participantId: z.uuid() });
-const paidSchema = z.object({ id: z.uuid(), paid: z.boolean() });
 const bankSchema = z.object({
-  tripId: z.uuid(),
-  bin: z.enum(BANKS.map((b) => b.bin) as [string, ...string[]]),
-  accountNo: z.string().trim().regex(/^[0-9A-Za-z]{4,19}$/),
-  accountName: z.string().trim().min(1).max(60),
+  participantId: z.uuid(),
+  bank: z
+    .object({
+      bin: z.enum(BANKS.map((b) => b.bin) as [string, ...string[]]),
+      accountNo: z.string().trim().regex(/^[0-9A-Za-z]{4,19}$/),
+      accountName: z.string().trim().min(1).max(60),
+    })
+    .nullable(),
 });
+const transferSchema = z
+  .object({ tripId: z.uuid(), fromId: z.uuid(), toId: z.uuid(), amount: z.number().int().min(1).max(MAX_AMOUNT) })
+  .refine((t) => t.fromId !== t.toId, 'Người chuyển và người nhận phải khác nhau.');
 
 const repo = async () => createSettleRepo((await authed()).db);
 
@@ -34,26 +40,26 @@ export async function removeParticipantAction(input: z.input<typeof idSchema>): 
   });
 }
 
-export async function setPayerAction(input: z.input<typeof payerSchema>): Promise<ActionResult<null>> {
+/** Tài khoản nhận tiền của một người (null là bỏ), để người khác quét mã VietQR chuyển cho họ. */
+export async function setParticipantBankAction(input: z.input<typeof bankSchema>): Promise<ActionResult<null>> {
   return runAction(async () => {
-    const { tripId, participantId } = parse(payerSchema, input);
-    await (await repo()).setPayer(tripId, participantId);
+    const { participantId, bank } = parse(bankSchema, input);
+    await (await repo()).setBank(participantId, bank);
     return null;
   });
 }
 
-export async function setPaidAction(input: z.input<typeof paidSchema>): Promise<ActionResult<null>> {
+/** Ghi một lần chuyển tiền thật giữa hai người (số tiền do người dùng xác nhận). */
+export async function addTransferAction(input: z.input<typeof transferSchema>): Promise<ActionResult<null>> {
   return runAction(async () => {
-    const { id, paid } = parse(paidSchema, input);
-    await (await repo()).setPaid(id, paid);
+    await (await repo()).addTransfer(parse(transferSchema, input));
     return null;
   });
 }
 
-export async function setPayerBankAction(input: z.input<typeof bankSchema>): Promise<ActionResult<null>> {
+export async function removeTransferAction(input: z.input<typeof idSchema>): Promise<ActionResult<null>> {
   return runAction(async () => {
-    const { tripId, ...bank } = parse(bankSchema, input);
-    await (await repo()).setPayerBank(tripId, bank);
+    await (await repo()).removeTransfer(parse(idSchema, input).id);
     return null;
   });
 }

@@ -11,16 +11,18 @@ import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Pagination } from '@/shared/ui/pagination';
 import { Skeleton } from '@/shared/ui/skeleton';
+import type { TripParticipant } from '../repositories/settle-repo';
 import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
 import { tripDays } from '../services/timeline';
 import { toTripStats } from '../services/trip-stats';
 import { SettlePanel } from './settle-panel';
 import { MoneyInput } from './money-input';
+import { PayerSelect } from './payer-select';
 import { FIELD } from './stop-editor';
-import { tripStatsQuery } from './trip-queries';
+import { tripSplitQuery, tripStatsQuery } from './trip-queries';
 import { stopsFilter } from './trip-view';
 import { usePagedStops, type InitialStops } from './use-paged-stops';
-import { useAddExpense, useRemoveExpense, useSetPartySize, useUpdateStop } from './use-trip-mutations';
+import { useAddExpense, useRemoveExpense, useSetExpensePayer, useSetPartySize, useUpdateStop } from './use-trip-mutations';
 
 const MAX_PARTY = 100;
 const vnd = (n: number) => `${formatVnd(n)}đ`;
@@ -56,16 +58,19 @@ function Breakdown({ title, rows }: { title: string; rows: { key: string; label:
   );
 }
 
-function ExpenseForm({ onAdd }: { onAdd: (v: { label: string; amount: number }) => void }) {
+function ExpenseForm({ participants, onAdd }: { participants: TripParticipant[]; onAdd: (v: { label: string; amount: number; paidBy: string | null }) => void }) {
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
+  const [paidBy, setPaidBy] = useState<string | null>(null);
+  // Người đã chọn bị xóa khỏi danh sách thì coi như chưa chọn.
+  const payer = paidBy && participants.some((p) => p.id === paidBy) ? paidBy : null;
   const parsed = parseMoney(amount);
   const valid = label.trim() !== '' && typeof parsed === 'number';
 
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!valid) return;
-    onAdd({ label, amount: parsed });
+    onAdd({ label, amount: parsed, paidBy: payer });
     setLabel('');
     setAmount('');
   }
@@ -91,6 +96,7 @@ function ExpenseForm({ onAdd }: { onAdd: (v: { label: string; amount: number }) 
           className={`${FIELD} flex-[2] tabular-nums ${parsed === undefined ? 'border-bad! text-bad' : ''}`}
         />
       </div>
+      {participants.length > 0 && <PayerSelect label="Ai trả khoản chi mới" value={payer} participants={participants} onChange={setPaidBy} />}
       <Button type="submit" variant="secondary" disabled={!valid}>
         <Plus size={16} aria-hidden />
         Thêm khoản chi
@@ -121,7 +127,9 @@ export function TripStatsPanel({
   const setPartySize = useSetPartySize(tripId);
   const addExpense = useAddExpense(tripId);
   const removeExpense = useRemoveExpense(tripId);
-  const error = updateStop.error ?? setPartySize.error ?? addExpense.error ?? removeExpense.error;
+  const setExpensePayer = useSetExpensePayer(tripId);
+  const participants = useQuery(tripSplitQuery(tripId)).data?.participants ?? [];
+  const error = updateStop.error ?? setPartySize.error ?? addExpense.error ?? removeExpense.error ?? setExpensePayer.error;
 
   const days = tripDays(info.trip);
   // Số người lấy từ thông tin chuyến (sửa lạc quan) để chia đầu người đổi ngay khi bấm − / +.
@@ -244,6 +252,14 @@ export function TripStatsPanel({
                 <div className="min-w-0 flex-1">
                   <p className={`truncate text-sm font-semibold ${item.status === 'visited' ? 'text-muted' : ''}`}>{item.place.name}</p>
                   {item.cost !== null && <p className="text-xs text-muted tabular-nums">{vnd(perPerson(item.cost, people))}/người</p>}
+                  {item.cost !== null && participants.length > 0 && (
+                    <PayerSelect
+                      label={`Ai trả ${item.place.name}`}
+                      value={item.paid_by}
+                      participants={participants}
+                      onChange={(paidBy) => updateStop.mutate({ tripPlaceId: item.id, patch: { paidBy } })}
+                    />
+                  )}
                 </div>
                 <MoneyInput
                   aria-label={`Giá ${item.place.name}`}
@@ -270,6 +286,15 @@ export function TripStatsPanel({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{e.label}</p>
                   <p className="text-xs text-muted tabular-nums">{vnd(perPerson(e.amount, people))}/người</p>
+                  {participants.length > 0 && (
+                    <PayerSelect
+                      label={`Ai trả ${e.label}`}
+                      value={e.paid_by}
+                      participants={participants}
+                      disabled={e.id.startsWith('optimistic-')}
+                      onChange={(paidBy) => setExpensePayer.mutate({ expenseId: e.id, paidBy })}
+                    />
+                  )}
                 </div>
                 <span className="text-sm font-semibold tabular-nums">{vnd(e.amount)}</span>
                 <button
@@ -285,10 +310,10 @@ export function TripStatsPanel({
             ))}
           </ul>
         )}
-        <ExpenseForm onAdd={(v) => addExpense.mutate(v)} />
+        <ExpenseForm participants={participants} onAdd={(v) => addExpense.mutate(v)} />
       </Card>
 
-      {stats && <SettlePanel trip={info.trip} total={stats.total} />}
+      <SettlePanel tripId={tripId} />
 
       <Link href={`/trips/${tripId}/recap`} className="pressable flex min-h-11 items-center justify-center gap-2 rounded bg-deep text-sm font-semibold text-white">
         <Sparkles size={18} aria-hidden />
