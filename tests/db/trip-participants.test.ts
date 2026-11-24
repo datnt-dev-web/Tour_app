@@ -75,7 +75,7 @@ describe('trip_participants', () => {
 
     const expense = await trips.addExpense(T, 'Khách sạn', 900_001, a.id);
     await expect(trips.addExpense(T, 'Sai', 1_000, stranger.id)).rejects.toMatchObject({ code: 'VALIDATION' });
-    await expect(trips.setExpensePayer(expense.id, stranger.id)).rejects.toMatchObject({ code: 'VALIDATION' });
+    await expect(trips.updateExpense(expense.id, { paidBy: stranger.id })).rejects.toMatchObject({ code: 'VALIDATION' });
 
     await settle.addTransfer({ tripId: T, fromId: b.id, toId: a.id, amount: 200_000 });
     await expect(settle.addTransfer({ tripId: T, fromId: stranger.id, toId: a.id, amount: 1 })).rejects.toMatchObject({ code: 'VALIDATION' });

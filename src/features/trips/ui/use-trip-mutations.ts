@@ -9,12 +9,12 @@ import {
   addToTripAction,
   removeAction,
   removeExpenseAction,
-  setExpensePayerAction,
   setPartySizeAction,
+  updateExpenseAction,
   updateStopAction,
   setStatusAction,
 } from '../actions/trip-actions';
-import type { StopsPage, TripInfo, TripPlacePatch, TripPlaceStatus, TripStop } from '../repositories/trips-repo';
+import type { StopsPage, TripExpensePatch, TripInfo, TripPlacePatch, TripPlaceStatus, TripStop } from '../repositories/trips-repo';
 
 type Snapshot = { stops: [readonly unknown[], StopsPage | undefined][]; info: TripInfo | undefined };
 
@@ -155,11 +155,27 @@ export function useRemoveExpense(tripId: string) {
   });
 }
 
-export function useSetExpensePayer(tripId: string) {
+/** Sửa tên / số tiền / người trả của một khoản chi phí khác. */
+export function useUpdateExpense(tripId: string) {
   const o = useOptimisticTripEdit(tripId);
   return useMutation({
-    mutationFn: async (v: { expenseId: string; paidBy: string | null }) => unwrap(await setExpensePayerAction(v)),
-    onMutate: (v) => o.apply({ info: (i) => ({ ...i, expenses: i.expenses.map((e) => (e.id === v.expenseId ? { ...e, paid_by: v.paidBy } : e)) }) }),
+    mutationFn: async (v: { expenseId: string; patch: TripExpensePatch }) => unwrap(await updateExpenseAction(v)),
+    onMutate: ({ expenseId, patch }) =>
+      o.apply({
+        info: (i) => ({
+          ...i,
+          expenses: i.expenses.map((e) =>
+            e.id === expenseId
+              ? {
+                  ...e,
+                  ...(patch.label !== undefined && { label: patch.label.trim() }),
+                  ...(patch.amount !== undefined && { amount: patch.amount }),
+                  ...(patch.paidBy !== undefined && { paid_by: patch.paidBy }),
+                }
+              : e,
+          ),
+        }),
+      }),
     onError: (_e, _v, ctx) => o.rollback(ctx),
     onSettled: o.settle,
   });

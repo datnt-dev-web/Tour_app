@@ -129,6 +129,7 @@ export function StopEditor({
   onSave,
   onClearSchedule,
   onCancel,
+  showCost,
 }: {
   days: string[];
   value: StopDraft;
@@ -137,9 +138,11 @@ export function StopEditor({
   /** Có khi chỗ đang có giờ: bỏ giờ để về mục "Chưa xếp giờ". */
   onClearSchedule?: () => void;
   onCancel: () => void;
+  /** Chỉ admin nhóm sửa được giá. */
+  showCost: boolean;
 }) {
   const cost = parseMoney(value.cost);
-  const invalid = !value.date || !value.time || endTimeInvalid(value) || cost === undefined;
+  const invalid = !value.date || !value.time || endTimeInvalid(value) || (showCost && cost === undefined);
   return (
     <form
       className="flex flex-col gap-3 rounded-sm border border-line bg-surface p-2"
@@ -153,17 +156,19 @@ export function StopEditor({
         <span className="text-xs font-semibold uppercase tracking-wide text-muted">Di chuyển</span>
         <TransportField value={value.transport} onChange={(transport) => onChange({ ...value, transport })} />
       </div>
-      <label className="flex flex-col gap-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted">Tổng tiền cả nhóm</span>
-        <input
-          inputMode="numeric"
-          value={value.cost}
-          onChange={(e) => onChange({ ...value, cost: e.target.value })}
-          placeholder="Chưa có giá (gõ tắt 120k, 1tr2)"
-          aria-invalid={cost === undefined || undefined}
-          className={`${FIELD} tabular-nums ${cost === undefined ? 'border-bad! text-bad' : ''}`}
-        />
-      </label>
+      {showCost && (
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted">Tổng tiền cả nhóm</span>
+          <input
+            inputMode="numeric"
+            value={value.cost}
+            onChange={(e) => onChange({ ...value, cost: e.target.value })}
+            placeholder="Chưa có giá (gõ tắt 120k, 1tr2)"
+            aria-invalid={cost === undefined || undefined}
+            className={`${FIELD} tabular-nums ${cost === undefined ? 'border-bad! text-bad' : ''}`}
+          />
+        </label>
+      )}
       <div className="flex gap-2">
         {onClearSchedule && (
           <Button variant="ghost" className="text-bad" onClick={onClearSchedule}>

@@ -18,6 +18,8 @@ export interface TripDetail {
 export interface TripInfo {
   trip: Trip;
   expenses: TripExpense[];
+  /** Người xem là owner nhóm (admin): chỉ họ sửa được tiền (database cũng chặn, cờ này để ẩn ô sửa). */
+  canEditMoney: boolean;
 }
 /** Một chỗ còn hiệu lực trong chuyến (view trip_stops): kèm loại chỗ và cờ trùng giờ tính ở database. */
 export type TripStop = Database['public']['Views']['trip_stops']['Row'] & { place: Place };
@@ -82,6 +84,12 @@ export interface TripPlacePatch {
   /** Người tham gia đã trả khoản này; null là chưa ghi (không vào chia tiền). */
   paidBy?: string | null;
 }
+/** Các trường sửa trên một khoản chi phí khác; khóa vắng mặt là giữ nguyên. */
+export interface TripExpensePatch {
+  label?: string;
+  amount?: number;
+  paidBy?: string | null;
+}
 export interface NewTripInput {
   groupId: string;
   name: string;
@@ -104,7 +112,7 @@ export interface TripsRepo {
   updateTripPlace(tripPlaceId: string, patch: TripPlacePatch): Promise<void>;
   setPartySize(tripId: string, partySize: number): Promise<void>;
   addExpense(tripId: string, label: string, amount: number, paidBy?: string | null): Promise<TripExpense>;
-  setExpensePayer(expenseId: string, paidBy: string | null): Promise<void>;
+  updateExpense(expenseId: string, patch: TripExpensePatch): Promise<void>;
   removeExpense(expenseId: string): Promise<void>;
   removeFromTrip(tripPlaceId: string): Promise<void>;
   /** Thêm cả lô trong một transaction; chỗ đã có trong chuyến thì bỏ qua (kể cả đang ở trạng thái Bỏ). */
@@ -166,9 +174,14 @@ export function createTripsRepo(db: Db): TripsRepo {
     },
 
     async getTripInfo(tripId) {
-      const [trip, expenses] = await Promise.all([getTrip(tripId), db.from('trip_expenses').select('*').eq('trip_id', tripId).order('created_at')]);
+      const [trip, expenses, owner] = await Promise.all([
+        getTrip(tripId),
+        db.from('trip_expenses').select('*').eq('trip_id', tripId).order('created_at'),
+        db.rpc('is_trip_owner', { p_trip_id: tripId }),
+      ]);
       if (expenses.error) throw expenses.error;
-      return trip ? { trip, expenses: expenses.data } : null;
+      if (owner.error) throw owner.error;
+      return trip ? { trip, expenses: expenses.data, canEditMoney: owner.data === true } : null;
     },
 
     async listStops(tripId, { order, statuses, day, page }) {
@@ -276,8 +289,15 @@ export function createTripsRepo(db: Db): TripsRepo {
       return data;
     },
 
-    async setExpensePayer(expenseId, paidBy) {
-      const { data, error } = await db.from('trip_expenses').update({ paid_by: paidBy }).eq('id', expenseId).select('id');
+    async updateExpense(expenseId, { label, amount, paidBy }) {
+      const changes = {
+        ...(label !== undefined && { label }),
+        ...(amount !== undefined && { amount }),
+        ...(paidBy !== undefined && { paid_by: paidBy }),
+      };
+      if (Object.keys(changes).length === 0) return;
+      // Không phải admin thì RLS lọc mất dòng (0 dòng), nên "không tìm thấy" cũng gồm trường hợp không có quyền.
+      const { data, error } = await db.from('trip_expenses').update(changes).eq('id', expenseId).select('id');
       if (error?.code === FK_VIOLATION) throw payerNotInTrip();
       if (error) throw error;
       if (data.length === 0) throw new AppError('NOT_FOUND', 'Không tìm thấy khoản chi.');

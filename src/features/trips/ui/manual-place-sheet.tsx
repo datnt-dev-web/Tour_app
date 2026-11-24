@@ -13,6 +13,7 @@ import { FIELD } from '@/shared/ui/field';
 import type { TripPlace } from '../repositories/trips-repo';
 import { defaultDay, lastTransport, suggestTime } from '../services/timeline';
 import { endTimeInvalid, ScheduleFields, TransportField, type ScheduleDraft } from './stop-editor';
+import { useCanEditMoney } from './trip-queries';
 import { useAddManualPlace } from './use-trip-mutations';
 
 /**
@@ -34,6 +35,7 @@ export function ManualPlaceSheet({
   onClose: () => void;
 }) {
   const add = useAddManualPlace(tripId);
+  const canEditCost = useCanEditMoney(tripId);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
@@ -47,7 +49,7 @@ export function ManualPlaceSheet({
   });
   // Nhóm thường đi một kiểu suốt chuyến (ví dụ xe máy thuê): lấy sẵn theo chỗ gần nhất.
   const [transport, setTransport] = useState(() => lastTransport(items) ?? '');
-  const invalid = parsedCost === undefined || (withTime && endTimeInvalid(schedule));
+  const invalid = (canEditCost && parsedCost === undefined) || (withTime && endTimeInvalid(schedule));
   const [added, setAdded] = useState<string[]>([]);
 
   function submit(e: FormEvent<HTMLFormElement>) {
@@ -62,7 +64,7 @@ export function ManualPlaceSheet({
       category,
       schedule: withTime ? { ...schedule, endTime: schedule.endTime || null } : null,
       transport: transport.trim() || null,
-      cost: parsedCost,
+      cost: canEditCost ? (parsedCost ?? null) : null,
     };
     add.mutate(payload, {
       onSuccess: () => {
@@ -134,17 +136,19 @@ export function ManualPlaceSheet({
           <TransportField value={transport} onChange={setTransport} />
         </div>
 
-        <label className="flex flex-col gap-1 text-sm font-medium">
-          Tổng tiền cả nhóm <span className="font-normal text-muted">(không bắt buộc, gõ tắt được 120k, 1tr2)</span>
-          <input
-            inputMode="numeric"
-            value={cost}
-            onChange={(e) => setCost(e.target.value)}
-            placeholder="Chưa có giá"
-            aria-invalid={parsedCost === undefined || undefined}
-            className={`${FIELD} font-normal tabular-nums ${parsedCost === undefined ? 'border-bad! text-bad' : ''}`}
-          />
-        </label>
+        {canEditCost && (
+          <label className="flex flex-col gap-1 text-sm font-medium">
+            Tổng tiền cả nhóm <span className="font-normal text-muted">(không bắt buộc, gõ tắt được 120k, 1tr2)</span>
+            <input
+              inputMode="numeric"
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+              placeholder="Chưa có giá"
+              aria-invalid={parsedCost === undefined || undefined}
+              className={`${FIELD} font-normal tabular-nums ${parsedCost === undefined ? 'border-bad! text-bad' : ''}`}
+            />
+          </label>
+        )}
 
         <label className="flex flex-col gap-1 text-sm font-medium">
           Ghi chú

@@ -528,6 +528,9 @@ isOneToOne: false
             "is_group_member":
 { Args: { "gid": string }; Returns: boolean
                            },
+            "is_trip_owner":
+{ Args: { "p_trip_id": string }; Returns: boolean
+                           },
             "trip_stats":
 { Args: { "p_trip_id": string }; Returns: Json
                            }

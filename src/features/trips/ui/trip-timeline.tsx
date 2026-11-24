@@ -119,6 +119,7 @@ function StopCard({
           onSave={editing.save}
           onClearSchedule={scheduled ? editing.clearSchedule : undefined}
           onCancel={editing.close}
+          showCost={editing.canEditCost}
         />
       ) : (
         <div className="flex items-center justify-between gap-2">

@@ -82,6 +82,7 @@ function PlaceRow({
           onSave={editing.save}
           onClearSchedule={scheduled ? editing.clearSchedule : undefined}
           onCancel={editing.close}
+          showCost={editing.canEditCost}
         />
       )}
     </li>

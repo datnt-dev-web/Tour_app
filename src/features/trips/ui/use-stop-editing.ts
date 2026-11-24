@@ -6,6 +6,7 @@ import { formatVnd, parseMoney } from '@/shared/money';
 import type { TripPlace } from '../repositories/trips-repo';
 import { defaultDay, lastTransport, suggestTime, toHHMM } from '../services/timeline';
 import type { StopDraft } from './stop-editor';
+import { useCanEditMoney } from './trip-queries';
 import { useUpdateStop } from './use-trip-mutations';
 
 type Stop = Pick<TripPlace, 'id' | 'visit_date' | 'visit_time' | 'visit_end_time' | 'transport' | 'cost'>;
@@ -17,6 +18,7 @@ type Stop = Pick<TripPlace, 'id' | 'visit_date' | 'visit_time' | 'visit_end_time
  */
 export function useStopEditing(tripId: string, items: Stop[], days: string[]) {
   const mutation = useUpdateStop(tripId);
+  const canEditCost = useCanEditMoney(tripId);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<StopDraft>({ date: '', time: '', endTime: '', transport: '', cost: '' });
 
@@ -43,19 +45,20 @@ export function useStopEditing(tripId: string, items: Stop[], days: string[]) {
   return {
     editingId,
     draft,
+    canEditCost,
     error: mutation.error,
     open,
     close,
     change,
     save: () => {
-      const cost = parseMoney(draft.cost);
-      if (!editingId || cost === undefined) return;
+      const cost = canEditCost ? parseMoney(draft.cost) : undefined;
+      if (!editingId || (canEditCost && cost === undefined)) return;
       mutation.mutate({
         tripPlaceId: editingId,
         patch: {
           schedule: { date: draft.date, time: draft.time, endTime: draft.endTime || null },
           transport: draft.transport.trim() || null,
-          cost,
+          ...(canEditCost && { cost }),
         },
       });
       close();

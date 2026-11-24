@@ -62,9 +62,13 @@ const updateStopSchema = z.object({
   }),
 });
 const partySizeSchema = z.object({ tripId: z.uuid(), partySize: z.number().int().min(1).max(100) });
-const addExpenseSchema = z.object({ tripId: z.uuid(), label: z.string().trim().min(1).max(120), amount, paidBy: z.uuid().nullable().optional() });
+const expenseLabel = z.string().trim().min(1).max(120);
+const addExpenseSchema = z.object({ tripId: z.uuid(), label: expenseLabel, amount, paidBy: z.uuid().nullable().optional() });
 const removeExpenseSchema = z.object({ expenseId: z.uuid() });
-const expensePayerSchema = z.object({ expenseId: z.uuid(), paidBy: z.uuid().nullable() });
+const updateExpenseSchema = z.object({
+  expenseId: z.uuid(),
+  patch: z.object({ label: expenseLabel.optional(), amount: amount.optional(), paidBy: z.uuid().nullable().optional() }),
+});
 
 const manualSchema = z.object({
   tripId: z.uuid(),
@@ -142,11 +146,12 @@ export async function addExpenseAction(input: z.input<typeof addExpenseSchema>):
   });
 }
 
-export async function setExpensePayerAction(input: z.input<typeof expensePayerSchema>): Promise<ActionResult<null>> {
+/** Sửa tên, số tiền, người trả của một khoản chi phí khác (chỉ admin; RLS chặn người khác). */
+export async function updateExpenseAction(input: z.input<typeof updateExpenseSchema>): Promise<ActionResult<null>> {
   return runAction(async () => {
     const { db } = await authed();
-    const { expenseId, paidBy } = parse(expensePayerSchema, input);
-    await createTripsRepo(db).setExpensePayer(expenseId, paidBy);
+    const { expenseId, patch } = parse(updateExpenseSchema, input);
+    await createTripsRepo(db).updateExpense(expenseId, patch);
     return null;
   });
 }

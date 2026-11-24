@@ -2,6 +2,7 @@ import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import { AppError } from '@/shared/errors';
 import { queryKeys } from '@/shared/query/keys';
 import { createBrowserSupabase } from '@/shared/supabase/browser';
+import { useQuery } from '@/shared/query/use-query';
 import { createSettleRepo } from '../repositories/settle-repo';
 import { createTripsRepo, type StopsQuery } from '../repositories/trips-repo';
 import type { TripLocations } from '../services/trip-locations-service';
@@ -23,6 +24,11 @@ export const tripQuery = (tripId: string) =>
       return info;
     },
   });
+
+/** Người xem có sửa được tiền không (admin nhóm). Database vẫn là nơi chặn cuối; đây chỉ để ẩn ô sửa. */
+export function useCanEditMoney(tripId: string): boolean {
+  return useQuery({ ...tripQuery(tripId), select: (info) => info.canEditMoney === true }).data ?? false;
+}
 
 /** Một trang chỗ (lọc, sắp, phân trang ở database). Giữ trang cũ trong lúc tải trang mới để khỏi nháy. */
 export const tripStopsQuery = (tripId: string, query: StopsQuery) =>
