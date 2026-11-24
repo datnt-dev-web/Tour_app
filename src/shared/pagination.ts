@@ -14,3 +14,14 @@ export function pageItems(current: number, count: number): (number | 'gap')[] {
   const sorted = [...keep].sort((a, b) => a - b);
   return sorted.flatMap((p, i) => (i > 0 && p - sorted[i - 1] > 1 ? ['gap' as const, p] : [p]));
 }
+
+/**
+ * Một trang của danh sách đã tải đủ ở client. Trang vượt quá (vd. vừa xóa bớt) thì lùi về trang cuối,
+ * để không bao giờ rơi vào trang trống.
+ */
+export function pageSlice<T>(items: T[], page: number, pageSize: number): { page: number; count: number; offset: number; items: T[] } {
+  const count = pageCount(items.length, pageSize);
+  const current = Math.min(Math.max(1, page), count);
+  const offset = (current - 1) * pageSize;
+  return { page: current, count, offset, items: items.slice(offset, offset + pageSize) };
+}

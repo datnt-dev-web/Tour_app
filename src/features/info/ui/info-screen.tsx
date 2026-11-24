@@ -4,6 +4,7 @@ import { Download, ExternalLink, FileText, Link2, StickyNote, Trash2, type Lucid
 import Link from 'next/link';
 import { useState } from 'react';
 import { MemoriesBoard } from '@/features/memories/ui/memories-board';
+import { Pagination, useClientPages } from '@/shared/ui/pagination';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
 import { Button } from '@/shared/ui/button';
@@ -23,6 +24,7 @@ const sectionHref = (tripId: string, section: InfoSection) => `/info?${new URLSe
 
 const ICONS: Record<InfoKind, LucideIcon> = { note: StickyNote, link: Link2, file: FileText };
 const SKELETON_ROWS = 3;
+const INFOS_PAGE_SIZE = 10;
 
 function formatBytes(n: number | null): string {
   if (!n) return '';
@@ -102,6 +104,7 @@ export function InfoScreen({
 function TripInfoBoard({ tripId, initialItems, uploadEnabled }: { tripId: string; initialItems: TripInfo[]; uploadEnabled: boolean }) {
   const { data, isPending, isError, error } = useQuery({ ...tripInfosQuery(tripId), initialData: initialItems });
   const remove = useRemoveInfo(tripId);
+  const pages = useClientPages(data ?? [], INFOS_PAGE_SIZE);
 
   return (
     <>
@@ -119,11 +122,14 @@ function TripInfoBoard({ tripId, initialItems, uploadEnabled }: { tripId: string
         ) : data.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted">Chưa có gì. Thêm vé, xác nhận đặt phòng, link lịch trình, số điện thoại…</p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {data.map((item) => (
-              <InfoRow key={item.id} item={item} onRemove={() => remove.mutate(item.id)} />
-            ))}
-          </ul>
+          <>
+            <ul className="flex flex-col gap-2">
+              {pages.items.map((item) => (
+                <InfoRow key={item.id} item={item} onRemove={() => remove.mutate(item.id)} />
+              ))}
+            </ul>
+            <Pagination page={pages.page} count={pages.count} onChange={pages.setPage} label="Trang thông tin" />
+          </>
         )}
       </section>
     </>

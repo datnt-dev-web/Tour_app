@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { addressDirectionsUrl, directionsUrl, parseTripView, placeDetailHref, tripViewHref } from '@/features/trips/ui/trip-view';
+import { addressDirectionsUrl, directionsUrl, parseTripView, placeDetailHref, tripViewHref, visibleTripViews } from '@/features/trips/ui/trip-view';
 
 describe('parseTripView', () => {
   test('map/timeline chỉ khi đúng giá trị', () => {
@@ -57,5 +57,16 @@ describe('addressDirectionsUrl', () => {
     expect(addressDirectionsUrl({ ...place, address: null })).toBeNull();
     expect(addressDirectionsUrl({ ...place, address: '  ' })).toBeNull();
     expect(addressDirectionsUrl({ ...place, address: '(chưa chọn quán)' })).toBeNull();
+  });
+});
+
+describe('visibleTripViews', () => {
+  test('không có tab Bản đồ (đã có ở thanh dưới); Hôm nay chỉ khi đang đi', () => {
+    expect(visibleTripViews(true).map((v) => v.value)).toEqual(['today', 'list', 'timeline', 'stats']);
+    expect(visibleTripViews(false).map((v) => v.value)).toEqual(['list', 'timeline', 'stats']);
+  });
+
+  test('?view=map vẫn mở được bản đồ từ thanh dưới', () => {
+    expect(parseTripView('map')).toBe('map');
   });
 });

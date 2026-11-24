@@ -1,7 +1,8 @@
 'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { pageItems } from '@/shared/pagination';
+import { useState } from 'react';
+import { pageItems, pageSlice } from '@/shared/pagination';
 
 const CELL = 'inline-flex size-9 items-center justify-center rounded-sm text-sm font-semibold tabular-nums pressable';
 
@@ -36,4 +37,13 @@ export function Pagination({ page, count, onChange, label = 'Phân trang' }: { p
       </button>
     </nav>
   );
+}
+
+/**
+ * Phân trang danh sách đã tải đủ ở client (danh sách chuyến, thông tin, ảnh kỉ niệm: ít dữ liệu, tải một lần).
+ * Danh sách dài và lọc ở database thì phân trang ở database như các trang chỗ của chuyến.
+ */
+export function useClientPages<T>(items: T[], pageSize: number) {
+  const [page, setPage] = useState(1);
+  return { ...pageSlice(items, page, pageSize), setPage };
 }

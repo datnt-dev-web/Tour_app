@@ -5,6 +5,7 @@ import { Camera, ChevronLeft, ChevronRight, Download, ImagePlus, Trash2, X } fro
 import { useId, useState } from 'react';
 import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
+import { Pagination, useClientPages } from '@/shared/ui/pagination';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { runLimited, uploadWithTicket } from '@/shared/upload/direct-upload';
 import { Button, buttonClass } from '@/shared/ui/button';
@@ -17,6 +18,8 @@ import { CameraCapture } from './camera-capture';
 
 const PARALLEL_UPLOADS = 3;
 const SKELETON_TILES = 6;
+/** 10 hàng của lưới 3 cột. */
+const PHOTOS_PAGE_SIZE = 30;
 
 const memoriesQuery = (tripId: string) =>
   queryOptions({
@@ -40,6 +43,7 @@ export function MemoriesBoard({ tripId }: { tripId: string }) {
   const [viewing, setViewing] = useState<number | null>(null);
   const [camera, setCamera] = useState(false);
   const photos = data?.photos ?? [];
+  const pages = useClientPages(photos, PHOTOS_PAGE_SIZE);
 
   async function upload(files: File[]) {
     setProblem(null);
@@ -148,9 +152,14 @@ export function MemoriesBoard({ tripId }: { tripId: string }) {
         <p className="py-8 text-center text-sm text-muted">Chưa có ảnh nào. Thêm ảnh chụp trong chuyến để cả nhóm cùng xem lại.</p>
       ) : (
         <ul className="grid grid-cols-3 gap-1">
-          {photos.map((p, i) => (
+          {pages.items.map((p, i) => (
             <li key={p.id}>
-              <button type="button" onClick={() => setViewing(i)} className="block aspect-square w-full overflow-hidden rounded-sm bg-surface pressable" aria-label={`Xem ảnh ${i + 1}`}>
+              <button
+                type="button"
+                onClick={() => setViewing(pages.offset + i)}
+                className="block aspect-square w-full overflow-hidden rounded-sm bg-surface pressable"
+                aria-label={`Xem ảnh ${pages.offset + i + 1}`}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element -- ảnh Cloudinary đã thu nhỏ sẵn, link ký riêng */}
                 <img src={p.thumbUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
               </button>
@@ -158,6 +167,7 @@ export function MemoriesBoard({ tripId }: { tripId: string }) {
           ))}
         </ul>
       )}
+      <Pagination page={pages.page} count={pages.count} onChange={pages.setPage} label="Trang ảnh kỉ niệm" />
 
       {current && viewing !== null && (
         <Lightbox
@@ -166,7 +176,13 @@ export function MemoriesBoard({ tripId }: { tripId: string }) {
           index={viewing}
           total={photos.length}
           onClose={() => setViewing(null)}
-          onMove={(d) => setViewing((v) => (v === null ? v : (v + d + photos.length) % photos.length))}
+          onMove={(d) => {
+            // Xem lớn vẫn lướt qua mọi ảnh; lưới nhảy theo trang của ảnh đang xem để đóng lại là thấy nó.
+            if (viewing === null) return;
+            const next = (viewing + d + photos.length) % photos.length;
+            setViewing(next);
+            pages.setPage(Math.floor(next / PHOTOS_PAGE_SIZE) + 1);
+          }}
           onRemove={() => void remove(current.id)}
         />
       )}

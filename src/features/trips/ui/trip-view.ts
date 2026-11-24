@@ -16,8 +16,11 @@ export const TRIP_VIEWS: { value: TripView; label: string }[] = [
   { value: 'stats', label: 'Thống kê' },
 ];
 
-/** Các tab hiện ra: bỏ "Hôm nay" khi chuyến chưa bắt đầu hoặc đã xong. */
-export const visibleTripViews = (ongoing: boolean) => TRIP_VIEWS.filter((v) => ongoing || v.value !== 'today');
+/**
+ * Các tab hiện ra: bỏ "Hôm nay" khi chuyến chưa bắt đầu hoặc đã xong. "Bản đồ" không nằm trong hàng tab
+ * (đã có ở thanh dưới cùng, mở `?view=map`), nhưng vẫn là một view hợp lệ.
+ */
+export const visibleTripViews = (ongoing: boolean) => TRIP_VIEWS.filter((v) => v.value !== 'map' && (ongoing || v.value !== 'today'));
 
 /** Giá trị lạ hoặc thiếu coi là danh sách. */
 export function parseTripView(raw: string | null | undefined): TripView {

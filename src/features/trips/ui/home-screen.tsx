@@ -3,12 +3,13 @@
 import { FileSpreadsheet, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { daysUntil, todayInVietnam } from '@/shared/date';
 import { staggerStyle } from '@/shared/ui/stagger';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
+import { Pagination, useClientPages } from '@/shared/ui/pagination';
 import { SignOutButton } from '@/features/auth/ui/sign-out-button';
 import { ThemeToggle } from '@/shared/ui/theme-toggle';
 import { iconButtonClass } from '@/shared/ui/icon-button';
@@ -24,6 +25,8 @@ import { tripsQuery } from './trip-queries';
 const ImportSheet = dynamic(() => import('./import-sheet').then((m) => m.ImportSheet), { ssr: false });
 
 type ImportTarget = Pick<TripSummary, 'id' | 'name'>;
+
+const TRIPS_PAGE_SIZE = 8;
 
 /** Nút nhỏ mở sheet nhập danh sách từ file; nằm ngoài Link của card (không lồng nút trong link). */
 function ImportButton({ trip, onImport, className = '' }: { trip: ImportTarget; onImport: (t: ImportTarget) => void; className?: string }) {
@@ -85,7 +88,17 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips }: { userI
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState<ImportTarget | null>(null);
   const { data: trips } = useQuery({ ...tripsQuery(groupId), initialData: initialTrips });
-  const { upcoming, past } = splitTrips(trips, todayInVietnam());
+  const today = todayInVietnam();
+  const { upcoming, past } = splitTrips(trips, today);
+  // Sắp đi (gần nhất trước) rồi mới tới đã đi: qua ngày kết thúc là chuyến tự xuống cuối.
+  const ordered = [...upcoming.map((trip) => ({ trip, past: false })), ...past.map((trip) => ({ trip, past: true }))];
+  const pages = useClientPages(ordered, TRIPS_PAGE_SIZE);
+  const top = useRef<HTMLDivElement>(null);
+
+  function goTo(page: number) {
+    pages.setPage(page);
+    top.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   return (
     <main className="animate-enter flex flex-col gap-4 px-2 py-4">
@@ -100,11 +113,6 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips }: { userI
         </div>
       </header>
 
-      {upcoming.map((t, i) => (
-        <UpcomingCard key={t.id} index={i} trip={t} today={todayInVietnam()} onImport={setImporting} />
-      ))}
-      {upcoming.length === 0 && <p className="py-4 text-center text-sm text-muted">Chưa có chuyến nào sắp đi.</p>}
-
       {creating ? (
         <NewTripForm groupId={groupId} onCancel={() => setCreating(false)} />
       ) : (
@@ -114,28 +122,37 @@ export function HomeScreen({ userId, groupId, groupName, initialTrips }: { userI
         </Button>
       )}
 
-      {past.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-base font-bold">Đã đi</h2>
-          {past.map((t, i) => (
-            <div key={t.id} className="stagger flex items-center gap-1" style={staggerStyle(i)}>
-              <Link href={`/trips/${t.id}`} className="pressable block min-w-0 flex-1">
-                <Card className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{t.city}</p>
-                    <p className="truncate text-sm text-muted">
-                      {t.name}
-                      {dateRange(t) && ` · ${dateRange(t)}`}
-                    </p>
-                  </div>
-                  <Badge tone="good">{t.confirmedCount} chỗ</Badge>
-                </Card>
-              </Link>
-              <ImportButton trip={t} onImport={setImporting} className="text-muted hover:bg-surface" />
-            </div>
-          ))}
-        </section>
-      )}
+      <div ref={top} className="flex scroll-mt-4 flex-col gap-4">
+        {trips.length === 0 && <p className="py-4 text-center text-sm text-muted">Chưa có chuyến nào.</p>}
+        {pages.items.map(({ trip: t, past: isPast }, i) => {
+          const index = pages.offset + i;
+          // Tiêu đề "Đã đi" đặt trước chuyến đã đi đầu tiên (kể cả khi nó là dòng đầu của trang).
+          const firstPast = isPast && (index === 0 || !ordered[index - 1].past);
+          return isPast ? (
+            <section key={t.id} className="flex flex-col gap-2">
+              {firstPast && <h2 className="text-base font-bold">Đã đi</h2>}
+              <div className="stagger flex items-center gap-1" style={staggerStyle(i)}>
+                <Link href={`/trips/${t.id}`} className="pressable block min-w-0 flex-1">
+                  <Card className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{t.city}</p>
+                      <p className="truncate text-sm text-muted">
+                        {t.name}
+                        {dateRange(t) && ` · ${dateRange(t)}`}
+                      </p>
+                    </div>
+                    <Badge tone="good">{t.confirmedCount} chỗ</Badge>
+                  </Card>
+                </Link>
+                <ImportButton trip={t} onImport={setImporting} className="text-muted hover:bg-surface" />
+              </div>
+            </section>
+          ) : (
+            <UpcomingCard key={t.id} index={i} trip={t} today={today} onImport={setImporting} />
+          );
+        })}
+        <Pagination page={pages.page} count={pages.count} onChange={goTo} label="Trang danh sách chuyến" />
+      </div>
 
       {importing && <ImportSheet tripId={importing.id} tripName={importing.name} onClose={() => setImporting(null)} />}
     </main>
