@@ -96,3 +96,26 @@ describe('tiền của chuyến chỉ admin (owner nhóm) được ghi', () => {
     expect((await member.db.from('trip_places').insert({ trip_id: T, place_id: place.id })).error).toBeNull();
   });
 });
+
+describe('sửa chỗ ở tab Danh sách: mọi thành viên đều được', () => {
+  test('thành viên sửa tên, địa chỉ, loại, ghi chú trong một lần (cả places và trip_places)', async () => {
+    await createTripsRepo(member.db).updateTripPlaceInfo(TP, { name: 'Bánh đa cua Bà Cụ', address: '179 Cầu Đất', category: 'snack', note: 'Gọi thêm chả lá lốt' });
+    const tp = (await admin.from('trip_places').select('note, cost, place:places(name, address, category)').eq('id', TP).single()).data!;
+    expect(tp).toEqual({ note: 'Gọi thêm chả lá lốt', cost: 140_000, place: { name: 'Bánh đa cua Bà Cụ', address: '179 Cầu Đất', category: 'snack' } });
+  });
+
+  test('để trống địa chỉ / ghi chú là bỏ; tên trống bị từ chối và không ghi gì', async () => {
+    const trips = createTripsRepo(member.db);
+    await trips.updateTripPlaceInfo(TP, { name: 'Bánh đa cua Bà Cụ', address: ' ', category: 'food', note: '' });
+    const tp = (await admin.from('trip_places').select('note, place:places(address, category)').eq('id', TP).single()).data!;
+    expect(tp).toEqual({ note: null, place: { address: null, category: 'food' } });
+    await expect(trips.updateTripPlaceInfo(TP, { name: '  ', address: '', category: 'cafe', note: 'x' })).rejects.toBeTruthy();
+    expect((await admin.from('trip_places').select('note').eq('id', TP).single()).data!.note).toBeNull();
+  });
+
+  test('người ngoài nhóm không sửa được (không tìm thấy)', async () => {
+    const outsider = await signIn('money-out');
+    await expect(createTripsRepo(outsider.db).updateTripPlaceInfo(TP, { name: 'Lạ', address: '', category: 'food', note: '' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await admin.auth.admin.deleteUser(outsider.id);
+  });
+});

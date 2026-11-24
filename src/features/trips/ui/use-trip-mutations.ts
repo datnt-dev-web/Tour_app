@@ -7,6 +7,7 @@ import {
   addExpenseAction,
   addManualPlaceAction,
   addToTripAction,
+  editTripPlaceAction,
   removeAction,
   removeExpenseAction,
   setPartySizeAction,
@@ -14,7 +15,7 @@ import {
   updateStopAction,
   setStatusAction,
 } from '../actions/trip-actions';
-import type { StopsPage, TripExpensePatch, TripInfo, TripPlacePatch, TripPlaceStatus, TripStop } from '../repositories/trips-repo';
+import type { StopsPage, TripExpensePatch, TripInfo, TripPlaceInfo, TripPlacePatch, TripPlaceStatus, TripStop } from '../repositories/trips-repo';
 
 type Snapshot = { stops: [readonly unknown[], StopsPage | undefined][]; info: TripInfo | undefined };
 
@@ -95,6 +96,27 @@ export function useUpdateStop(tripId: string) {
     onMutate: (v) => o.apply({ stop: onStop(v.tripPlaceId, (s) => applyPatch(s, v.patch)) }),
     onError: (_e, _v, ctx) => o.rollback(ctx),
     onSettled: o.settle,
+  });
+}
+
+/** Sửa tên/địa chỉ/loại/ghi chú; tên, địa chỉ, loại dùng chung với sổ quán nên làm mới cả sổ quán và màn chỗ. */
+export function useEditTripPlace(tripId: string) {
+  const qc = useQueryClient();
+  const o = useOptimisticTripEdit(tripId);
+  return useMutation({
+    mutationFn: async (v: { tripPlaceId: string; info: TripPlaceInfo }) => unwrap(await editTripPlaceAction(v)),
+    onMutate: ({ tripPlaceId, info }) =>
+      o.apply({
+        stop: onStop(tripPlaceId, (s) => ({
+          ...s,
+          category: info.category,
+          note: info.note.trim() || null,
+          place: { ...s.place, name: info.name.trim(), address: info.address.trim() || null, category: info.category },
+        })),
+      }),
+    onError: (_e, _v, ctx) => o.rollback(ctx),
+    onSettled: () =>
+      Promise.all([o.settle(), qc.invalidateQueries({ queryKey: queryKeys.bookAll }), qc.invalidateQueries({ queryKey: queryKeys.placeAll })]),
   });
 }
 

@@ -8,7 +8,7 @@ import { MAX_AMOUNT } from '@/shared/money';
 import { authed } from '@/shared/supabase/authed';
 import { TRIP_PLACE_STATUSES } from '../constants';
 import { createTripsRepo, type Trip, type TripExpense, type TripPlace } from '../repositories/trips-repo';
-import { addManualPlace, addToTrip, createTrip, removePlace, setStatus, updateStop } from '../services/trips-service';
+import { addManualPlace, addToTrip, createTrip, editTripPlace, removePlace, setStatus, updateStop } from '../services/trips-service';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const category = z.enum(STORED_CATEGORIES);
@@ -59,6 +59,15 @@ const updateStopSchema = z.object({
     transport: transportSchema.optional(),
     cost: amount.nullable().optional(),
     paidBy: z.uuid().nullable().optional(),
+  }),
+});
+const editPlaceSchema = z.object({
+  tripPlaceId: z.uuid(),
+  info: z.object({
+    name: z.string().trim().min(1).max(120),
+    address: z.string().trim().max(200),
+    category,
+    note: z.string().trim().max(500),
   }),
 });
 const partySizeSchema = z.object({ tripId: z.uuid(), partySize: z.number().int().min(1).max(100) });
@@ -118,6 +127,16 @@ export async function updateStopAction(input: z.input<typeof updateStopSchema>):
   return runAction(async () => {
     const { db } = await authed();
     await updateStop(createTripsRepo(db), parse(updateStopSchema, input));
+    return null;
+  });
+}
+
+/** Sửa tên, địa chỉ, loại, ghi chú của một chỗ (tab Danh sách). */
+export async function editTripPlaceAction(input: z.input<typeof editPlaceSchema>): Promise<ActionResult<null>> {
+  return runAction(async () => {
+    const { db } = await authed();
+    const { tripPlaceId, info } = parse(editPlaceSchema, input);
+    await editTripPlace(createTripsRepo(db), tripPlaceId, info);
     return null;
   });
 }

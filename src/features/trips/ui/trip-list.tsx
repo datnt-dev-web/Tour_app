@@ -1,8 +1,9 @@
 'use client';
 
-import { Clock, Trash2 } from 'lucide-react';
+import { Clock, Pencil } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { CATEGORY_LABELS, placeKeyOf } from '@/features/places/constants';
 import { formatDayMonth } from '@/shared/date';
 import { Badge } from '@/shared/ui/badge';
@@ -11,16 +12,22 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { staggerStyle } from '@/shared/ui/stagger';
 import { IconButton } from '@/shared/ui/icon-button';
 import { buttonClass } from '@/shared/ui/button';
+import { ConfirmDeleteButton } from '@/shared/ui/confirm-delete-button';
+import { useQuery } from '@/shared/query/use-query';
 import { STATUS_LABELS, STATUS_TONES, type TripTab } from '../constants';
 import type { TripStop } from '../repositories/trips-repo';
 import { formatSlot } from '../services/timeline';
 import { PlaceLines } from './place-lines';
 import { StatusSelect } from './status-select';
+import { tripQuery } from './trip-queries';
 import { StopEditor } from './stop-editor';
 import { stopsFilter } from './trip-view';
 import { usePagedStops, type InitialStops } from './use-paged-stops';
 import { useStopEditing, type StopEditing } from './use-stop-editing';
 import { useRemoveFromTrip, useSetStatus } from './use-trip-mutations';
+
+// Chỉ tải khi bấm sửa (không nằm trong bundle đầu của tab Danh sách).
+const EditPlaceSheet = dynamic(() => import('./edit-place-sheet').then((m) => m.EditPlaceSheet), { ssr: false });
 
 const SKELETON_ROWS = 4;
 
@@ -31,6 +38,7 @@ function PlaceRow({
   days,
   editing,
   onStatus,
+  onEdit,
   onRemove,
 }: {
   index: number;
@@ -39,6 +47,7 @@ function PlaceRow({
   days: string[];
   editing: StopEditing;
   onStatus: (s: TripStop['status']) => void;
+  onEdit: () => void;
   onRemove: () => void;
 }) {
   const scheduled = item.visit_date !== null && item.visit_time !== null;
@@ -70,9 +79,10 @@ function PlaceRow({
           <Clock size={16} aria-hidden />
           {scheduled ? `${formatSlot(item.visit_time!, item.visit_end_time)} · ${formatDayMonth(item.visit_date!)}` : 'Giờ'}
         </button>
-        <IconButton label={`Xóa ${item.place.name} khỏi chuyến`} tone="outline" className="text-bad" onClick={onRemove}>
-          <Trash2 size={18} aria-hidden />
+        <IconButton label={`Sửa ${item.place.name}`} tone="outline" className="text-accent" onClick={onEdit}>
+          <Pencil size={18} aria-hidden />
         </IconButton>
+        <ConfirmDeleteButton label={`Xóa ${item.place.name} khỏi chuyến`} tone="outline" className="text-bad" onConfirm={onRemove} />
       </div>
       {editing.editingId === item.id && (
         <StopEditor
@@ -107,6 +117,8 @@ export function TripList({ tripId, tab, days, initial }: { tripId: string; tab: 
   const editing = useStopEditing(tripId, paged.items, days);
   const setStatus = useSetStatus(tripId);
   const remove = useRemoveFromTrip(tripId);
+  const city = useQuery(tripQuery(tripId)).data?.trip.city ?? '';
+  const [editingPlace, setEditingPlace] = useState<TripStop | null>(null);
   const error = setStatus.error ?? remove.error ?? editing.error;
 
   function goTo(page: number) {
@@ -142,6 +154,7 @@ export function TripList({ tripId, tab, days, initial }: { tripId: string; tab: 
                     days={days}
                     editing={editing}
                     onStatus={(status) => setStatus.mutate({ tripPlaceId: item.id, status })}
+                    onEdit={() => setEditingPlace(item)}
                     onRemove={() => remove.mutate({ tripPlaceId: item.id })}
                   />
                 ))}
@@ -151,6 +164,7 @@ export function TripList({ tripId, tab, days, initial }: { tripId: string; tab: 
         </div>
       )}
       <Pagination page={paged.page} count={paged.count} onChange={goTo} label="Trang danh sách" />
+      {editingPlace && <EditPlaceSheet tripId={tripId} city={city} item={editingPlace} onClose={() => setEditingPlace(null)} />}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Check, ChevronDown, Landmark, QrCode, Trash2, UserPlus, X } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Landmark, QrCode, UserPlus, X } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { unwrap } from '@/shared/actions';
 import { BANKS, bankName } from '@/shared/banks';
@@ -9,6 +9,7 @@ import { formatVnd } from '@/shared/money';
 import { queryKeys } from '@/shared/query/keys';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
+import { ConfirmDeleteButton } from '@/shared/ui/confirm-delete-button';
 import { Dropdown } from '@/shared/ui/dropdown';
 import { FIELD } from '@/shared/ui/field';
 import { IconButton } from '@/shared/ui/icon-button';
@@ -111,9 +112,7 @@ export function SettlePanel({ tripId }: { tripId: string }) {
                 >
                   <Landmark size={18} aria-hidden />
                 </IconButton>
-                <IconButton label={`Bỏ ${p.name}`} tone="danger" onClick={() => remove.mutate(p.id)}>
-                  <Trash2 size={16} aria-hidden />
-                </IconButton>
+                <ConfirmDeleteButton label={`Bỏ ${p.name}`} confirmText="Bỏ?" iconSize={16} disabled={remove.isPending} onConfirm={() => remove.mutate(p.id)} />
               </div>
               {bankFor === p.id && <BankForm tripId={tripId} participant={p} onDone={() => setBankFor(null)} />}
             </li>
@@ -278,6 +277,7 @@ function BankForm({ tripId, participant: p, onDone }: { tripId: string; particip
   const [bin, setBin] = useState(p.bank_bin ?? BANKS[0].bin);
   const [accountNo, setAccountNo] = useState(p.account_no ?? '');
   const [accountName, setAccountName] = useState(p.account_name ?? '');
+  const [confirmClear, setConfirmClear] = useState(false);
   const save = useSplitMutation(tripId, async (bank: { bin: string; accountNo: string; accountName: string } | null) =>
     unwrap(await setParticipantBankAction({ participantId: p.id, bank })),
   );
@@ -300,8 +300,14 @@ function BankForm({ tripId, participant: p, onDone }: { tripId: string; particip
           {save.isPending ? 'Đang lưu…' : 'Lưu tài khoản'}
         </Button>
         {hasBank(p) && (
-          <Button type="button" variant="secondary" disabled={save.isPending} onClick={() => save.mutate(null, { onSuccess: onDone })}>
-            Bỏ tài khoản
+          <Button
+            type="button"
+            variant={confirmClear ? 'danger' : 'secondary'}
+            disabled={save.isPending}
+            onBlur={() => setConfirmClear(false)}
+            onClick={() => (confirmClear ? save.mutate(null, { onSuccess: onDone }) : setConfirmClear(true))}
+          >
+            {confirmClear ? 'Bỏ tài khoản?' : 'Bỏ tài khoản'}
           </Button>
         )}
       </div>

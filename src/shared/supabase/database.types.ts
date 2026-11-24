@@ -531,6 +531,9 @@ isOneToOne: false
             "is_trip_owner":
 { Args: { "p_trip_id": string }; Returns: boolean
                            },
+            "update_trip_place_info":
+{ Args: { "p_trip_place_id": string; "p_name": string; "p_address": string; "p_category": Database["public"]["Enums"]["place_category"]; "p_note": string }; Returns: undefined
+                           },
             "trip_stats":
 { Args: { "p_trip_id": string }; Returns: Json
                            }

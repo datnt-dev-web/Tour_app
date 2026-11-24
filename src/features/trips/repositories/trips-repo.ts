@@ -90,6 +90,15 @@ export interface TripExpensePatch {
   amount?: number;
   paidBy?: string | null;
 }
+/** Thông tin sửa ở tab Danh sách: tên/địa chỉ/loại của chỗ (dùng chung với sổ quán) và ghi chú trong chuyến. */
+export interface TripPlaceInfo {
+  name: string;
+  /** Rỗng là không có địa chỉ. */
+  address: string;
+  category: StoredPlaceCategory;
+  /** Rỗng là không có ghi chú. */
+  note: string;
+}
 export interface NewTripInput {
   groupId: string;
   name: string;
@@ -110,6 +119,8 @@ export interface TripsRepo {
   addPlaceToTrip(tripId: string, placeId: string, userId: string, note?: string): Promise<TripPlace>;
   setTripPlaceStatus(tripPlaceId: string, status: TripPlaceStatus): Promise<void>;
   updateTripPlace(tripPlaceId: string, patch: TripPlacePatch): Promise<void>;
+  /** Ghi cả places và trip_places trong một transaction (RPC update_trip_place_info). */
+  updateTripPlaceInfo(tripPlaceId: string, info: TripPlaceInfo): Promise<void>;
   setPartySize(tripId: string, partySize: number): Promise<void>;
   addExpense(tripId: string, label: string, amount: number, paidBy?: string | null): Promise<TripExpense>;
   updateExpense(expenseId: string, patch: TripExpensePatch): Promise<void>;
@@ -136,6 +147,8 @@ const FK_VIOLATION = '23503';
 const payerNotInTrip = () => new AppError('VALIDATION', 'Người trả không có trong danh sách người tham gia của chuyến.');
 /** PostgREST: offset vượt quá số dòng (HTTP 416). */
 const RANGE_NOT_SATISFIABLE = 'PGRST103';
+/** RPC update_trip_place_info: không thấy chỗ (không tồn tại hoặc RLS chặn). */
+const NO_DATA_FOUND = 'P0002';
 
 export function createTripsRepo(db: Db): TripsRepo {
   async function getTrip(tripId: string): Promise<Trip | null> {
@@ -274,6 +287,18 @@ export function createTripsRepo(db: Db): TripsRepo {
       if (error?.code === FK_VIOLATION) throw payerNotInTrip();
       if (error) throw error;
       if (data.length === 0) throw notFound();
+    },
+
+    async updateTripPlaceInfo(tripPlaceId, { name, address, category, note }) {
+      const { error } = await db.rpc('update_trip_place_info', {
+        p_trip_place_id: tripPlaceId,
+        p_name: name,
+        p_address: address,
+        p_category: category,
+        p_note: note,
+      });
+      if (error?.code === NO_DATA_FOUND) throw notFound();
+      if (error) throw error;
     },
 
     async setPartySize(tripId, partySize) {

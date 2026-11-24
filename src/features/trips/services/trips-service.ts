@@ -3,7 +3,7 @@ import type { PlacesRepo, StoredPlaceCategory } from '@/features/places/reposito
 import { AppError } from '@/shared/errors';
 import { normalizeText } from '@/shared/text';
 import type { ImportRow } from '../import/import-rows';
-import type { NewTripInput, Trip, TripPlace, TripPlacePatch, TripPlaceStatus, TripsRepo, TripSummary, VisitSchedule } from '../repositories/trips-repo';
+import type { NewTripInput, Trip, TripPlace, TripPlaceInfo, TripPlacePatch, TripPlaceStatus, TripsRepo, TripSummary, VisitSchedule } from '../repositories/trips-repo';
 import { tripDays } from './timeline';
 
 const byDate = (a: string | null, b: string | null) => (a ?? '9999-12-31').localeCompare(b ?? '9999-12-31');
@@ -86,6 +86,13 @@ export async function updateStop(
   if (!trip) throw new AppError('NOT_FOUND', 'Không tìm thấy chuyến đi.');
   assertSchedule(trip, input.patch.schedule);
   await repo.updateTripPlace(input.tripPlaceId, { ...input.patch, transport: cleanTransport(input.patch.transport) });
+}
+
+/** Sửa tên, địa chỉ, loại, ghi chú của một chỗ trong chuyến (mọi thành viên nhóm đều sửa được). */
+export async function editTripPlace(repo: Pick<TripsRepo, 'updateTripPlaceInfo'>, tripPlaceId: string, info: TripPlaceInfo): Promise<void> {
+  const name = info.name.trim();
+  if (!name) throw new AppError('INVALID_PLACE', 'Cần nhập tên quán hoặc địa điểm.');
+  await repo.updateTripPlaceInfo(tripPlaceId, { ...info, name, address: info.address.trim(), note: info.note.trim() });
 }
 
 export interface ManualPlaceInput {

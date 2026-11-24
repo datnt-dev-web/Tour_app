@@ -37,6 +37,7 @@ export function PlacePhotos({ placeId, tripId }: { placeId: string; tripId?: str
   const qc = useQueryClient();
   const { data } = useQuery(photosQuery(placeId));
   const [viewing, setViewing] = useState<PlacePhotoView | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.placePhotos(placeId) }), qc.invalidateQueries({ queryKey: queryKeys.photoCovers })]);
   const upload = useMutation({
     mutationFn: async (file: File) => {
@@ -100,11 +101,17 @@ export function PlacePhotos({ placeId, tripId }: { placeId: string; tripId?: str
             </button>
             <button
               type="button"
-              onClick={() => remove.mutate(viewing.id, { onSuccess: () => setViewing(null) })}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded bg-bad px-4 text-sm font-semibold text-white"
+              disabled={remove.isPending}
+              onBlur={() => setConfirmRemove(false)}
+              onClick={() =>
+                confirmRemove
+                  ? remove.mutate(viewing.id, { onSuccess: () => setViewing(null), onSettled: () => setConfirmRemove(false) })
+                  : setConfirmRemove(true)
+              }
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded px-4 text-sm font-semibold text-white disabled:opacity-50 ${confirmRemove ? 'bg-bad' : 'bg-white/10'}`}
             >
               <Trash2 size={16} aria-hidden />
-              Xóa ảnh
+              {confirmRemove ? 'Xóa ảnh này?' : 'Xóa ảnh'}
             </button>
           </div>
         </div>
