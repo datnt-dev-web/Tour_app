@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { CirclePlay, FolderPlus, Music, Pause, Pencil, Play, Plus, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Trash2, Upload } from 'lucide-react';
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { unwrap } from '@/shared/actions';
@@ -20,6 +20,7 @@ import {
   removeTrackAction,
   renameFolderAction,
 } from '../actions/music-actions';
+import { useQuery } from '@/shared/query/use-query';
 import { FOLDER_NAME_MAX, MUSIC_MAX_BYTES } from '../constants';
 import { useMusicPlayer, YoutubeSlot } from './music-player';
 import { musicQuery, type MusicData } from './music-queries';

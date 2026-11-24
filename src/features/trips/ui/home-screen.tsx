@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { FileSpreadsheet, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -13,6 +12,7 @@ import { Card } from '@/shared/ui/card';
 import { SignOutButton } from '@/features/auth/ui/sign-out-button';
 import { ThemeToggle } from '@/shared/ui/theme-toggle';
 import { iconButtonClass } from '@/shared/ui/icon-button';
+import { useQuery } from '@/shared/query/use-query';
 import type { TripSummary } from '../repositories/trips-repo';
 import { dateRange } from '../services/timeline';
 import { isTripOngoing } from '../services/today';

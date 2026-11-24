@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { Check, LocateFixed, Navigation } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CATEGORY_LABELS } from '@/features/places/constants';
@@ -8,6 +7,7 @@ import { nowHHMMInVietnam, todayInVietnam } from '@/shared/date';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Skeleton } from '@/shared/ui/skeleton';
+import { useQuery } from '@/shared/query/use-query';
 import type { TripStop } from '../repositories/trips-repo';
 import { formatSlot } from '../services/timeline';
 import { planToday } from '../services/today';

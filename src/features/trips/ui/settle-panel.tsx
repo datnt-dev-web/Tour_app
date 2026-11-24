@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Check, ChevronDown, Landmark, QrCode, Trash2, UserPlus, X } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { unwrap } from '@/shared/actions';
@@ -15,6 +15,7 @@ import { IconButton } from '@/shared/ui/icon-button';
 import { Sheet } from '@/shared/ui/sheet';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { buildVietQrPayload } from '@/shared/vietqr';
+import { useQuery } from '@/shared/query/use-query';
 import { addParticipantAction, addTransferAction, removeParticipantAction, removeTransferAction, setParticipantBankAction } from '../actions/settle-actions';
 import type { TripParticipant } from '../repositories/settle-repo';
 import { computeSplit, type PairDebt } from '../services/settle';

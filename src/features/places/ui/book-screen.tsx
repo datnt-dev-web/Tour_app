@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
@@ -8,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { staggerStyle } from '@/shared/ui/stagger';
 import { Chip } from '@/shared/ui/chip';
 import { useDebouncedValue } from '@/shared/ui/use-debounced-value';
+import { useQuery } from '@/shared/query/use-query';
 import { BOOK_FILTERS, CATEGORY_LABELS, placeKeyOf } from '../constants';
 import { bookCities, filterBook, pickBookCity, type BookRow, type BookVerdict } from '../services/book-service';
 import { bookQuery } from './book-queries';

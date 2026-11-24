@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { Download, ExternalLink, FileText, Link2, StickyNote, Trash2, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -8,6 +7,7 @@ import { MemoriesBoard } from '@/features/memories/ui/memories-board';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
 import { Button } from '@/shared/ui/button';
+import { useQuery } from '@/shared/query/use-query';
 import type { InfoKind } from '../constants';
 import type { TripInfo } from '../repositories/infos-repo';
 import { AddInfoForm } from './add-info-form';

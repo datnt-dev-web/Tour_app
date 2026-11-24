@@ -1,6 +1,6 @@
 'use client';
 
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useQueryClient } from '@tanstack/react-query';
 import { Camera, ChevronLeft, ChevronRight, Download, ImagePlus, Trash2, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { unwrap } from '@/shared/actions';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/shared/ui/skeleton';
 import { runLimited, uploadWithTicket } from '@/shared/upload/direct-upload';
 import { Button, buttonClass } from '@/shared/ui/button';
 import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
+import { useQuery } from '@/shared/query/use-query';
 import { addMemoryAction, prepareMemoryUploadsAction, removeMemoryAction } from '../actions/memories-actions';
 import { MEMORY_BATCH_MAX, MEMORY_MAX_BYTES } from '../constants';
 import type { TripPhotoView } from '../services/memories-service';

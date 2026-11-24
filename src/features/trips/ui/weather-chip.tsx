@@ -1,8 +1,9 @@
 'use client';
 
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import { describeWeather, type DailyWeather } from '@/integrations/open-meteo/client';
 import { queryKeys } from '@/shared/query/keys';
+import { useQuery } from '@/shared/query/use-query';
 
 const WEATHER_STALE_MS = 60 * 60 * 1000;
 

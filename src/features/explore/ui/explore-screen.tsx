@@ -1,6 +1,6 @@
 'use client';
 
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation } from '@tanstack/react-query';
 import { Check, LocateFixed, MapPin, Navigation, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ import { Chip } from '@/shared/ui/chip';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { useDebouncedValue } from '@/shared/ui/use-debounced-value';
 import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
+import { useQuery } from '@/shared/query/use-query';
 import type { ExploreNearbyPlace, ExploreNearbyResult } from '../services/nearby-service';
 import { pickBookForExplore } from '../services/nearby-service';
 

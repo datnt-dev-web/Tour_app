@@ -1,12 +1,13 @@
 'use client';
 
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Camera, Trash2, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import { unwrap } from '@/shared/actions';
 import { queryKeys } from '@/shared/query/keys';
 import { uploadWithTicket } from '@/shared/upload/direct-upload';
 import { buttonClass } from '@/shared/ui/button';
+import { useQuery } from '@/shared/query/use-query';
 import { addPlacePhotoAction, preparePlacePhotoUploadAction, removePlacePhotoAction } from '../actions/photo-actions';
 import type { PlacePhotoView } from '../services/photo-service';
 

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Minus, Plus, Trash2, Users, Sparkles } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { useRef, useState, type FormEvent } from 'react';
 import { CATEGORY_LABELS } from '@/features/places/constants';
 import { formatDayMonth } from '@/shared/date';
@@ -13,6 +12,7 @@ import { Pagination } from '@/shared/ui/pagination';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { FIELD } from '@/shared/ui/field';
 import { IconButton } from '@/shared/ui/icon-button';
+import { useQuery } from '@/shared/query/use-query';
 import type { TripParticipant } from '../repositories/settle-repo';
 import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
 import { tripDays } from '../services/timeline';

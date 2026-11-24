@@ -1,9 +1,10 @@
 'use client';
 
-import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { queryKeys } from '@/shared/query/keys';
 import { pageCount } from '@/shared/pagination';
+import { useQuery } from '@/shared/query/use-query';
 import { STOPS_PAGE_SIZE, type StopsPage, type StopsQuery, type TripStop } from '../repositories/trips-repo';
 import { tripStopsQuery } from './trip-queries';
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useQuery } from '@/shared/query/use-query';
 import type { TrackView } from '../services/music-service';
 import { musicQuery } from './music-queries';
 import { playerKey, readSavedPlayer, restoreQueue, type RepeatMode } from './player-storage';
@@ -173,6 +173,43 @@ export function MusicPlayerProvider({ userId, children }: { userId: string | nul
     setState((s) => ({ ...s, queue: [], index: null, playing: false }));
   }, []);
 
+  // Thẻ <audio> tạo sau khi mount và gắn thẳng vào body, ngoài cây React: HTML server không có nó nên extension
+  // (vd. nút lồng tiếng YouTube) không chèn được gì vào trước lúc hydrate để gây lệch; chèn sau thì React cũng không quản.
+  const endedRef = useRef(ended);
+  useLayoutEffect(() => {
+    endedRef.current = ended;
+  });
+  useEffect(() => {
+    const el = document.createElement('audio');
+    el.preload = 'none';
+    el.hidden = true;
+    const onPlay = () => {
+      interrupted.current = false;
+      setState((s) => ({ ...s, playing: true }));
+    };
+    const onPause = () => {
+      // Hết bài cũng phát sự kiện pause: không tính là bị gián đoạn. Chỉ dừng lúc app chạy nền mới là hệ thống dừng.
+      if (!userPaused.current && !el.ended && !isPageVisible()) interrupted.current = true;
+      setState((s) => ({ ...s, playing: false }));
+    };
+    // Qua ref: effect chỉ chạy một lần, không tạo lại thẻ (ngắt nhạc) khi hàm ended đổi.
+    const onEnded = () => endedRef.current();
+    el.addEventListener('play', onPlay);
+    el.addEventListener('pause', onPause);
+    el.addEventListener('ended', onEnded);
+    document.body.appendChild(el);
+    audio.current = el;
+    return () => {
+      el.removeEventListener('play', onPlay);
+      el.removeEventListener('pause', onPause);
+      el.removeEventListener('ended', onEnded);
+      el.pause();
+      el.removeAttribute('src');
+      el.remove();
+      if (audio.current === el) audio.current = null;
+    };
+  }, []);
+
   // Thông tin bài và nút trên màn hình khóa / thanh thông báo.
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
@@ -286,21 +323,6 @@ export function MusicPlayerProvider({ userId, children }: { userId: string | nul
   return (
     <PlayerContext.Provider value={api}>
       {children}
-      <audio
-        ref={audio}
-        preload="none"
-        onPlay={() => {
-          interrupted.current = false;
-          setState((s) => ({ ...s, playing: true }));
-        }}
-        onPause={() => {
-          // Hết bài cũng phát sự kiện pause: không tính là bị gián đoạn. Chỉ dừng lúc app chạy nền mới là hệ thống dừng.
-          if (!userPaused.current && !audio.current?.ended && !isPageVisible()) interrupted.current = true;
-          setState((s) => ({ ...s, playing: false }));
-        }}
-        onEnded={ended}
-        className="hidden"
-      />
       {current?.kind === 'youtube' && current.youtubeId && (
         <YoutubeDock slot={youtubeSlot} onClose={stop}>
           <YoutubePlayer

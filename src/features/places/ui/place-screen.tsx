@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Star } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
@@ -11,6 +10,7 @@ import { weekdayIndexInVietnam } from '@/shared/date';
 import { queryKeys } from '@/shared/query/keys';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
+import { useQuery } from '@/shared/query/use-query';
 import { CATEGORY_LABELS, STORED_CATEGORIES } from '../constants';
 import type { PlaceView } from '../services/place-service';
 import { CheckLinks } from './check-links';

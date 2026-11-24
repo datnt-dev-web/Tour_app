@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import { Dropdown } from '@/shared/ui/dropdown';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { iconButtonClass } from '@/shared/ui/icon-button';
 import { buttonClass } from '@/shared/ui/button';
+import { useQuery } from '@/shared/query/use-query';
 import { TRIP_TABS, type TripTab } from '../constants';
 import type { RawTripStats, TripInfo } from '../repositories/trips-repo';
 import { dateRange, tripDays } from '../services/timeline';

@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { latLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LocateFixed, Navigation, X } from 'lucide-react';
@@ -11,6 +10,7 @@ import { Badge } from '@/shared/ui/badge';
 import { Button, buttonClass } from '@/shared/ui/button';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { IconButton, iconButtonClass } from '@/shared/ui/icon-button';
+import { useQuery } from '@/shared/query/use-query';
 import { STATUS_LABELS, STATUS_TONES, TAB_STATUSES, type TripTab } from '../constants';
 import type { TripMapPoint } from '../services/trip-locations-service';
 import { tripLocationsQuery } from './trip-queries';

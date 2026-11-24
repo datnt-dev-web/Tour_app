@@ -1,11 +1,12 @@
 'use client';
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData } from '@tanstack/react-query';
 import { MapPin } from 'lucide-react';
 import { useId, useState, type InputHTMLAttributes, type KeyboardEvent } from 'react';
 import type { GeoSuggestion, SuggestKind } from '@/integrations/photon/client';
 import { queryKeys } from '@/shared/query/keys';
 import { useDebouncedValue } from '@/shared/ui/use-debounced-value';
+import { useQuery } from '@/shared/query/use-query';
 import { MIN_SUGGEST_CHARS } from '../constants';
 
 /** Chờ người dùng ngừng gõ rồi mới hỏi server. */

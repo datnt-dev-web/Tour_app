@@ -1,9 +1,10 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PlaceSummary } from '@/integrations/gemini/parse';
 import type { PlaceCategory } from '@/integrations/google-places/types';
 import { queryKeys } from '@/shared/query/keys';
+import { useQuery } from '@/shared/query/use-query';
 import type { AiStatus } from '../services/quota';
 import type { HotPlace } from '../services/ai-service';
 

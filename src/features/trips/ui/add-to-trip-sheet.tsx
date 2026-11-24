@@ -1,10 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Sheet } from '@/shared/ui/sheet';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { todayInVietnam } from '@/shared/date';
+import { useQuery } from '@/shared/query/use-query';
 import { splitTrips } from '../services/trips-service';
 import { dateRange } from '../services/timeline';
 import { tripsQuery } from './trip-queries';
