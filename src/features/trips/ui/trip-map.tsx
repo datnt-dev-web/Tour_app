@@ -14,7 +14,7 @@ import { useQuery } from '@/shared/query/use-query';
 import { STATUS_LABELS, STATUS_TONES, TAB_STATUSES, type TripTab } from '../constants';
 import type { TripMapPoint } from '../services/trip-locations-service';
 import { tripLocationsQuery } from './trip-queries';
-import { formatDistance, nearestPoints, distanceMeters, type LatLng } from './geo';
+import { formatDistance, nearestPoints, distanceMeters, type LatLng } from '../services/geo';
 import { directionsUrl, placeDetailHref } from './trip-view';
 import { useMyLocation, type MyLocation } from './use-my-location';
 

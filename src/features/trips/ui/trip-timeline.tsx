@@ -2,9 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { AlertTriangle, Check, Clock, MapPin, Navigation } from 'lucide-react';
-import Link from 'next/link';
 import { useRef, useState, type CSSProperties } from 'react';
-import { placeKeyOf } from '@/features/places/constants';
 import { formatDayMonth } from '@/shared/date';
 import { WeatherChip } from './weather-chip';
 import { formatVnd, perPerson } from '@/shared/money';
@@ -17,6 +15,7 @@ import { STATUS_LABELS, STATUS_TONES, type TripTab } from '../constants';
 import type { TripStop } from '../repositories/trips-repo';
 import { buildTimeline, toHHMM } from '../services/timeline';
 import { PlaceLines } from './place-lines';
+import { PlaceNameLink } from './place-name-link';
 import { StopEditor } from './stop-editor';
 import { addressDirectionsUrl, stopsFilter } from './trip-view';
 import { usePagedStops, type InitialStops } from './use-paged-stops';
@@ -88,12 +87,7 @@ function StopCard({
           </span>
         </button>
         <div className={`min-w-0 flex-1 ${visited ? 'opacity-60' : ''}`}>
-          <Link
-            href={`/places/${encodeURIComponent(placeKeyOf({ placeId: item.place.id, googlePlaceId: item.place.google_place_id }))}?trip=${tripId}`}
-            className={`block font-semibold leading-snug ${visited ? 'text-muted line-through' : ''}`}
-          >
-            {item.place.name}
-          </Link>
+          <PlaceNameLink place={item.place} tripId={tripId} visited={visited} />
           <PlaceLines address={item.place.address} note={item.note} />
           {item.transport && (
             <p className="flex items-center gap-1 text-xs text-muted">

@@ -12,7 +12,7 @@ import type { StoredPlaceCategory } from '@/features/places/repositories/places-
 import { bookQuery } from '@/features/places/ui/book-queries';
 import { VerdictBadge } from '@/features/places/ui/verdict-badge';
 import { addManualPlaceAction } from '@/features/trips/actions/trip-actions';
-import { formatDistance } from '@/features/trips/ui/geo';
+import { formatDistance } from '@/features/trips/services/geo';
 import { directionsUrl } from '@/features/trips/ui/trip-view';
 import { useMyLocation } from '@/features/trips/ui/use-my-location';
 import { unwrap } from '@/shared/actions';

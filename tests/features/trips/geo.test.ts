@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { distanceMeters, formatDistance, nearestPoints } from '@/features/trips/ui/geo';
+import { distanceMeters, formatDistance, nearestPoints } from '@/features/trips/services/geo';
 
 describe('distanceMeters', () => {
   it('0 khi trùng điểm', () => {

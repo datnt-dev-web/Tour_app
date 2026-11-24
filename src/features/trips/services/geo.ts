@@ -23,3 +23,12 @@ export function nearestPoints<T extends LatLng>(points: T[], me: LatLng, limit: 
     .sort((a, b) => a.meters - b.meters)
     .slice(0, limit);
 }
+
+/**
+ * Làm tròn vị trí về ô lưới (độ). Đi trong cùng một ô thì vị trí "không đổi": không phải tính lại quãng đường
+ * mỗi bước chân, và máy chủ định tuyến chỉ thấy vị trí thô.
+ */
+export function snapToGrid(p: LatLng, gridDeg: number): LatLng {
+  const snap = (v: number) => Number((Math.round(v / gridDeg) * gridDeg).toFixed(6));
+  return { lat: snap(p.lat), lng: snap(p.lng) };
+}

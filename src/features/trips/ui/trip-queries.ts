@@ -5,6 +5,8 @@ import { createBrowserSupabase } from '@/shared/supabase/browser';
 import { useQuery } from '@/shared/query/use-query';
 import { createSettleRepo } from '../repositories/settle-repo';
 import { createTripsRepo, type StopsQuery } from '../repositories/trips-repo';
+import type { LatLng } from '../services/geo';
+import type { StopDistances } from '../services/stop-distances';
 import type { TripLocations } from '../services/trip-locations-service';
 
 /** Danh sách phẳng; việc tách sắp đi/đã đi làm lúc render để đếm ngược theo ngày hiện tại. */
@@ -61,6 +63,26 @@ export const tripLocationsQuery = (tripId: string) =>
       if (res.ok) return (await res.json()) as TripLocations;
       const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
       throw new Error(body?.error?.message ?? 'Không tải được bản đồ, thử lại sau.');
+    },
+  });
+
+const DISTANCES_STALE_MS = 10 * 60 * 1000;
+
+/** Quãng đường đi thật (server gọi Valhalla, cache). `origin` đã làm tròn ô lưới nên đi trong một ô không tải lại. */
+export const stopDistancesQuery = (tripId: string, ids: string[], origin: LatLng | null) =>
+  queryOptions({
+    queryKey: queryKeys.tripDistances(tripId, origin ? `${origin.lat},${origin.lng}` : '', ids),
+    staleTime: DISTANCES_STALE_MS,
+    enabled: ids.length > 0,
+    queryFn: async (): Promise<StopDistances> => {
+      const res = await fetch(`/api/trips/${tripId}/distances`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, origin }),
+      });
+      if (res.ok) return (await res.json()) as StopDistances;
+      const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+      throw new Error(body?.error?.message ?? 'Không tính được quãng đường, thử lại sau.');
     },
   });
 

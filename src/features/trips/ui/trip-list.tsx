@@ -2,9 +2,8 @@
 
 import { Clock, Pencil } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useRef, useState } from 'react';
-import { CATEGORY_LABELS, placeKeyOf } from '@/features/places/constants';
+import { CATEGORY_LABELS } from '@/features/places/constants';
 import { formatDayMonth } from '@/shared/date';
 import { Badge } from '@/shared/ui/badge';
 import { Pagination } from '@/shared/ui/pagination';
@@ -18,6 +17,7 @@ import { STATUS_LABELS, STATUS_TONES, type TripTab } from '../constants';
 import type { TripStop } from '../repositories/trips-repo';
 import { formatSlot } from '../services/timeline';
 import { PlaceLines } from './place-lines';
+import { PlaceNameLink } from './place-name-link';
 import { StatusSelect } from './status-select';
 import { tripQuery } from './trip-queries';
 import { StopEditor } from './stop-editor';
@@ -55,12 +55,7 @@ function PlaceRow({
     <li className="stagger flex flex-col gap-2 rounded border border-line bg-card p-3 shadow-card" style={staggerStyle(index)}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <Link
-            href={`/places/${encodeURIComponent(placeKeyOf({ placeId: item.place.id, googlePlaceId: item.place.google_place_id }))}?trip=${tripId}`}
-            className="block font-semibold leading-snug"
-          >
-            {item.place.name}
-          </Link>
+          <PlaceNameLink place={item.place} tripId={tripId} />
           <PlaceLines address={item.place.address} note={item.note} />
         </div>
         <Badge tone={STATUS_TONES[item.status]} className="shrink-0">

@@ -1,6 +1,6 @@
 import type { StoredPlaceCategory } from '@/features/places/repositories/places-repo';
 import type { BookRow, BookVerdict } from '@/features/places/services/book-service';
-import { distanceMeters } from '@/features/trips/ui/geo';
+import { distanceMeters } from '@/features/trips/services/geo';
 import type { LatLngPoint, NearbyPlace, OverpassClient } from '@/integrations/overpass/client';
 import type { CacheStore } from '@/shared/cache/cache-store';
 import { cached } from '@/shared/cache/cached';

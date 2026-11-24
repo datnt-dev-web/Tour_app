@@ -9,6 +9,8 @@ export const queryKeys = {
   tripStopsAll: (tripId: string) => ['tripStops', tripId] as const,
   tripStats: (tripId: string) => ['tripStats', tripId] as const,
   tripLocations: (tripId: string) => ['tripLocations', tripId] as const,
+  /** Quãng đường tab Hôm nay: theo ô lưới vị trí và danh sách chỗ chưa đi. */
+  tripDistances: (tripId: string, origin: string, ids: string[]) => ['tripDistances', tripId, origin, ids] as const,
   tripInfos: (tripId: string) => ['tripInfos', tripId] as const,
   tripPhotos: (tripId: string) => ['tripPhotos', tripId] as const,
   groupTracks: ['groupTracks'] as const,

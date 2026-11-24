@@ -49,3 +49,15 @@ export const TAB_STATUSES: Record<TripTab, TripPlaceStatus[]> = {
 /** Link xem lịch trình tự hết hạn sau ngần này ngày (chia sẻ xong chuyến là thôi).
  *  Để ở đây chứ không ở services/share.ts: file đó dùng node:crypto, client import vào sẽ kéo theo polyfill crypto ~140 KB. */
 export const SHARE_TTL_DAYS = 30;
+
+/** Tab Hôm nay: hai chỗ chưa đi cách nhau (đường đi) không quá ngần này mét thì gợi ý "Gần đó". */
+export const NEARBY_MAX_M = 1000;
+/** Mỗi thẻ gợi ý tối đa ngần này chỗ gần đó. */
+export const NEARBY_LIMIT = 2;
+/** Khối "Gần bạn nhất" gợi ý tối đa ngần này chỗ. */
+export const NEAREST_LIMIT = 3;
+/** Ô lưới vị trí (~200 m): đi trong một ô thì không tính lại quãng đường từ chỗ mình. */
+export const ORIGIN_GRID_DEG = 0.002;
+/** Một lần tính tối đa ngần này chỗ (đủ cho một ngày, chặn yêu cầu quá lớn lên máy chủ định tuyến). */
+export const DISTANCES_MAX_STOPS = 25;
+

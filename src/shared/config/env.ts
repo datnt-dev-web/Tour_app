@@ -28,6 +28,11 @@ const schema = z.object({
   INFO_FILE_URL_TTL_SEC: num(300),
   // Khám phá: Overpass (OpenStreetMap), có thể đổi sang máy chủ khác nếu máy chủ chính quá tải.
   OVERPASS_API_URL: z.string().url().default('https://overpass-api.de/api/interpreter'),
+  // Quãng đường đi thật (tab Hôm nay): Valhalla trên OpenStreetMap; motor_scooter = xe máy.
+  VALHALLA_API_URL: z.string().url().default('https://valhalla1.openstreetmap.de'),
+  ROUTING_COSTING: z.enum(['motor_scooter', 'motorcycle', 'auto', 'pedestrian', 'bicycle']).default('motor_scooter'),
+  // Quãng đường giữa hai điểm cố định gần như không đổi: cache lâu để ít gọi máy chủ miễn phí.
+  ROUTE_TTL_SEC: num(2592000),
   // Thông báo đẩy nhắc giờ (Web Push): tùy chọn, thiếu khóa VAPID thì tắt. CRON_SECRET bảo vệ /api/cron/reminders.
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().min(1).optional(),
   VAPID_PRIVATE_KEY: z.string().min(1).optional(),
