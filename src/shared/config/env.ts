@@ -33,6 +33,8 @@ const schema = z.object({
   ROUTING_COSTING: z.enum(['motor_scooter', 'motorcycle', 'auto', 'pedestrian', 'bicycle']).default('motor_scooter'),
   // Quãng đường giữa hai điểm cố định gần như không đổi: cache lâu để ít gọi máy chủ miễn phí.
   ROUTE_TTL_SEC: num(2592000),
+  // Link chia sẻ ai cũng mở được: giới hạn số lần tính quãng đường mỗi phút cho một link, tránh bị spam máy chủ định tuyến.
+  SHARE_DISTANCES_PER_MIN: num(20),
   // Thông báo đẩy nhắc giờ (Web Push): tùy chọn, thiếu khóa VAPID thì tắt. CRON_SECRET bảo vệ /api/cron/reminders.
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().min(1).optional(),
   VAPID_PRIVATE_KEY: z.string().min(1).optional(),

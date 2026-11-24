@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import { SHARE_TTL_DAYS } from '@/features/trips/constants';
-import { generateShareToken, loadSharedTrip, shareExpiry } from '@/features/trips/services/share';
+import { consumeShareDistanceRate, generateShareToken, loadSharedTrip, shareExpiry } from '@/features/trips/services/share';
+import { MemoryCacheStore } from '@/shared/cache/memory-store';
 
 describe('share token', () => {
   test('ngẫu nhiên, an toàn cho URL, đủ dài để không đoán được', () => {
@@ -34,5 +35,15 @@ describe('loadSharedTrip', () => {
     expect(d.findByToken).not.toHaveBeenCalled();
     expect(await loadSharedTrip(deps(null), 'x'.repeat(43), now)).toBeNull();
     expect(await loadSharedTrip(deps({ ...trip, share_expires_at: '2026-11-20T00:00:00Z' }), 'x'.repeat(43), now)).toBeNull();
+  });
+});
+
+describe('consumeShareDistanceRate', () => {
+  test('cho qua đủ số lần mỗi phút, lần sau đó bị chặn; link khác đếm riêng', async () => {
+    const store = new MemoryCacheStore();
+    const a = 'a'.repeat(43);
+    for (let i = 0; i < 3; i++) await consumeShareDistanceRate(store, a, 3);
+    await expect(consumeShareDistanceRate(store, a, 3)).rejects.toMatchObject({ code: 'RATE_LIMITED' });
+    await expect(consumeShareDistanceRate(store, 'b'.repeat(43), 3)).resolves.toBeUndefined();
   });
 });
